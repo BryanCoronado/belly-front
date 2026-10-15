@@ -1,0 +1,245 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, CircleCheckBig, MessageCircleMore } from 'lucide-react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { abrirChat, enviarMensaje, leerConversacion, leerMensajes, type MensajeChat } from '@/api'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { avisoError } from '@/lib/avisos'
+import { cn } from '@/lib/utils'
+import { BurbujaMensaje } from './BurbujaMensaje'
+import { DialogoFinalizar, DialogoPlantilla } from './Dialogos'
+import { claveDia, etiquetaDia, iniciales, leerFecha, nombreContacto, ventanaAbierta } from './formato'
+import { Redactor } from './Redactor'
+import { ResumenBot } from './ResumenBot'
+
+const ESTADO_FINALIZADA = 2
+const DISTANCIA_PEGADO_ABAJO = 120
+
+type Props = {
+  idConversacion: number
+  alVolver: () => void
+  className?: string
+}
+
+export function PanelConversacion({ idConversacion, alVolver, className }: Props) {
+  const consultas = useQueryClient()
+  const claveMensajes = ['mensajes', idConversacion]
+  const [dialogo, setDialogo] = useState<'plantilla' | 'finalizar' | null>(null)
+
+  const conversacion = useQuery({ queryKey: ['conversacion', idConversacion], queryFn: () => leerConversacion(idConversacion) })
+  const mensajes = useQuery({
+    queryKey: claveMensajes,
+    queryFn: () => leerMensajes(idConversacion),
+  })
+
+  const refrescarListas = () => {
+    consultas.invalidateQueries({ queryKey: ['chats'] })
+    consultas.invalidateQueries({ queryKey: ['chats-contadores'] })
+  }
+
+  const lectura = useMutation({
+    mutationFn: () => abrirChat(idConversacion),
+    onSuccess: async () => {
+      refrescarListas()
+      await consultas.invalidateQueries({ queryKey: claveMensajes })
+    },
+  })
+  const hayNoLeidos = mensajes.data?.some((mensaje) => mensaje.contesta === 'cliente' && Number(mensaje.id_estado) === 3) ?? false
+  const ultimoId = mensajes.data?.at(-1)?.id ?? 0
+  const { mutate: marcarLeidos, isPending: marcando } = lectura
+
+  useEffect(() => {
+    if (hayNoLeidos && !marcando) {
+      marcarLeidos()
+    }
+  }, [hayNoLeidos, ultimoId, marcando, marcarLeidos])
+
+  const envio = useMutation({
+    mutationFn: ({ texto, archivo }: { texto: string; archivo?: File }) => enviarMensaje(idConversacion, texto, archivo),
+    onMutate: async ({ texto, archivo }) => {
+      await consultas.cancelQueries({ queryKey: claveMensajes })
+      const provisional: MensajeChat = {
+        id: -Date.now(),
+        id_conversacion: idConversacion,
+        id_estado: 1,
+        mensaje: texto || archivo?.name || '',
+        contesta: 'usuario',
+        media_type: null,
+        media_url: null,
+        cod_error: null,
+        created_at: new Date().toISOString(),
+        pendiente: true,
+      }
+      consultas.setQueryData<MensajeChat[]>(claveMensajes, (actuales = []) => [...actuales, provisional])
+    },
+    onError: (error) => avisoError(error, 'No se pudo enviar el mensaje'),
+    onSettled: () => {
+      consultas.invalidateQueries({ queryKey: claveMensajes })
+      refrescarListas()
+    },
+  })
+
+  const chat = conversacion.data
+  const finalizada = chat?.id_estado === ESTADO_FINALIZADA
+  const nombre = chat ? nombreContacto(chat) : ''
+
+  return (
+    <section className={cn('flex min-h-0 flex-col', className)}>
+      <header
+        className="flex items-center gap-3 border-b border-[var(--wa-borde)] bg-[var(--wa-panel)] px-3 py-2.5"
+        data-tour="cabecera-chat"
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-[var(--wa-muted)] hover:bg-black/5 md:hidden"
+          aria-label="Volver a la lista"
+          onClick={alVolver}
+        >
+          <ArrowLeft />
+        </Button>
+        {chat ? (
+          <>
+            <Avatar className="size-10">
+              <AvatarFallback className="bg-[#dfe5e7] text-sm font-medium text-[#54656f] dark:bg-[#2a3942] dark:text-[#aebac1]">{iniciales(nombre)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[15px] font-medium">{nombre}</p>
+              <p className="truncate text-[12px] text-[var(--wa-muted)]">
+                {[chat.telefono, chat.nombre_app].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+            {finalizada ? (
+              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[var(--wa-muted)]">
+                Finalizada
+              </span>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-[var(--wa-borde)] bg-white text-[var(--wa-texto)] hover:bg-white/80"
+                onClick={() => setDialogo('finalizar')}
+                data-tour="finalizar-chat"
+              >
+                <CircleCheckBig /> <span className="hidden sm:inline">Finalizar</span>
+              </Button>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-1 items-center gap-3">
+            <Skeleton className="size-10 rounded-full" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        )}
+      </header>
+
+      {chat ? <ResumenBot idConversacion={idConversacion} totalMensajes={mensajes.data?.length ?? 0} /> : null}
+
+      <ListaMensajes mensajes={mensajes.data} cargando={mensajes.isLoading} error={mensajes.error?.message} />
+
+      {finalizada ? (
+        <p className="border-t border-[var(--wa-borde)] bg-[var(--wa-panel)] px-4 py-3 text-center text-sm text-[var(--wa-muted)]">
+          Conversación finalizada
+        </p>
+      ) : chat && mensajes.data ? (
+        <Redactor
+          ventanaAbierta={ventanaAbierta(mensajes.data)}
+          enviando={envio.isPending}
+          alEnviar={(texto, archivo) => envio.mutateAsync({ texto, archivo })}
+          alUsarPlantilla={() => setDialogo('plantilla')}
+        />
+      ) : null}
+
+      {chat ? (
+        <>
+          <DialogoPlantilla
+            abierto={dialogo === 'plantilla'}
+            idConversacion={idConversacion}
+            idApp={chat.id_app}
+            alCerrar={() => setDialogo(null)}
+            alEnviar={() => {
+              setDialogo(null)
+              consultas.invalidateQueries({ queryKey: claveMensajes })
+              refrescarListas()
+            }}
+          />
+          <DialogoFinalizar
+            abierto={dialogo === 'finalizar'}
+            idConversacion={idConversacion}
+            alCerrar={() => setDialogo(null)}
+            alFinalizar={() => {
+              setDialogo(null)
+              consultas.invalidateQueries({ queryKey: ['conversacion', idConversacion] })
+              refrescarListas()
+            }}
+          />
+        </>
+      ) : null}
+    </section>
+  )
+}
+
+type PropsLista = {
+  mensajes?: MensajeChat[]
+  cargando: boolean
+  error?: string
+}
+
+function ListaMensajes({ mensajes, cargando, error }: PropsLista) {
+  const contenedor = useRef<HTMLDivElement>(null)
+  const pegadoAbajo = useRef(true)
+  const total = mensajes?.length ?? 0
+
+  useLayoutEffect(() => {
+    const elemento = contenedor.current
+    if (elemento && pegadoAbajo.current) {
+      elemento.scrollTop = elemento.scrollHeight
+    }
+  }, [total])
+
+  return (
+    <div
+      ref={contenedor}
+      onScroll={(evento) => {
+        const elemento = evento.currentTarget
+        pegadoAbajo.current = elemento.scrollHeight - elemento.scrollTop - elemento.clientHeight < DISTANCIA_PEGADO_ABAJO
+      }}
+      className="chat-wa-fondo min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 sm:px-10"
+      data-tour="mensajes-chat"
+    >
+      {cargando ? (
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-2/3 rounded-lg" />
+          <Skeleton className="ml-auto h-10 w-1/2 rounded-lg" />
+          <Skeleton className="h-14 w-3/5 rounded-lg" />
+        </div>
+      ) : error ? (
+        <p className="text-center text-sm text-destructive">{error}</p>
+      ) : total === 0 ? (
+        <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-[var(--wa-muted)]">
+          <MessageCircleMore className="size-6" />
+          Sin mensajes
+        </div>
+      ) : (
+        mensajes!.map((mensaje, indice) => {
+          const dia = claveDia(mensaje.created_at)
+          const nuevoDia = indice === 0 || dia !== claveDia(mensajes![indice - 1].created_at)
+          const fecha = leerFecha(mensaje.created_at)
+          return (
+            <Fragment key={mensaje.id}>
+              {nuevoDia && fecha ? (
+                <div className="flex justify-center py-2.5">
+                  <span className="rounded-md bg-[#ffeecd] px-3 py-1 text-[12px] font-medium text-[#54656f] capitalize shadow-sm dark:bg-[#182229] dark:text-[#8696a0]">
+                    {etiquetaDia(fecha)}
+                  </span>
+                </div>
+              ) : null}
+              <BurbujaMensaje mensaje={mensaje} />
+            </Fragment>
+          )
+        })
+      )}
+    </div>
+  )
+}
