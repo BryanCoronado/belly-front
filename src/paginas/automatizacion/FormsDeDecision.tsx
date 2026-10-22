@@ -2,13 +2,14 @@ import type { DatosPaso } from '@/api'
 import { cn } from '@/lib/utils'
 import { Area, Nota, Numero, Seleccion } from './controles'
 import { SelectorAsesores } from './SelectorAsesores'
-import { MODOS_ASIGNACION, TEMPERATURAS, idsDe, porcentajeA, texto } from './tipos'
+import { porcentajeA } from '@/lib/editorPasos'
+import { MODOS_ASIGNACION, TEMPERATURAS, modoAsignacion, texto } from './tipos'
 
 type Props = { datos: DatosPaso; poner: (parcial: DatosPaso) => void }
 
 /** Paso «Pasar a un asesor»: a quién pasa el chat y qué le dice al cliente. */
 export function FormAsesor({ datos, poner, variables }: Props & { variables: string[] }) {
-  const modo = texto(datos, 'asignar') || 'flujo'
+  const modo = modoAsignacion(datos)
   const actual = MODOS_ASIGNACION.find((m) => m.valor === modo)
 
   return (
@@ -25,13 +26,6 @@ export function FormAsesor({ datos, poner, variables }: Props & { variables: str
 
         {modo === 'elegir' ? (
           <SelectorAsesores unico valor={Number(datos.asesor_id) > 0 ? [Number(datos.asesor_id)] : []} alCambiar={(ids) => poner({ asesor_id: ids[0] ?? 0 })} />
-        ) : null}
-
-        {modo === 'equitativo' || modo === 'menos_carga' ? (
-          <div className="space-y-1.5">
-            <p className="text-sm font-medium">Entre quiénes</p>
-            <SelectorAsesores valor={idsDe(datos.asesores)} alCambiar={(ids) => poner({ asesores: ids })} />
-          </div>
         ) : null}
       </div>
 

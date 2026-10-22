@@ -1,36 +1,24 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { LayoutApp } from '@/components/layout/LayoutApp'
 import { RequiereWhatsapp } from '@/components/RequiereWhatsapp'
+import { AgenteIa } from '@/paginas/AgenteIa'
+import { Asesores } from '@/paginas/Asesores'
 import { Inicio } from '@/paginas/Inicio'
 import { Login } from '@/paginas/Login'
 import { Equipo } from '@/paginas/Equipo'
-import {
-  Asesores,
-  AsesoresCustomer,
-  AsesoresVenta,
-  Conversaciones,
-  ConversacionesAsesores,
-  ConversacionesCustomer,
-  Leads,
-  Marketing,
-  MarketingImagenes,
-  MarketingPlantillas,
-  MarketingVideos,
-  Metricas,
-  MetricasAsesores,
-  MetricasCustomer,
-  MetricasMarketing,
-  MetricasOrigenes,
-  MisClientes,
-  Productos,
-  Ventas,
-} from '@/paginas/ModuloEnConstruccion'
+import { Productos } from '@/paginas/Productos'
 import { Chats } from '@/paginas/chat/Chats'
+import { Supervision } from '@/paginas/chat/Supervision'
 import { ConexionWhatsapp } from '@/paginas/integraciones/ConexionWhatsapp'
 import { Integraciones } from '@/paginas/integraciones/Integraciones'
-import { Clientes, ListaNegra, Plantillas } from '@/paginas/Modulos'
+import { ListaNegra, Plantillas } from '@/paginas/Modulos'
 import { EditorFlujo } from '@/paginas/automatizacion/EditorFlujo'
 import { Flujos } from '@/paginas/automatizacion/Flujos'
+import { Clientes } from '@/paginas/clientes/Clientes'
+import { ImportarClientes } from '@/paginas/clientes/ImportarClientes'
+import { DetalleEnvio } from '@/paginas/envios/DetalleEnvio'
+import { Envios } from '@/paginas/envios/Envios'
+import { NuevoEnvio } from '@/paginas/envios/NuevoEnvio'
 import { Registro } from '@/paginas/Registro'
 
 export default function App() {
@@ -44,23 +32,16 @@ export default function App() {
           <Route path="/dashboard" element={<Inicio />} />
           <Route element={<RequiereWhatsapp />}>
             <Route path="/chats" element={<Chats />} />
-            <Route path="/conversaciones" element={<Conversaciones />} />
-            <Route path="/conversaciones/chat/mis_clientes" element={<MisClientes />} />
+            <Route path="/supervision" element={<Supervision />} />
+            <Route path="/conversaciones/chat/mis_clientes" element={<Clientes propios />} />
             <Route path="/conversaciones/chat/mis_plantillas" element={<Plantillas />} />
-            <Route path="/conversaciones/contact_center" element={<ConversacionesAsesores />} />
-            <Route path="/conversaciones/customer_success" element={<ConversacionesCustomer />} />
             <Route path="/plantillas" element={<Plantillas />} />
             <Route path="/asesores" element={<Asesores />} />
-            <Route path="/asesores/contact_center" element={<AsesoresVenta />} />
-            <Route path="/asesores/customer_success" element={<AsesoresCustomer />} />
-            <Route path="/metricas" element={<Metricas />} />
-            <Route path="/metricas/contact_center" element={<MetricasAsesores />} />
-            <Route path="/metricas/customer_success" element={<MetricasCustomer />} />
-            <Route path="/metricas/marketing" element={<MetricasMarketing />} />
-            <Route path="/metricas/origenes" element={<MetricasOrigenes />} />
-            <Route path="/marketing/plantilla" element={<MarketingPlantillas />} />
             <Route path="/automatizacion" element={<Flujos />} />
             <Route path="/automatizacion/:id" element={<EditorFlujo />} />
+            <Route path="/envios" element={<Envios />} />
+            <Route path="/envios/nuevo" element={<NuevoEnvio />} />
+            <Route path="/envios/:id" element={<DetalleEnvio />} />
           </Route>
           <Route path="/conversaciones/chat" element={<Navigate to="/chats" replace />} />
           <Route path="/conversaciones/chat/mis_conversaciones" element={<Navigate to="/chats" replace />} />
@@ -69,16 +50,14 @@ export default function App() {
           <Route path="/integraciones" element={<Integraciones />} />
           <Route path="/integraciones/whatsapp" element={<ConexionWhatsapp />} />
           <Route path="/clientes" element={<Clientes />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/leads/clientes" element={<Clientes />} />
-          <Route path="/leads/lista-negra" element={<ListaNegra />} />
+          <Route path="/clientes/importar" element={<ImportarClientes />} />
+          <Route path="/leads" element={<Navigate to="/clientes" replace />} />
+          <Route path="/leads/clientes" element={<Navigate to="/clientes" replace />} />
+          <Route path="/leads/lista-negra" element={<Navigate to="/lista-negra" replace />} />
           <Route path="/lista-negra" element={<ListaNegra />} />
           <Route path="/equipo" element={<Equipo />} />
-          <Route path="/marketing" element={<Marketing />} />
-          <Route path="/marketing/image" element={<MarketingImagenes />} />
-          <Route path="/marketing/video" element={<MarketingVideos />} />
           <Route path="/productos" element={<Productos />} />
-          <Route path="/ventas" element={<Ventas />} />
+          <Route path="/agente-ia" element={<AgenteIa />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

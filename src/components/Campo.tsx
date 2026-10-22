@@ -7,9 +7,11 @@ type CampoProps = ComponentProps<typeof Input> & {
   etiqueta: string
   ayuda?: string
   opcional?: boolean
+  /** Se muestra en rojo en lugar de la ayuda. */
+  error?: string | null
 }
 
-export function Campo({ id, etiqueta, ayuda, opcional, className, ...props }: CampoProps) {
+export function Campo({ id, etiqueta, ayuda, opcional, error, className, ...props }: CampoProps) {
   const idGenerado = useId()
   const idCampo = id ?? idGenerado
 
@@ -19,8 +21,8 @@ export function Campo({ id, etiqueta, ayuda, opcional, className, ...props }: Ca
         {etiqueta}
         {opcional ? <span className="font-normal text-muted-foreground">(opcional)</span> : null}
       </Label>
-      <Input id={idCampo} className={cn('h-10 px-3', className)} {...props} />
-      {ayuda ? <p className="text-xs text-muted-foreground">{ayuda}</p> : null}
+      <Input id={idCampo} aria-invalid={error ? true : undefined} className={cn('h-10 px-3', className)} {...props} />
+      {error ? <p className="text-xs text-rose-600">{error}</p> : ayuda ? <p className="text-xs text-muted-foreground">{ayuda}</p> : null}
     </div>
   )
 }

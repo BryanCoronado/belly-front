@@ -1,12 +1,16 @@
+import { useQuery } from '@tanstack/react-query'
 import { Copy, Plus, Settings2, Trash2, TriangleAlert } from 'lucide-react'
 import { useId } from 'react'
-import type { DatosPaso, TipoArchivoFlujo } from '@/api'
+import { Link } from 'react-router-dom'
+import { leerGruposAtencion, type DatosPaso, type TipoArchivoFlujo } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { nuevoId } from '@/lib/editorPasos'
 import { cn } from '@/lib/utils'
 import type { NodoRF } from './conversion'
-import { Area, Avanzado, FilaOpcion, Nota, Numero, Pausa, SelectorHorario, Seleccion, SinRespuesta, SubirArchivo, Texto } from './controles'
+import { etiquetaTurnoGrupo } from '../asesores/tiposReparto'
+import { Area, Avanzado, FilaOpcion, Nota, Numero, Pausa, Seleccion, SinRespuesta, SubirArchivo, Texto } from './controles'
 import { FormAsesor, FormDividir, FormTemperatura } from './FormsDeDecision'
 import {
   LARGO_BOTON,
@@ -19,9 +23,7 @@ import {
   OPERADORES,
   UNIDADES_ESPERA,
   VALIDACIONES,
-  nuevoId,
   opcionesDe,
-  resumenEquipo,
   resumenInicio,
   texto,
 } from './tipos'
@@ -74,7 +76,7 @@ export function PanelNodo({ nodo, variables, alCambiar, alDuplicar, alEliminar, 
         {tipo === 'lista' ? <FormLista datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'pregunta' ? <FormPregunta datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'condicion' ? <FormCondicion datos={datos} poner={poner} variables={variables} /> : null}
-        {tipo === 'horario' ? <FormHorario datos={datos} poner={poner} /> : null}
+        {tipo === 'horario' ? <FormTurnos /> : null}
         {tipo === 'variable' ? <FormVariable datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'espera' ? <FormEspera datos={datos} poner={poner} /> : null}
         {tipo === 'ubicacion' ? <FormUbicacion datos={datos} poner={poner} /> : null}
@@ -121,17 +123,13 @@ export function PanelNodo({ nodo, variables, alCambiar, alDuplicar, alEliminar, 
 function ResumenInicio({ datos, alConfigurar }: { datos: DatosPaso; alConfigurar: () => void }) {
   return (
     <div className="space-y-3">
-      <div className="space-y-2 rounded-lg border bg-zinc-50 p-3 text-sm">
-        <p className="font-medium">{resumenInicio(datos)}</p>
-        <p className="text-muted-foreground">{resumenEquipo(datos)}</p>
-      </div>
+      <div className="rounded-lg border bg-zinc-50 p-3 text-sm text-muted-foreground">{resumenInicio(datos)}</div>
       <Button className="w-full" onClick={alConfigurar}>
         <Settings2 />
         Configurar flujo
       </Button>
       <Nota>
-        Ahí eliges <b>a quién le responde</b>, <b>cuándo funciona</b>, y <b>cómo se reparten los chats entre tus asesores</b> cuando el bot
-        termina.
+        Aquí solo defines cuándo arranca el bot y con qué contactos. Turnos, horarios y quién atiende están en <b>Asesores</b>.
       </Nota>
     </div>
   )
@@ -400,14 +398,31 @@ function FormCondicion({ datos, poner, variables }: FormProps) {
   )
 }
 
-function FormHorario({ datos, poner }: Omit<FormProps, 'variables'>) {
+function FormTurnos() {
+  const grupos = useQuery({ queryKey: ['grupos-atencion'], queryFn: leerGruposAtencion })
+  const turnos = (grupos.data ?? []).filter((g) => g.tipo === 'turno')
+
   return (
     <>
-      <SelectorHorario
-        datos={{ dias: Array.isArray(datos.dias) ? (datos.dias as number[]) : [], desde: texto(datos, 'desde'), hasta: texto(datos, 'hasta') }}
-        alCambiar={(h) => poner({ dias: h.dias, desde: h.desde, hasta: h.hasta })}
-      />
-      <Nota>Usa la hora de tu empresa. Con la flecha <b>En horario</b> sigue si escriben dentro de este horario; si no, por <b>Fuera de horario</b>.</Nota>
+      <div className="space-y-2 rounded-lg border bg-zinc-50 p-3">
+        <p className="text-sm font-medium">Tus turnos</p>
+        {grupos.isPending ? <p className="text-sm text-muted-foreground">Cargando…</p> : null}
+        {!grupos.isPending && turnos.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aún no tienes grupos tipo turno, así que este paso siempre irá por «En turno».</p>
+        ) : null}
+        <ul className="space-y-1 text-sm">
+          {turnos.map((g) => (
+            <li key={g.id}>{etiquetaTurnoGrupo(g)}</li>
+          ))}
+        </ul>
+        <Link to="/asesores?tab=grupos" className="inline-block text-sm font-medium text-emerald-700 underline-offset-2 hover:underline">
+          Editar turnos en Asesores → Grupos
+        </Link>
+      </div>
+      <Nota>
+        Si el cliente escribe dentro de alguno de estos turnos sigue por <b>En turno</b>; si no, por <b>Fuera de turno</b>. Las horas no se
+        escriben aquí, así nunca se contradicen con el reparto.
+      </Nota>
     </>
   )
 }

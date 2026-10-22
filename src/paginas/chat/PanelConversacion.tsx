@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CircleCheckBig, MessageCircleMore } from 'lucide-react'
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { abrirChat, enviarMensaje, leerConversacion, leerMensajes, type MensajeChat } from '@/api'
+import { FichaCliente } from '../clientes/FichaCliente'
+import { useAjustesCrm } from '../clientes/crm'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,22 +22,30 @@ type Props = {
   idConversacion: number
   alVolver: () => void
   className?: string
+  /** Quien supervisa mira sin marcar como leído: el asesor debe seguir viendo sus pendientes. */
+  supervision?: boolean
+  acciones?: ReactNode
+  aviso?: ReactNode
 }
 
-export function PanelConversacion({ idConversacion, alVolver, className }: Props) {
+export function PanelConversacion({ idConversacion, alVolver, className, supervision = false, acciones, aviso }: Props) {
   const consultas = useQueryClient()
   const claveMensajes = ['mensajes', idConversacion]
   const [dialogo, setDialogo] = useState<'plantilla' | 'finalizar' | null>(null)
+  const [perfilAbierto, setPerfilAbierto] = useState(false)
+  const ajustes = useAjustesCrm()
 
   const conversacion = useQuery({ queryKey: ['conversacion', idConversacion], queryFn: () => leerConversacion(idConversacion) })
   const mensajes = useQuery({
     queryKey: claveMensajes,
     queryFn: () => leerMensajes(idConversacion),
+    refetchInterval: supervision ? 4_000 : false,
   })
 
   const refrescarListas = () => {
     consultas.invalidateQueries({ queryKey: ['chats'] })
     consultas.invalidateQueries({ queryKey: ['chats-contadores'] })
+    consultas.invalidateQueries({ queryKey: ['supervision'] })
   }
 
   const lectura = useMutation({
@@ -50,10 +60,10 @@ export function PanelConversacion({ idConversacion, alVolver, className }: Props
   const { mutate: marcarLeidos, isPending: marcando } = lectura
 
   useEffect(() => {
-    if (hayNoLeidos && !marcando) {
+    if (!supervision && hayNoLeidos && !marcando) {
       marcarLeidos()
     }
-  }, [hayNoLeidos, ultimoId, marcando, marcarLeidos])
+  }, [supervision, hayNoLeidos, ultimoId, marcando, marcarLeidos])
 
   const envio = useMutation({
     mutationFn: ({ texto, archivo }: { texto: string; archivo?: File }) => enviarMensaje(idConversacion, texto, archivo),
@@ -101,15 +111,23 @@ export function PanelConversacion({ idConversacion, alVolver, className }: Props
         </Button>
         {chat ? (
           <>
-            <Avatar className="size-10">
-              <AvatarFallback className="bg-[#dfe5e7] text-sm font-medium text-[#54656f] dark:bg-[#2a3942] dark:text-[#aebac1]">{iniciales(nombre)}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-medium">{nombre}</p>
-              <p className="truncate text-[12px] text-[var(--wa-muted)]">
-                {[chat.telefono, chat.nombre_app].filter(Boolean).join(' · ')}
-              </p>
-            </div>
+            <button
+              type="button"
+              className="-ml-1 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-0.5 text-left hover:bg-black/5"
+              onClick={() => chat.id_cliente && setPerfilAbierto(true)}
+              title="Ver perfil del cliente"
+            >
+              <Avatar className="size-10">
+                <AvatarFallback className="bg-[#dfe5e7] text-sm font-medium text-[#54656f] dark:bg-[#2a3942] dark:text-[#aebac1]">{iniciales(nombre)}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-medium">{nombre}</p>
+                <p className="truncate text-[13px] text-[var(--wa-muted)]">
+                  {chat.telefono ? `+${String(chat.telefono).replace(/^\+/, '')}` : chat.nombre_app || 'WhatsApp'}
+                </p>
+              </div>
+            </button>
+            {acciones}
             {finalizada ? (
               <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[var(--wa-muted)]">
                 Finalizada
@@ -137,6 +155,8 @@ export function PanelConversacion({ idConversacion, alVolver, className }: Props
       {chat ? <ResumenBot idConversacion={idConversacion} totalMensajes={mensajes.data?.length ?? 0} /> : null}
 
       <ListaMensajes mensajes={mensajes.data} cargando={mensajes.isLoading} error={mensajes.error?.message} />
+
+      {aviso}
 
       {finalizada ? (
         <p className="border-t border-[var(--wa-borde)] bg-[var(--wa-panel)] px-4 py-3 text-center text-sm text-[var(--wa-muted)]">
@@ -174,6 +194,12 @@ export function PanelConversacion({ idConversacion, alVolver, className }: Props
               refrescarListas()
             }}
           />
+          <FichaCliente
+            id={perfilAbierto && chat.id_cliente ? Number(chat.id_cliente) : null}
+            ajustes={ajustes.data}
+            alCerrar={() => setPerfilAbierto(false)}
+            desdeChat
+          />
         </>
       ) : null}
     </section>
@@ -205,7 +231,7 @@ function ListaMensajes({ mensajes, cargando, error }: PropsLista) {
         const elemento = evento.currentTarget
         pegadoAbajo.current = elemento.scrollHeight - elemento.scrollTop - elemento.clientHeight < DISTANCIA_PEGADO_ABAJO
       }}
-      className="chat-wa-fondo min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 sm:px-10"
+      className="chat-wa-fondo min-h-0 flex-1 overflow-y-auto px-3 py-2 sm:px-16"
       data-tour="mensajes-chat"
     >
       {cargando ? (
@@ -222,7 +248,11 @@ function ListaMensajes({ mensajes, cargando, error }: PropsLista) {
           Sin mensajes
         </div>
       ) : (
-        mensajes!.map((mensaje, indice) => {
+        <>
+        <p className="mx-auto my-3 max-w-sm rounded-[7.5px] bg-[var(--wa-dia)] px-3 py-1.5 text-center text-[12px] text-[var(--wa-dia-texto)] shadow-sm">
+          Los mensajes de este chat salen por tu WhatsApp Business.
+        </p>
+        {mensajes!.map((mensaje, indice) => {
           const dia = claveDia(mensaje.created_at)
           const nuevoDia = indice === 0 || dia !== claveDia(mensajes![indice - 1].created_at)
           const fecha = leerFecha(mensaje.created_at)
@@ -230,15 +260,19 @@ function ListaMensajes({ mensajes, cargando, error }: PropsLista) {
             <Fragment key={mensaje.id}>
               {nuevoDia && fecha ? (
                 <div className="flex justify-center py-2.5">
-                  <span className="rounded-md bg-[#ffeecd] px-3 py-1 text-[12px] font-medium text-[#54656f] capitalize shadow-sm dark:bg-[#182229] dark:text-[#8696a0]">
+                  <span className="rounded-[7.5px] bg-[var(--wa-dia)] px-3 py-1 text-[12.5px] font-medium text-[var(--wa-dia-texto)] capitalize shadow-sm">
                     {etiquetaDia(fecha)}
                   </span>
                 </div>
               ) : null}
-              <BurbujaMensaje mensaje={mensaje} />
+              <BurbujaMensaje
+                mensaje={mensaje}
+                agrupada={!nuevoDia && indice > 0 && mensajes![indice - 1].contesta === mensaje.contesta}
+              />
             </Fragment>
           )
-        })
+        })}
+        </>
       )}
     </div>
   )

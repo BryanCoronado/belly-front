@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, Check, Copy, Headset, LoaderCircle, MessagesSquare, Plus, Trash2, UsersRound, Workflow, Zap } from 'lucide-react'
+import { Bot, Check, Copy, LoaderCircle, MessagesSquare, Plus, Trash2, UsersRound, Workflow, Zap } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   cambiarEstadoFlujo,
@@ -177,13 +177,6 @@ function Tarjeta({ flujo }: { flujo: ResumenFlujo }) {
             {flujo.disparador.audiencia === 'nuevos' ? 'Contactos nuevos' : 'Todos los contactos'}
           </span>
           <span className="rounded-full bg-zinc-100 px-2 py-1 font-medium text-zinc-600">{flujo.pasos} pasos</span>
-          {flujo.equipo.reparto !== 'mantener' ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2 py-1 font-medium text-fuchsia-700">
-              <Headset className="size-3" />
-              {flujo.equipo.reparto === 'equitativo' ? 'Reparto parejo' : 'Al que tiene menos chats'}
-              {flujo.equipo.asesores > 0 ? ` · ${flujo.equipo.asesores}` : ''}
-            </span>
-          ) : null}
           {flujo.conversaciones_activas > 0 ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1 font-medium text-sky-700">
               <MessagesSquare className="size-3" />

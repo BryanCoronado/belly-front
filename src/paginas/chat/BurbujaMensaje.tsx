@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MensajeChat } from '@/api'
 import { cn } from '@/lib/utils'
+import { leerSesion } from '@/sesion'
 import { horaCorta } from './formato'
 import { InteractivoWa } from './InteractivoWa'
 
@@ -19,19 +20,26 @@ const PLACEHOLDER_MEDIA = new RegExp(
   'is',
 )
 
-export function BurbujaMensaje({ mensaje }: { mensaje: MensajeChat }) {
+export function BurbujaMensaje({ mensaje, agrupada = false }: { mensaje: MensajeChat; agrupada?: boolean }) {
   const entrante = mensaje.contesta === 'cliente'
   const fallido = Number(mensaje.id_estado) === ESTADO.error
+  const miId = leerSesion()?.usuario.id
+  const autorAjeno =
+    mensaje.contesta === 'usuario' && mensaje.autor && Number(mensaje.autor.id) !== Number(miId)
+      ? mensaje.autor.nombre
+      : null
 
   return (
-    <div className={cn('flex', entrante ? 'justify-start' : 'justify-end')}>
+    <div className={cn('flex', agrupada ? 'mt-0.5' : 'mt-2', entrante ? 'justify-start' : 'justify-end')}>
       <div className="flex max-w-[85%] flex-col gap-1 sm:max-w-[65%]">
         <div
           className={cn(
-            'relative overflow-hidden px-1.5 pt-1.5 pb-1 text-[14.2px] leading-[19px] shadow-sm',
+            'chat-wa-burbuja relative px-1.5 pt-1 pb-0.5 text-[14.2px] leading-[19px]',
             entrante
-              ? 'rounded-lg rounded-tl-none bg-white'
-              : 'rounded-lg rounded-tr-none bg-[var(--wa-verde-claro)]',
+              ? 'chat-wa-burbuja-in rounded-[7.5px] bg-[var(--wa-burbuja-in)]'
+              : 'chat-wa-burbuja-out rounded-[7.5px] bg-[var(--wa-verde-claro)]',
+            !agrupada && (entrante ? 'rounded-tl-none' : 'rounded-tr-none'),
+            agrupada && 'chat-wa-agrupada',
             fallido && 'bg-red-50 ring-1 ring-red-200',
             mensaje.pendiente && 'opacity-70',
           )}
@@ -40,6 +48,9 @@ export function BurbujaMensaje({ mensaje }: { mensaje: MensajeChat }) {
             <span className="mb-1 flex items-center gap-1 px-1 text-[11px] font-medium text-[var(--wa-muted)]">
               <Bot className="size-3" /> Automático
             </span>
+          ) : null}
+          {autorAjeno ? (
+            <span className="mb-1 block truncate px-1 text-[11px] font-medium text-[var(--wa-verde-oscuro)]">{autorAjeno}</span>
           ) : null}
           {mensaje.mensaje_responde_contenido ? (
             <div className="px-1">

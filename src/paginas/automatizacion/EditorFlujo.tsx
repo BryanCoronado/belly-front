@@ -36,7 +36,8 @@ import { aAristasRF, aDefinicion, aNodosRF, estiloArista, type NodoRF } from './
 import { NodoVisual } from './NodoVisual'
 import { PanelNodo } from './PanelNodo'
 import { Simulador } from './Simulador'
-import { GRUPOS_PASOS, META, PASOS_AGREGABLES, VARIABLES_BASE, datosIniciales, nuevoId, resumenEquipo, resumenInicio, salidasDe } from './tipos'
+import { nuevoId } from '@/lib/editorPasos'
+import { GRUPOS_PASOS, META, PASOS_AGREGABLES, VARIABLES_BASE, datosIniciales, resumenInicio, salidasDe } from './tipos'
 
 const TIPOS_NODO = { paso: NodoVisual }
 const FORMATO_ARRASTRE = 'application/x-belly-paso'
@@ -505,12 +506,11 @@ function Resumen({
         <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
           <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
             <Settings2 className="size-4" />
-            Cómo funciona este flujo
+            Cuándo habla el bot
           </p>
           <p className="text-sm text-emerald-900">{resumenInicio(datosInicio)}</p>
-          <p className="text-xs text-emerald-800">{resumenEquipo(datosInicio)}</p>
           <Button size="sm" onClick={alConfigurar} className="w-full">
-            Configurar: a quién responde y reparto de asesores
+            Configurar flujo
           </Button>
         </div>
       ) : null}

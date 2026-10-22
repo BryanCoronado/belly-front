@@ -47,6 +47,7 @@ import { CLAVE_WHATSAPP_CONECTADO } from '@/hooks/use-whatsapp'
 import { avisoError, avisoExito } from '@/lib/avisos'
 import { cn } from '@/lib/utils'
 import { esAdministrador, leerSesion } from '@/sesion'
+import { repartoGuardadoEnServidor } from '@/paginas/asesores/borradorReparto'
 
 const CLAVE_ESTADO = ['whatsapp-estado']
 
@@ -96,13 +97,13 @@ export function ConexionWhatsapp() {
   const hayConexion = datos ? datos.pasos.app_meta || datos.pasos.webhook || datos.numeros.length > 0 : false
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <CabeceraPagina
         titulo="WhatsApp"
         descripcion="Conecta el WhatsApp de tu empresa"
         acciones={
           datos ? (
-            <div className="flex flex-wrap items-center gap-3">
+            <>
               <Badge
                 className={cn(
                   'h-7 px-3 text-sm',
@@ -113,18 +114,35 @@ export function ConexionWhatsapp() {
                 {completo ? 'Conectado' : 'Sin terminar'}
               </Badge>
               {hayConexion ? <BotonDesconectar alActualizar={actualizar} /> : null}
-            </div>
+            </>
           ) : null
         }
       />
 
       {!datos ? (
-        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <Skeleton className="h-52 rounded-xl" />
-          <Skeleton className="h-96 rounded-xl" />
+        <div className="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <Skeleton className="h-16 rounded-xl lg:h-52" />
+          <Skeleton className="h-80 rounded-xl sm:h-96" />
         </div>
       ) : (
-        <Asistente estado={datos} alActualizar={actualizar} />
+        <>
+          {completo && !repartoGuardadoEnServidor() ? (
+            <div className="flex flex-col gap-3 rounded-lg border bg-white px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <span className="min-w-0">
+                <span className="font-medium">Siguiente:</span>{' '}
+                <span className="text-muted-foreground">decide quién recibe cada chat nuevo.</span>
+              </span>
+              <Link
+                to="/asesores?tab=reparto"
+                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full sm:w-auto')}
+              >
+                Reparto de chats
+                <ArrowRight />
+              </Link>
+            </div>
+          ) : null}
+          <Asistente estado={datos} alActualizar={actualizar} />
+        </>
       )}
     </div>
   )
@@ -146,7 +164,7 @@ function BotonDesconectar({ alActualizar }: { alActualizar: (estado: EstadoWhats
 
   return (
     <>
-      <Button variant="outline" onClick={() => setAbierto(true)} className="text-destructive hover:text-destructive">
+      <Button variant="outline" onClick={() => setAbierto(true)} className="w-full text-destructive hover:text-destructive sm:w-auto">
         <Unplug />
         Desconectar
       </Button>
@@ -159,10 +177,10 @@ function BotonDesconectar({ alActualizar }: { alActualizar: (estado: EstadoWhats
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAbierto(false)}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setAbierto(false)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={() => desconectar.mutate()} disabled={desconectar.isPending}>
+            <Button variant="destructive" className="w-full sm:w-auto" onClick={() => desconectar.mutate()} disabled={desconectar.isPending}>
               {desconectar.isPending ? <LoaderCircle className="animate-spin" /> : null}
               Desconectar
             </Button>
@@ -185,15 +203,15 @@ function Asistente({ estado, alActualizar }: PropsPaso) {
   const alAvanzar = () => setElegido(activo + 1)
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <nav aria-label="Pasos" data-tour="pasos-lista" className="lg:sticky lg:top-24">
-        <ol className="flex gap-2 lg:flex-col lg:gap-0">
+    <div className="grid min-w-0 items-start gap-4 sm:gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+      <nav aria-label="Pasos" data-tour="pasos-lista" className="min-w-0 lg:sticky lg:top-24">
+        <ol className="flex items-center rounded-xl border bg-white p-2 lg:flex-col lg:items-stretch lg:gap-0 lg:border-0 lg:bg-transparent lg:p-0">
           {PASOS.map((paso, indice) => {
             const hecho = listos[indice]
             const bloqueado = indice > tope
             const actual = indice === activo
             return (
-              <li key={paso.titulo} className="relative min-w-0 flex-1 lg:flex-none">
+              <li key={paso.titulo} className="contents lg:relative lg:mb-3 lg:block">
                 {indice < ULTIMO ? (
                   <span
                     aria-hidden
@@ -208,15 +226,16 @@ function Asistente({ estado, alActualizar }: PropsPaso) {
                   disabled={bloqueado}
                   onClick={() => setElegido(indice)}
                   aria-current={actual ? 'step' : undefined}
+                  aria-label={`${paso.titulo}${hecho ? ', completado' : bloqueado ? ', bloqueado' : ''}`}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors lg:mb-3',
-                    actual ? 'bg-white shadow-xs ring-1 ring-zinc-200' : 'hover:bg-white/70',
+                    'flex shrink-0 items-center justify-center gap-3 rounded-lg p-1.5 text-left transition-colors lg:w-full lg:justify-start lg:p-2',
+                    actual ? 'bg-zinc-50 ring-1 ring-zinc-200 lg:bg-white lg:shadow-xs' : 'hover:bg-zinc-50 lg:hover:bg-white/70',
                     bloqueado && 'cursor-not-allowed opacity-60 hover:bg-transparent',
                   )}
                 >
                   <span
                     className={cn(
-                      'flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
+                      'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold lg:size-9',
                       hecho && 'bg-emerald-600 text-white',
                       !hecho && actual && 'border-2 border-emerald-600 bg-white text-emerald-700',
                       !hecho && !actual && 'border bg-zinc-50 text-zinc-400',
@@ -224,49 +243,57 @@ function Asistente({ estado, alActualizar }: PropsPaso) {
                   >
                     {hecho ? <Check className="size-4" /> : bloqueado ? <Lock className="size-3.5" /> : indice + 1}
                   </span>
-                  <span className="min-w-0">
+                  <span className="hidden min-w-0 lg:block">
                     <span className="block truncate text-sm font-medium">{paso.titulo}</span>
-                    <span className="hidden truncate text-xs text-muted-foreground lg:block">
+                    <span className="block truncate text-xs text-muted-foreground">
                       {hecho ? 'Completado' : bloqueado ? 'Bloqueado' : paso.resumen}
                     </span>
                   </span>
                 </button>
+                {indice < ULTIMO ? (
+                  <span aria-hidden className={cn('mx-1 h-px min-w-4 flex-1 lg:hidden', hecho ? 'bg-emerald-500' : 'bg-zinc-200')} />
+                ) : null}
               </li>
             )
           })}
         </ol>
       </nav>
 
-      <section data-tour="paso-contenido" className="min-w-0 rounded-xl border bg-white">
+      <section data-tour="paso-contenido" className="min-w-0 overflow-hidden rounded-xl border bg-white">
         {activo === 0 ? (
           <PasoAppMeta estado={estado} alActualizar={alActualizar} alGuardar={alAvanzar} />
         ) : null}
         {activo === 1 ? <PasoWebhook estado={estado} alActualizar={alActualizar} /> : null}
         {activo === 2 ? <PasoNumero estado={estado} alActualizar={alActualizar} /> : null}
 
-        <footer className="flex flex-wrap items-center justify-between gap-3 border-t px-5 py-4 sm:px-7">
-          <div>
-            {activo > 0 ? (
-              <Button variant="ghost" onClick={() => setElegido(activo - 1)}>
-                <ArrowLeft />
-                Atrás
-              </Button>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-3">
+        <footer className="flex flex-col-reverse gap-2 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+          {activo > 0 ? (
+            <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setElegido(activo - 1)}>
+              <ArrowLeft />
+              Atrás
+            </Button>
+          ) : (
+            <span className="hidden sm:block" />
+          )}
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
             {!listos[activo] ? (
-              <p className="hidden text-sm text-muted-foreground sm:block">Completa este paso para continuar</p>
+              <p className="text-center text-sm text-muted-foreground sm:text-left">Completa este paso para continuar</p>
             ) : null}
             {activo < ULTIMO ? (
-              <Button disabled={!listos[activo]} onClick={alAvanzar}>
+              <Button className="w-full sm:w-auto" disabled={!listos[activo]} onClick={alAvanzar}>
                 Continuar
                 <ArrowRight />
               </Button>
             ) : completo ? (
-              <Link to="/chats" className={buttonVariants()}>
-                Ir al chat
-                <ArrowRight />
-              </Link>
+              <>
+                <Link to="/asesores?tab=reparto" className={cn(buttonVariants({ variant: 'outline' }), 'w-full sm:w-auto')}>
+                  Reparto de chats
+                </Link>
+                <Link to="/chats" className={cn(buttonVariants(), 'w-full sm:w-auto')}>
+                  Ir al chat
+                  <ArrowRight />
+                </Link>
+              </>
             ) : null}
           </div>
         </footer>
@@ -329,7 +356,7 @@ function PasoAppMeta({ estado, alActualizar, alGuardar }: PropsPaso & { alGuarda
           required={!yaListo}
         />
         <div>
-          <Button type="submit" disabled={guardar.isPending || !appId.trim()}>
+          <Button type="submit" className="w-full sm:w-auto" disabled={guardar.isPending || !appId.trim()}>
             {guardar.isPending ? <LoaderCircle className="animate-spin" /> : null}
             {yaListo ? 'Guardar cambios' : 'Guardar'}
           </Button>
@@ -371,12 +398,14 @@ function PasoWebhook({ estado, alActualizar }: PropsPaso) {
         <Copiable etiqueta="URL de devolución de llamada" valor={webhook.url} />
         <Copiable etiqueta="Token de verificación" valor={webhook.verify_token} />
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-zinc-50 px-4 py-3">
+        <div className="flex flex-col gap-3 rounded-lg bg-zinc-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           {verificado ? (
-            <p className="flex items-center gap-2 text-sm text-zinc-700">
-              <ShieldCheck className="size-4 text-emerald-600" />
-              Meta ya está conectado
-              {webhook.ultimo_evento_at ? ` · último mensaje ${fechaCorta(webhook.ultimo_evento_at)}` : ''}
+            <p className="flex min-w-0 items-start gap-2 text-sm text-zinc-700 sm:items-center">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600 sm:mt-0" />
+              <span className="min-w-0 break-words">
+                Meta ya está conectado
+                {webhook.ultimo_evento_at ? ` · último mensaje ${fechaCorta(webhook.ultimo_evento_at)}` : ''}
+              </span>
             </p>
           ) : (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -384,7 +413,7 @@ function PasoWebhook({ estado, alActualizar }: PropsPaso) {
               Esperando a Meta…
             </p>
           )}
-          <Button variant="outline" size="sm" onClick={() => setConfirmar(true)}>
+          <Button variant="outline" size="sm" className="w-full shrink-0 sm:w-auto" onClick={() => setConfirmar(true)}>
             <RefreshCw />
             Cambiar token
           </Button>
@@ -437,6 +466,7 @@ function PasoNumero({ estado, alActualizar }: PropsPaso) {
   })
   const cambiar = (campo: keyof DatosNumeroWhatsapp) => (evento: { target: { value: string } }) =>
     setNumero((actual) => ({ ...actual, [campo]: evento.target.value }))
+  const yaConectado = estado.numeros.some((item) => item.verificado)
 
   return (
     <PanelPaso
@@ -455,8 +485,8 @@ function PasoNumero({ estado, alActualizar }: PropsPaso) {
         {estado.numeros.length ? (
           <ul className="grid gap-2">
             {estado.numeros.map((item) => (
-              <li key={item.id} className="flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3">
-                <span className="flex size-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-600">
+              <li key={item.id} className="flex min-w-0 items-center gap-3 rounded-lg border px-3 py-3 sm:px-4">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600">
                   <Smartphone className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -465,36 +495,39 @@ function PasoNumero({ estado, alActualizar }: PropsPaso) {
                     {item.telefono ? `+${item.telefono}` : 'Falta verificar'}
                   </p>
                 </div>
-                {item.verificado ? (
-                  <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
-                    <CircleCheck />
-                    Verificado
-                  </Badge>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setNumero({
-                        nombre: item.nombre,
-                        phone_number_id: item.phone_number_id,
-                        whatsapp_business_account_id: item.whatsapp_business_account_id,
-                        access_token: '',
-                      })
-                    }
-                  >
-                    <CircleAlert />
-                    Verificar
+                <div className="flex shrink-0 items-center gap-1">
+                  {item.verificado ? (
+                    <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
+                      <CircleCheck />
+                      <span className="hidden sm:inline">Verificado</span>
+                    </Badge>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setNumero({
+                          nombre: item.nombre,
+                          phone_number_id: item.phone_number_id,
+                          whatsapp_business_account_id: item.whatsapp_business_account_id,
+                          access_token: '',
+                        })
+                      }
+                    >
+                      <CircleAlert />
+                      Verificar
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon-sm" aria-label={`Desconectar ${item.nombre}`} onClick={() => setQuitar(item)}>
+                    <Trash2 />
                   </Button>
-                )}
-                <Button variant="ghost" size="icon-sm" aria-label={`Desconectar ${item.nombre}`} onClick={() => setQuitar(item)}>
-                  <Trash2 />
-                </Button>
+                </div>
               </li>
             ))}
           </ul>
         ) : null}
 
+        {!yaConectado ? (
         <form
           className="grid max-w-xl gap-4"
           onSubmit={(evento: FormEvent) => {
@@ -502,7 +535,7 @@ function PasoNumero({ estado, alActualizar }: PropsPaso) {
             conectar.mutate()
           }}
         >
-          <p className="text-sm font-medium">{estado.numeros.length ? 'Conectar otro número' : 'Conectar un número'}</p>
+          <p className="text-sm font-medium">Conectar un número</p>
           <Campo etiqueta="Nombre" value={numero.nombre} onChange={cambiar('nombre')} opcional />
           <Campo
             etiqueta="Identificador del número de teléfono"
@@ -527,12 +560,17 @@ function PasoNumero({ estado, alActualizar }: PropsPaso) {
             required
           />
           <div>
-            <Button type="submit" disabled={conectar.isPending}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={conectar.isPending}>
               {conectar.isPending ? <LoaderCircle className="animate-spin" /> : <ShieldCheck />}
               {conectar.isPending ? 'Verificando…' : 'Conectar'}
             </Button>
           </div>
         </form>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Esta empresa atiende con un solo número. Si quieres cambiarlo, desconéctalo y conecta el nuevo.
+          </p>
+        )}
       </div>
 
       <Dialog open={quitar !== null} onOpenChange={(abierto) => !abierto && setQuitar(null)}>
@@ -571,16 +609,16 @@ function PanelPaso({
 }) {
   return (
     <>
-      <header className="space-y-1 border-b px-5 py-5 sm:px-7">
+      <header className="space-y-1 border-b px-4 py-4 sm:px-7 sm:py-5">
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           Paso {indice + 1} de {PASOS.length}
         </p>
         <h2 className="text-xl font-semibold tracking-tight">{titulo}</h2>
         <p className="text-sm text-muted-foreground">{ayuda}</p>
       </header>
-      <div className="grid gap-8 px-5 py-6 sm:px-7 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid min-w-0 gap-6 px-4 py-5 sm:px-7 sm:py-6 xl:grid-cols-[minmax(0,1fr)_280px] xl:gap-8">
         <div className="min-w-0">{children}</div>
-        <aside className="h-fit rounded-lg bg-zinc-50 p-5">
+        <aside className="h-fit rounded-lg bg-zinc-50 p-4 sm:p-5">
           <p className="text-sm font-medium">Dónde lo encuentro</p>
           <ol className="mt-4 space-y-3.5">
             {guia.map((texto, posicion) => (
@@ -611,9 +649,14 @@ function Copiable({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
     <div className="grid gap-2">
       <span className="text-sm font-medium">{etiqueta}</span>
-      <div className="flex gap-2">
-        <Input readOnly value={valor} className="h-10 font-mono text-xs" onFocus={(evento) => evento.target.select()} />
-        <Button type="button" variant="outline" className="h-10" onClick={copiar} aria-label={`Copiar ${etiqueta}`}>
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+        <Input
+          readOnly
+          value={valor}
+          className="h-10 min-w-0 font-mono text-[11px] sm:text-xs"
+          onFocus={(evento) => evento.target.select()}
+        />
+        <Button type="button" variant="outline" className="h-10 shrink-0 sm:w-auto" onClick={copiar} aria-label={`Copiar ${etiqueta}`}>
           <Copy />
           Copiar
         </Button>

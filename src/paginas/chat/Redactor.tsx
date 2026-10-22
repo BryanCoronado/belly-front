@@ -169,7 +169,7 @@ export function Redactor({ ventanaAbierta, enviando, alEnviar, alUsarPlantilla }
           rows={1}
           placeholder={archivo ? 'Añade un comentario (opcional)' : 'Escribe un mensaje'}
           aria-label="Mensaje"
-          className="field-sizing-content max-h-36 min-h-10 flex-1 resize-none rounded-lg border-0 bg-white px-3.5 py-2.5 text-[15px] text-[var(--wa-texto)] shadow-sm outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0"
+          className="field-sizing-content max-h-36 min-h-11 flex-1 resize-none rounded-[24px] border-0 bg-white px-4 py-2.5 text-[15px] text-[var(--wa-texto)] shadow-sm outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0"
         />
 
         <Button

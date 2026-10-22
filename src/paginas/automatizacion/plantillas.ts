@@ -62,13 +62,13 @@ export const PLANTILLAS: PlantillaFlujo[] = [
   },
   {
     id: 'horario',
-    titulo: 'Aviso fuera de horario',
-    descripcion: 'Si escriben fuera de tu horario, les avisa cuándo los atenderás.',
+    titulo: 'Aviso fuera de turno',
+    descripcion: 'Si escriben cuando no hay ningún turno de tus grupos, les avisa que los atenderás después.',
     definicion: {
       nodos: [
         { id: 'inicio', tipo: 'inicio', x: 0, y: 100, datos: { disparador: 'cualquier_mensaje', palabras: [], exacta: false, audiencia: 'todos', repetir: 'cada_horas', repetir_horas: 12 } },
-        { id: 'horario', tipo: 'horario', x: 320, y: 60, datos: { dias: [1, 2, 3, 4, 5], desde: '09:00', hasta: '18:00' } },
-        { id: 'aviso', tipo: 'fin', x: 700, y: 170, datos: { texto: 'Hola {{nombre}} 👋 Ahora estamos fuera de horario. Atendemos de lunes a viernes de 9:00 a 18:00. Te responderemos apenas volvamos.' } },
+        { id: 'horario', tipo: 'horario', x: 320, y: 60, datos: {} },
+        { id: 'aviso', tipo: 'fin', x: 700, y: 170, datos: { texto: 'Hola {{nombre}} 👋 Ahora estamos fuera de horario. Te responderemos apenas volvamos.' } },
         { id: 'enhorario', tipo: 'fin', x: 700, y: -40, datos: { texto: '' } },
       ],
       conexiones: [

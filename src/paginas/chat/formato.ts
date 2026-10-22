@@ -89,6 +89,22 @@ export function textoPlantilla(plantilla: PlantillaWhatsapp, tipo: 'HEADER' | 'B
   return plantilla.components?.find((componente) => componente.type === tipo)?.text ?? ''
 }
 
+/** Imagen, video o documento del encabezado que Meta guardó al aprobar la plantilla. */
+export function mediaPlantilla(plantilla: PlantillaWhatsapp): { tipo: 'IMAGE' | 'VIDEO' | 'DOCUMENT'; url: string | null } | null {
+  const header = plantilla.components?.find((componente) => componente.type === 'HEADER')
+  const tipo = header?.format
+  if (!header || (tipo !== 'IMAGE' && tipo !== 'VIDEO' && tipo !== 'DOCUMENT')) return null
+  const crudo = header.example?.header_handle
+  const url = (Array.isArray(crudo) ? crudo[0] : crudo) ?? ''
+  return { tipo, url: /^https?:\/\//i.test(url) ? url : null }
+}
+
+export function botonesPlantilla(plantilla: PlantillaWhatsapp): { texto: string }[] {
+  return (plantilla.components?.find((componente) => componente.type === 'BUTTONS')?.buttons ?? [])
+    .map((boton) => ({ texto: boton.text?.trim() ?? '' }))
+    .filter((boton) => boton.texto !== '')
+}
+
 export function contarVariables(texto: string): number {
   const encontradas = texto.match(/\{\{\s*\d+\s*\}\}/g) ?? []
   return new Set(encontradas.map((variable) => variable.replace(/\D/g, ''))).size
@@ -96,7 +112,7 @@ export function contarVariables(texto: string): number {
 
 export function vistaPrevia(chat: ConversacionChat): string {
   const texto = etiquetaVistaPrevia(chat.texto_ultimo_mensaje?.trim() || 'Sin mensajes')
-  return chat.ultimo_mensaje_contesta && chat.ultimo_mensaje_contesta !== 'cliente' ? `Tú: ${texto}` : texto
+  return texto
 }
 
 function etiquetaVistaPrevia(texto: string): string {

@@ -8,8 +8,8 @@ import { leerSesion } from '@/sesion'
 import { BarraLateral } from './BarraLateral'
 import { tituloDeRuta } from './navegacion'
 
-const PANTALLA_COMPLETA = new Set(['/chats'])
-/** El editor de flujos ocupa todo el alto: sin márgenes alrededor. */
+const PANTALLA_COMPLETA = new Set(['/chats', '/supervision'])
+/** Chat y editor de flujos ocupan todo el alto: sin márgenes alrededor. */
 const esPantallaCompleta = (ruta: string) => PANTALLA_COMPLETA.has(ruta) || /^\/automatizacion\/\d+/.test(ruta)
 
 export function LayoutApp() {

@@ -1,11 +1,11 @@
 ﻿import type { ReactNode } from 'react'
-import { Headset, Hourglass, MessageSquareReply, Users, Zap, type LucideIcon } from 'lucide-react'
+import { Hourglass, MessageSquareReply, Users, Zap, type LucideIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { DatosPaso } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Area, Interruptor, Nota, Numero, Palabras, SelectorHorario, Seleccion } from './controles'
-import { SelectorAsesores } from './SelectorAsesores'
-import { AUDIENCIAS, REPARTOS, REPETICIONES, audienciaDe, horarioActivo, idsDe, repartoDe, repeticionDe, texto } from './tipos'
+import { Area, Interruptor, Nota, Numero, Palabras, Seleccion } from './controles'
+import { AUDIENCIAS, REPETICIONES, audienciaDe, repeticionDe, texto } from './tipos'
 
 const PALABRAS_ASESOR = ['asesor', 'agente', 'humano', 'persona', 'operador']
 
@@ -16,14 +16,12 @@ type Props = {
   alCambiar: (datos: DatosPaso) => void
 }
 
-/** Ajustes de todo el flujo: cuÃ¡ndo arranca, a quiÃ©n responde y cÃ³mo se reparten los chats entre asesores. */
+/** Ajustes de todo el flujo: cuándo arranca y a quién responde. Horarios y quién atiende viven en Asesores. */
 export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Props) {
   const poner = (parcial: DatosPaso) => alCambiar({ ...datos, ...parcial })
   const disparador = texto(datos, 'disparador') || 'primer_mensaje'
   const palabras = Array.isArray(datos.palabras) ? (datos.palabras as string[]) : []
   const palabrasAsesor = Array.isArray(datos.palabras_asesor) ? (datos.palabras_asesor as string[]) : PALABRAS_ASESOR
-  const reparto = repartoDe(datos)
-  const repartoActual = REPARTOS.find((r) => r.valor === reparto)
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => (v ? undefined : alCerrar())}>
@@ -34,7 +32,7 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-zinc-50/60 p-5">
-          <Seccion icono={Zap} titulo="Â¿CuÃ¡ndo empieza?" tono="amber">
+          <Seccion icono={Zap} titulo="¿Cuándo empieza?" tono="amber">
             <Seleccion
               etiqueta="Se activa"
               valor={disparador}
@@ -48,8 +46,8 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
                 disparador === 'palabra_clave'
                   ? 'Si hay varios flujos activos, gana el que coincida con una palabra.'
                   : disparador === 'cualquier_mensaje'
-                    ? 'Solo arranca si la conversaciÃ³n aÃºn no tuvo un flujo.'
-                    : 'Arranca con el primer mensaje de una conversaciÃ³n nueva.'
+                    ? 'Solo arranca si la conversación aún no tuvo un flujo.'
+                    : 'Arranca con el primer mensaje de una conversación nueva.'
               }
             />
             {disparador === 'palabra_clave' ? (
@@ -58,8 +56,8 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
                   etiqueta="Palabras o frases"
                   valores={palabras}
                   alCambiar={(v) => poner({ palabras: v })}
-                  ayuda="Escribe una y presiona Enter. No importan mayÃºsculas ni tildes."
-                  ejemplo="Ej: precio, cotizaciÃ³n"
+                  ayuda="Escribe una y presiona Enter. No importan mayúsculas ni tildes."
+                  ejemplo="Ej: precio, cotización"
                 />
                 <Interruptor
                   etiqueta="Debe coincidir exactamente"
@@ -71,7 +69,7 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
             ) : null}
           </Seccion>
 
-          <Seccion icono={Users} titulo="Â¿A quiÃ©n le responde?" tono="emerald">
+          <Seccion icono={Users} titulo="¿A quién le responde?" tono="emerald">
             <Seleccion
               etiqueta="Contactos"
               valor={audienciaDe(datos)}
@@ -80,53 +78,34 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
               ayuda={AUDIENCIAS.find((a) => a.valor === audienciaDe(datos))?.ayuda}
             />
             <Seleccion
-              etiqueta="Â¿CuÃ¡ntas veces con la misma persona?"
+              etiqueta="¿Cuántas veces con la misma persona?"
               valor={repeticionDe(datos)}
               alCambiar={(v) => poner({ repetir: v })}
               opciones={REPETICIONES.map((r) => ({ valor: r.valor, etiqueta: r.etiqueta }))}
             />
             {repeticionDe(datos) === 'cada_horas' ? (
               <Numero
-                etiqueta="Volver a activarlo despuÃ©s de (horas)"
+                etiqueta="Volver a activarlo después de (horas)"
                 valor={Number(datos.repetir_horas ?? 24)}
                 min={1}
                 max={8760}
                 alCambiar={(v) => poner({ repetir_horas: v })}
-                ayuda="Ejemplo: 24 = una vez al dÃ­a como mÃ¡ximo."
+                ayuda="Ejemplo: 24 = una vez al día como máximo."
               />
             ) : null}
-            <div className="space-y-3 border-t pt-3">
-              <Interruptor
-                etiqueta="Solo funciona en ciertos horarios"
-                ayuda="Fuera de ese horario el bot no responde y el mensaje queda para tu equipo."
-                valor={Boolean(horarioActivo(datos).activo)}
-                alCambiar={(v) => poner({ horario_activo: { ...horarioActivo(datos), activo: v } })}
-              />
-              {horarioActivo(datos).activo ? (
-                <SelectorHorario datos={horarioActivo(datos)} alCambiar={(h) => poner({ horario_activo: { ...h, activo: true } })} />
-              ) : null}
-            </div>
           </Seccion>
 
-          <Seccion icono={Headset} titulo="Reparto entre tus asesores" tono="fuchsia">
-            <Seleccion
-              etiqueta="Cuando el bot pasa la conversaciÃ³n a una persona"
-              valor={reparto}
-              alCambiar={(v) => poner({ reparto: v })}
-              opciones={REPARTOS.map((r) => ({ valor: r.valor, etiqueta: r.etiqueta }))}
-              ayuda={repartoActual?.ayuda}
-            />
-            {reparto !== 'mantener' ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Â¿Entre quiÃ©nes?</p>
-                <SelectorAsesores valor={idsDe(datos.equipo)} alCambiar={(ids) => poner({ equipo: ids })} />
-              </div>
-            ) : null}
-            <Nota>
-              Cada paso Â«Pasar a un asesorÂ» puede tener su propia regla (por ejemplo, <b>Ventas</b> con unos asesores y <b>Soporte</b> con otros). Lo
-              que pongas aquÃ­ se usa cuando el paso no dice otra cosa, y tambiÃ©n cuando el cliente pide hablar con una persona.
-            </Nota>
-          </Seccion>
+          <Nota>
+            <b>Horarios y quién atiende</b> se configuran en un solo lugar: los turnos en{' '}
+            <Link to="/asesores?tab=grupos" className="font-medium underline-offset-2 hover:underline">
+              Asesores → Grupos
+            </Link>{' '}
+            y el camino de cada chat en{' '}
+            <Link to="/asesores?tab=reparto" className="font-medium underline-offset-2 hover:underline">
+              Reparto de chats
+            </Link>
+            . Si quieres un mensaje distinto fuera de turno, usa el paso <b>¿Hay turno ahora?</b> dentro del flujo.
+          </Nota>
 
           <Seccion icono={MessageSquareReply} titulo="Si el cliente pide hablar con una persona" tono="sky">
             <Palabras
@@ -143,7 +122,7 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
               variables={['asesor']}
               max={1000}
               opcional
-              ayuda="Si lo dejas vacÃ­o se envÃ­a: Â«Perfecto, un asesor te atenderÃ¡ en breve.Â»"
+              ayuda="Si lo dejas vacío se envía: «Perfecto, un asesor te atenderá en breve.»"
             />
           </Seccion>
 
@@ -154,7 +133,7 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
               min={1}
               max={5}
               alCambiar={(v) => poner({ max_intentos: v })}
-              ayuda="Si responde algo que el bot no entiende, se le vuelve a preguntar. Al llegar a este nÃºmero pasa con una persona."
+              ayuda="Si responde algo que el bot no entiende, se le vuelve a preguntar. Al llegar a este número pasa con una persona."
             />
           </Seccion>
         </div>
@@ -170,7 +149,6 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
 const TONOS = {
   amber: 'bg-amber-100 text-amber-700',
   emerald: 'bg-emerald-100 text-emerald-700',
-  fuchsia: 'bg-fuchsia-100 text-fuchsia-700',
   sky: 'bg-sky-100 text-sky-700',
   zinc: 'bg-zinc-200 text-zinc-700',
 } as const

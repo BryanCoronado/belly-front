@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils'
 import { esAdministrador, type UsuarioSesion } from '@/sesion'
 import { MenuUsuario } from './MenuUsuario'
-import { EQUIPO, NAVEGACION, gruposDesdeMenu, type EnlaceNavegacion, type GrupoNavegacion } from './navegacion'
+import { EQUIPO, NAVEGACION, SUPERVISION, gruposDesdeMenu, type EnlaceNavegacion, type GrupoNavegacion } from './navegacion'
 
 export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   const { pathname } = useLocation()
@@ -33,7 +33,9 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   const menu = useQuery({ queryKey: ['menu-modulos'], queryFn: leerMenu })
   const { conectado, cargando } = useWhatsappConectado()
   const pendiente = admin && !cargando && !conectado
-  const grupos = integracionesPrimero(conEquipo(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin))
+  const grupos = integracionesPrimero(
+    conSupervision(conEquipo(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin), admin),
+  )
 
   return (
     <Sidebar collapsible="icon">
@@ -189,4 +191,19 @@ function conEquipo(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[]
     return grupos
   }
   return [{ ...primero, enlaces: [...primero.enlaces, EQUIPO] }, ...resto]
+}
+
+function conSupervision(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {
+  const tieneChat = (enlace: EnlaceNavegacion) => enlace.ruta === '/chats' || enlace.hijos?.some((hijo) => hijo.ruta === '/chats')
+  const indice = grupos.findIndex((grupo) => grupo.enlaces.some(tieneChat))
+  if (!admin || indice < 0 || grupos.some((grupo) => grupo.enlaces.some((enlace) => enlace.ruta === SUPERVISION.ruta))) {
+    return grupos
+  }
+  return grupos.map((grupo, i) => {
+    if (i !== indice) {
+      return grupo
+    }
+    const posicion = grupo.enlaces.findIndex(tieneChat) + 1
+    return { ...grupo, enlaces: [...grupo.enlaces.slice(0, posicion), SUPERVISION, ...grupo.enlaces.slice(posicion)] }
+  })
 }

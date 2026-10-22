@@ -7,13 +7,17 @@ import { Campo } from '@/components/Campo'
 import { LayoutAcceso } from '@/components/layout/LayoutAcceso'
 import { Button } from '@/components/ui/button'
 import { avisoError, avisoExito } from '@/lib/avisos'
-import { guardarSesion, nombreVisible } from '@/sesion'
+import { consumirSesionVencida, guardarSesion, leerSesion, nombreVisible } from '@/sesion'
 
 const CREDENCIALES_VACIAS = { empresa: '', username: '', password: '' }
 
 export function Login() {
   const navegar = useNavigate()
   const [credenciales, setCredenciales] = useState(CREDENCIALES_VACIAS)
+  const [vencida] = useState(() => {
+    leerSesion()
+    return consumirSesionVencida()
+  })
 
   const acceso = useMutation({
     mutationFn: () =>
@@ -50,6 +54,11 @@ export function Login() {
       }
     >
       <form className="grid gap-5" onSubmit={enviar}>
+        {vencida ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Tu sesión venció. Entra de nuevo para continuar.
+          </p>
+        ) : null}
         <Campo
           etiqueta="Empresa"
           name="empresa"

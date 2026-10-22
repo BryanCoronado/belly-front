@@ -11,10 +11,8 @@ const NOMBRE_EN_PRUEBA = 'tu asesor'
 const MARCA_ASESOR = '[[asesor]]'
 
 const TEXTO_ASIGNACION: Record<Extract<MensajeBot, { tipo: 'asignar' }>['modo'], string> = {
-  mantener: 'El chat sigue con quien ya lo tiene.',
+  mantener: 'El chat sigue con el asesor que asignó Reparto de chats.',
   elegir: 'El chat pasa al asesor que elegiste.',
-  equitativo: 'El chat pasa al asesor que lleva menos chats hoy.',
-  menos_carga: 'El chat pasa al asesor con menos chats abiertos.',
 }
 
 const NIVELES: Record<Extract<MensajeBot, { tipo: 'temperatura' }>['valor'], string> = { frio: 'frío 🧊', tibio: 'tibio 🌤', caliente: 'caliente 🔥' }

@@ -35,7 +35,7 @@ export const GUIAS: Record<string, PasoGuia[]> = {
     {
       en: 'primeros-pasos',
       titulo: 'Primeros pasos',
-      texto: 'Sigue estos tres pasos en orden: conecta tu WhatsApp, agrega a tu equipo y empieza a atender.',
+      texto: 'Conecta tu WhatsApp y arma el reparto de chats. Lo demás es opcional. La lista desaparece cuando terminas.',
       lado: 'top',
     },
     {

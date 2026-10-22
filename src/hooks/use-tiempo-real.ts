@@ -20,25 +20,26 @@ export function useTiempoReal() {
     const refrescarListas = () => {
       consultas.invalidateQueries({ queryKey: ['chats'] })
       consultas.invalidateQueries({ queryKey: ['chats-contadores'] })
+      consultas.invalidateQueries({ queryKey: ['supervision'] })
     }
 
-    const socket = io(URL_SOCKET, { auth: { token }, transports: ['websocket'] })
+    const socket = io(URL_SOCKET, { auth: { token }, transports: ['websocket', 'polling'] })
 
     socket.on('mensaje', ({ id_conversacion }: Aviso) => {
       if (id_conversacion) {
-        consultas.invalidateQueries({ queryKey: ['mensajes', id_conversacion] })
+        void consultas.invalidateQueries({ queryKey: ['mensajes', id_conversacion] })
       }
       refrescarListas()
     })
     socket.on('conversacion', ({ id_conversacion }: Aviso) => {
       if (id_conversacion) {
-        consultas.invalidateQueries({ queryKey: ['conversacion', id_conversacion] })
+        void consultas.invalidateQueries({ queryKey: ['conversacion', id_conversacion] })
       }
       refrescarListas()
     })
     socket.on('contadores', refrescarListas)
     socket.io.on('reconnect', () => {
-      consultas.invalidateQueries({ queryKey: ['mensajes'] })
+      void consultas.invalidateQueries({ queryKey: ['mensajes'] })
       refrescarListas()
     })
 

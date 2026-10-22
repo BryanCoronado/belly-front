@@ -1,31 +1,6 @@
-import { Ban, Contact, FileText } from 'lucide-react'
-import { texto, type Fila } from '@/api'
+import { Ban, FileText } from 'lucide-react'
+import { texto } from '@/api'
 import { TablaModulo } from '@/components/TablaModulo'
-
-function nombreCompleto(fila: Fila, nombre: string, apellido: string): string {
-  return [texto(fila, nombre), texto(fila, apellido)].filter(Boolean).join(' ')
-}
-
-export function Clientes() {
-  return (
-    <TablaModulo
-      titulo="Clientes"
-      guia="clientes"
-      descripcion="Personas que escribieron o que registraste en tu empresa."
-      ruta="/v1/clientes/listar?page=1&perPage=20"
-      columnas={[
-        { titulo: 'Nombre', valor: (fila) => texto(fila, 'nombre_completo') || nombreCompleto(fila, 'nombre', 'apellido') },
-        { titulo: 'Teléfono', valor: (fila) => texto(fila, 'telefono') },
-        { titulo: 'Correo', valor: (fila) => texto(fila, 'correo') },
-      ]}
-      vacio={{
-        icono: Contact,
-        titulo: 'Aún no hay clientes',
-        texto: 'Se crean automáticamente al recibir el primer mensaje.',
-      }}
-    />
-  )
-}
 
 export function Plantillas() {
   return (

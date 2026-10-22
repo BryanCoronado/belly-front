@@ -1,4 +1,4 @@
-import { MessagesSquare } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { useGuia } from '@/guia/useGuia'
 import { useTiempoReal } from '@/hooks/use-tiempo-real'
@@ -27,13 +27,15 @@ export function Chats() {
           className="flex-1"
         />
       ) : (
-        <div className="chat-wa-fondo hidden flex-1 flex-col items-center justify-center gap-3 px-8 text-center md:flex">
-          <div className="flex size-16 items-center justify-center rounded-full bg-white/80 text-[var(--wa-verde)] shadow-sm">
-            <MessagesSquare className="size-7" />
+        <div className="chat-wa-fondo hidden flex-1 flex-col items-center justify-center gap-4 px-8 text-center md:flex">
+          <div className="flex size-[4.5rem] items-center justify-center rounded-full bg-white/70 text-[var(--wa-verde)] shadow-sm">
+            <Lock className="size-8" />
           </div>
-          <div className="space-y-1">
-            <p className="text-lg font-medium text-[var(--wa-texto)]">WhatsApp</p>
-            <p className="max-w-sm text-sm text-[var(--wa-muted)]">Elige una conversación para empezar a chatear</p>
+          <div className="space-y-1.5">
+            <p className="text-[28px] font-light text-[var(--wa-texto)]">WhatsApp Business</p>
+            <p className="max-w-md text-[14px] text-[var(--wa-muted)]">
+              Elige un chat de la izquierda. Los mensajes salen por el número de tu empresa.
+            </p>
           </div>
         </div>
       )}
