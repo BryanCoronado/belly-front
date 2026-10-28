@@ -123,7 +123,7 @@ export function TablaResponsiva<T>({ filas, columnas, clave, cargando, acciones,
 
 function EstadoVacio({ icono: Icono, titulo, texto }: TablaResponsivaProps<unknown>['vacio']) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 border-t px-6 py-14 text-center first:border-t-0">
+    <div className="belly-aparecer flex flex-col items-center justify-center gap-2 border-t px-6 py-14 text-center first:border-t-0">
       <div className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-emerald-50 ring-1 ring-emerald-100">
         <Icono className="size-5 text-emerald-600" />
       </div>

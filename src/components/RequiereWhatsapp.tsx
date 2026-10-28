@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { ArrowRight, Smartphone } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { IconoWhatsapp } from '@/components/IconoWhatsapp'
 import { Link, Outlet } from 'react-router-dom'
 import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,7 +21,7 @@ export function RequiereWhatsapp({ children }: { children?: ReactNode }) {
   const admin = esAdministrador(leerSesion()?.usuario)
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 p-6 text-center">
-      <Smartphone className="size-6 text-muted-foreground" />
+      <IconoWhatsapp className="size-8" />
       <p className="font-medium">WhatsApp no está conectado</p>
       {admin ? (
         <Link to="/integraciones/whatsapp" className={cn(buttonVariants())}>

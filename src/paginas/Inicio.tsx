@@ -8,7 +8,6 @@ import {
   MailOpen,
   MessageSquare,
   Reply,
-  Smartphone,
   Trophy,
   UserMinus,
   UsersRound,
@@ -24,6 +23,8 @@ import {
   type MiembroEquipoDashboard,
   type PendienteDashboard,
 } from '@/api'
+import { Bienvenida } from '@/components/Bienvenida'
+import { IconoWhatsapp } from '@/components/IconoWhatsapp'
 import { PrimerosPasos } from '@/components/PrimerosPasos'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +32,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useGuia } from '@/guia/useGuia'
 import { useWhatsappConectado } from '@/hooks/use-whatsapp'
+import { hayRecienRegistrado } from '@/lib/onboarding'
 import { cn } from '@/lib/utils'
 import { fechaLista, iniciales } from '@/paginas/chat/formato'
 import { AnilloResultado, Dona, EmbudoVisual, GraficoActividad, MiniSpark } from '@/paginas/inicio/graficos'
@@ -44,25 +46,26 @@ const PERIODOS: { id: DiasDashboard; texto: string }[] = [
 ]
 
 export function Inicio() {
-  useGuia('inicio')
+  const [mostrarBienvenida, setMostrarBienvenida] = useState(hayRecienRegistrado)
+  const [omitirTourAuto] = useState(hayRecienRegistrado)
+  useGuia('inicio', { silenciar: mostrarBienvenida || omitirTourAuto })
   const usuario = leerSesion()?.usuario
   const admin = esAdministrador(usuario)
   const { conectado, cargando } = useWhatsappConectado()
-  const pendiente = !cargando && !conectado
   const [dias, setDias] = useState<DiasDashboard>(14)
   const dashboard = useQuery({ queryKey: ['dashboard', dias], queryFn: () => leerDashboard(dias) })
 
   return (
     <div className="space-y-6">
+      <Bienvenida abierta={mostrarBienvenida} onCerrar={() => setMostrarBienvenida(false)} />
       <Saludo
         nombre={usuario ? nombreVisible(usuario) : ''}
-        empresa={usuario?.empresa ?? ''}
+        empresa={usuario?.empresa_nombre || usuario?.empresa || ''}
         conectado={conectado}
         dias={dias}
         alCambiarDias={setDias}
       />
 
-      {admin && pendiente ? <AvisoConectar /> : null}
       {dashboard.data && dashboard.data.cuadros.por_responder > 0 ? (
         <AvisoPendientes cantidad={dashboard.data.cuadros.por_responder} admin={admin} />
       ) : null}
@@ -118,33 +121,14 @@ function Saludo({
             </button>
           ))}
         </div>
-        <Link to={conectado ? '/chats' : RUTA_WHATSAPP} data-tour="conectar-whatsapp" className={cn(buttonVariants({ size: 'lg' }), 'h-10 px-4')}>
-          {conectado ? 'Ir al chat' : 'Conectar WhatsApp'}
-          <ArrowRight />
-        </Link>
+        {conectado ? (
+          <Link to="/chats" className={cn(buttonVariants({ size: 'lg' }), 'h-10 px-4')}>
+            Ir al chat
+            <ArrowRight />
+          </Link>
+        ) : null}
       </div>
     </div>
-  )
-}
-
-function AvisoConectar() {
-  return (
-    <Link
-      to={RUTA_WHATSAPP}
-      className="tema-fijo group flex flex-wrap items-center gap-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white shadow-lg shadow-emerald-600/20 transition-all hover:from-emerald-700 hover:to-teal-700 sm:p-6"
-    >
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/10">
-        <Smartphone className="size-6" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-lg font-semibold">Conecta tu WhatsApp</span>
-        <span className="block text-sm text-white/65">Sin un número conectado no llegan clientes ni se activa el chat.</span>
-      </span>
-      <span className="flex items-center gap-2 text-sm font-medium">
-        Empezar
-        <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-      </span>
-    </Link>
   )
 }
 
@@ -261,7 +245,7 @@ function Cuadros({
   const items = admin ? [...comunes, ...extrasAdmin] : comunes
 
   return (
-    <div className={cn('grid gap-3 sm:grid-cols-2', admin ? 'xl:grid-cols-5' : 'xl:grid-cols-3')} data-tour="metricas">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(11.5rem,1fr))] gap-3" data-tour="metricas">
       {items.map((item) => (
         <Cuadro key={item.titulo} {...item} />
       ))}
@@ -476,8 +460,8 @@ function Integraciones({ conectado, cargando }: { conectado: boolean; cargando: 
       <ul className="divide-y">
         <li>
           <Link to={RUTA_WHATSAPP} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-zinc-50">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">
-              <Smartphone className="size-4" />
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-zinc-200">
+              <IconoWhatsapp className="size-5" />
             </span>
             <span className="min-w-0 flex-1 text-sm font-medium">WhatsApp Business</span>
             {cargando ? (

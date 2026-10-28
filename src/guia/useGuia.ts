@@ -6,18 +6,21 @@ import { guiaVista, iniciarGuia } from './motor'
 const ESPERA_INICIO_MS = 900
 
 /** Declara la guía de la pantalla actual y la abre sola la primera vez. */
-export function useGuia(id: string): void {
+export function useGuia(id: string, opciones?: { silenciar?: boolean }): void {
+  const silenciar = opciones?.silenciar ?? false
   useEffect(() => {
     registrarGuia(id)
-    const temporizador = window.setTimeout(() => {
-      if (!guiaVista(id)) iniciarGuia(id)
-    }, ESPERA_INICIO_MS)
+    const temporizador = silenciar
+      ? undefined
+      : window.setTimeout(() => {
+          if (!guiaVista(id)) iniciarGuia(id)
+        }, ESPERA_INICIO_MS)
 
     return () => {
-      window.clearTimeout(temporizador)
+      if (temporizador !== undefined) window.clearTimeout(temporizador)
       liberarGuia(id)
     }
-  }, [id])
+  }, [id, silenciar])
 }
 
 export function useGuiaActual(): string | null {

@@ -15,12 +15,16 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
+import type { ComponentType } from 'react'
 import type { GrupoMenu, ModuloMenu } from '@/api'
+import { IconoWhatsapp } from '@/components/IconoWhatsapp'
+
+type IconoNav = LucideIcon | ComponentType<{ className?: string }>
 
 export type EnlaceNavegacion = {
   titulo: string
   ruta: string
-  icono: LucideIcon
+  icono: IconoNav
   tono: string
   hijos?: EnlaceNavegacion[]
 }
@@ -30,14 +34,14 @@ export type GrupoNavegacion = {
   enlaces: EnlaceNavegacion[]
 }
 
-const ICONOS: Record<string, LucideIcon> = {
+const ICONOS: Record<string, IconoNav> = {
   house_alt: LayoutDashboard,
   message: MessagesSquare,
   chat: MessageCircleMore,
   person_alt: UserRoundSearch,
   people: CircleUserRound,
   store: Boxes,
-  whatsapp: Smartphone,
+  whatsapp: IconoWhatsapp,
   bot: Bot,
   sparkles: Bot,
   send: Send,
@@ -138,7 +142,7 @@ export const NAVEGACION: GrupoNavegacion[] = [
   },
   {
     titulo: 'Integraciones',
-    enlaces: [{ titulo: 'WhatsApp', ruta: '/integraciones/whatsapp', icono: Smartphone, tono: TONO_RUTA['/integraciones/whatsapp'] }],
+    enlaces: [{ titulo: 'WhatsApp', ruta: '/integraciones/whatsapp', icono: IconoWhatsapp, tono: TONO_RUTA['/integraciones/whatsapp'] }],
   },
 ]
 
@@ -166,6 +170,7 @@ export function gruposDesdeMenu(grupos: GrupoMenu[]): GrupoNavegacion[] {
 }
 
 export function tituloDeRuta(ruta: string): string {
+  if (ruta === '/perfil') return 'Mi perfil'
   const plano = aplanar([...NAVEGACION.flatMap((grupo) => grupo.enlaces), EQUIPO, SUPERVISION, INTEGRACIONES])
   const exacto = plano.find((item) => item.ruta === ruta)
   if (exacto) {

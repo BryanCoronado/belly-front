@@ -26,7 +26,7 @@ export function BotonGuia() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="icon" className="ml-auto rounded-full" aria-label="Ayuda" title="Ayuda" data-tour="boton-guia" />
+          <Button variant="ghost" size="icon" className="rounded-full text-foreground" aria-label="Ayuda" title="Ayuda" data-tour="boton-guia" />
         }
       >
         <CircleHelp className="size-5" />

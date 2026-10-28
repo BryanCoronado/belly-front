@@ -35,14 +35,8 @@ export const GUIAS: Record<string, PasoGuia[]> = {
     {
       en: 'primeros-pasos',
       titulo: 'Primeros pasos',
-      texto: 'Conecta tu WhatsApp y arma el reparto de chats. Lo demás es opcional. La lista desaparece cuando terminas.',
+      texto: 'Conecta tu WhatsApp desde el menú y arma el reparto de chats. La lista desaparece cuando terminas.',
       lado: 'top',
-    },
-    {
-      en: 'conectar-whatsapp',
-      titulo: 'Empieza por aquí',
-      texto: 'Sin un número conectado no llegan mensajes. Conéctalo primero.',
-      lado: 'bottom',
     },
   ],
 

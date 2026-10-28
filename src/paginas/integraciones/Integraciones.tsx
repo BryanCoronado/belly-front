@@ -1,4 +1,6 @@
-import { ChevronRight, CircleCheck, Mail, Smartphone, Wallet, type LucideIcon } from 'lucide-react'
+import { ChevronRight, CircleCheck, Mail, Wallet, type LucideIcon } from 'lucide-react'
+import type { ComponentType } from 'react'
+import { IconoWhatsapp } from '@/components/IconoWhatsapp'
 import { Link } from 'react-router-dom'
 import { CabeceraPagina } from '@/components/CabeceraPagina'
 import { Badge } from '@/components/ui/badge'
@@ -8,7 +10,7 @@ import { cn } from '@/lib/utils'
 type Integracion = {
   titulo: string
   texto: string
-  icono: LucideIcon
+  icono: LucideIcon | ComponentType<{ className?: string }>
   ruta?: string
 }
 
@@ -27,7 +29,7 @@ export function Integraciones() {
         <Tarjeta
           titulo="WhatsApp Business"
           texto="Mensajes de clientes y chat"
-          icono={Smartphone}
+          icono={IconoWhatsapp}
           ruta="/integraciones/whatsapp"
           estado={cargando ? null : conectado ? 'Conectado' : 'Sin conectar'}
           destacado={!cargando && conectado}
@@ -51,8 +53,8 @@ function Tarjeta({
   const contenido = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex size-11 items-center justify-center rounded-lg border bg-zinc-50 text-zinc-700">
-          <Icono className="size-5" />
+        <div className="flex size-11 items-center justify-center rounded-lg border bg-white">
+          <Icono className="size-6" />
         </div>
         {estado ? (
           <Badge className={cn(destacado ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'bg-zinc-100 text-zinc-600')}>

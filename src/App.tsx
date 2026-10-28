@@ -19,6 +19,7 @@ import { ImportarClientes } from '@/paginas/clientes/ImportarClientes'
 import { DetalleEnvio } from '@/paginas/envios/DetalleEnvio'
 import { Envios } from '@/paginas/envios/Envios'
 import { NuevoEnvio } from '@/paginas/envios/NuevoEnvio'
+import { Perfil } from '@/paginas/Perfil'
 import { Registro } from '@/paginas/Registro'
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/registro" element={<Registro />} />
         <Route element={<LayoutApp />}>
           <Route path="/inicio" element={<Inicio />} />
+          <Route path="/perfil" element={<Perfil />} />
           <Route path="/dashboard" element={<Inicio />} />
           <Route element={<RequiereWhatsapp />}>
             <Route path="/chats" element={<Chats />} />

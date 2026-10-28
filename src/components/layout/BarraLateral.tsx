@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ChevronRight, Smartphone } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { leerMenu } from '@/api'
 import { LogoMarca } from '@/components/Marca'
@@ -46,7 +46,7 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
               <LogoMarca className="size-9 rounded-xl" />
               <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-[15px] font-semibold">Belly</span>
-                <span className="truncate text-xs text-muted-foreground">{usuario.empresa}</span>
+                <span className="truncate text-xs text-muted-foreground">{usuario.empresa_nombre || usuario.empresa}</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -58,7 +58,6 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
           <SidebarGroup key={grupo.titulo}>
             <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/80">{grupo.titulo}</SidebarGroupLabel>
             <SidebarGroupContent>
-              {pendiente && esGrupoIntegraciones(grupo) ? <AvisoConectar /> : null}
               <SidebarMenu className="gap-0.5">
                 {grupo.enlaces.map((enlace) => (
                   <ItemMenu
@@ -94,24 +93,6 @@ function esGrupoIntegraciones(grupo: GrupoNavegacion): boolean {
 function integracionesPrimero(grupos: GrupoNavegacion[]): GrupoNavegacion[] {
   const integraciones = grupos.filter(esGrupoIntegraciones)
   return [...integraciones, ...grupos.filter((grupo) => !esGrupoIntegraciones(grupo))]
-}
-
-function AvisoConectar() {
-  return (
-    <Link
-      to={RUTA_WHATSAPP}
-      className="tema-fijo group/aviso mx-1 mb-2 flex items-center gap-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 p-3 text-white shadow-md shadow-emerald-600/20 transition-all group-data-[collapsible=icon]:hidden hover:from-emerald-700 hover:to-teal-700"
-    >
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
-        <Smartphone className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1 leading-tight">
-        <span className="block text-[13px] font-medium">Conecta tu WhatsApp</span>
-        <span className="block text-xs text-white/60">Para recibir clientes</span>
-      </span>
-      <ArrowRight className="size-4 shrink-0 text-white/60 transition-transform group-hover/aviso:translate-x-0.5" />
-    </Link>
-  )
 }
 
 function ItemMenu({ enlace, ruta, pendiente = false }: { enlace: EnlaceNavegacion; ruta: string; pendiente?: boolean }) {

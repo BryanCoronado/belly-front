@@ -2,9 +2,11 @@ export type UsuarioSesion = {
   id: number
   id_empresa: number
   empresa: string
+  empresa_nombre?: string | null
   usuario: string
   nombres: string | null
   apellidos: string | null
+  foto?: string | null
   sudo?: number
 }
 
@@ -42,6 +44,13 @@ export function leerSesion(): Sesion | null {
 export function guardarSesion(sesion: Sesion) {
   sessionStorage.removeItem(CLAVE_VENCIDA)
   localStorage.setItem(CLAVE, JSON.stringify(sesion))
+  window.dispatchEvent(new Event('belly-sesion'))
+}
+
+export function actualizarUsuarioSesion(parcial: Partial<UsuarioSesion>) {
+  const sesion = leerSesion()
+  if (!sesion) return
+  guardarSesion({ ...sesion, usuario: { ...sesion.usuario, ...parcial } })
 }
 
 export function cerrarSesion() {

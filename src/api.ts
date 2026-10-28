@@ -76,6 +76,8 @@ export type DatosRegistro = {
   correo: string
   username: string
   password: string
+  codigo_pais: string
+  celular: string
 }
 
 type Respuesta = {
@@ -90,8 +92,11 @@ type Respuesta = {
   error?: string
 }
 
-export async function entrar(empresa: string, username: string, password: string): Promise<Sesion> {
-  const datos = await solicitar('/v1/auth/login', { method: 'POST', cuerpo: { empresa, username, password } })
+export async function entrar(identificador: string, password: string): Promise<Sesion> {
+  const cuerpo = identificador.includes('@')
+    ? { correo: identificador, password }
+    : { username: identificador, password }
+  const datos = await solicitar('/v1/auth/login', { method: 'POST', cuerpo })
   if (!datos.token || !datos.usuario) {
     throw new Error('No se pudo iniciar sesión.')
   }
@@ -100,6 +105,45 @@ export async function entrar(empresa: string, username: string, password: string
 
 export async function registrar(datos: DatosRegistro): Promise<void> {
   await solicitar('/v1/auth/registro', { method: 'POST', cuerpo: datos })
+}
+
+export type PerfilCuenta = {
+  nombres: string
+  apellidos: string
+  correo: string
+  celular: string
+  foto: string | null
+  usuario: string
+  empresa: { nombre: string; correo: string }
+}
+
+export async function leerPerfil(): Promise<PerfilCuenta> {
+  const datos = await solicitar('/v1/perfil', { method: 'GET', conToken: true })
+  return datos.data as PerfilCuenta
+}
+
+export async function guardarPerfil(cuerpo: {
+  nombres: string
+  apellidos: string
+  correo: string
+  celular: string
+  password_actual?: string
+  password_nueva?: string
+}): Promise<PerfilCuenta> {
+  const datos = await solicitar('/v1/perfil', { method: 'PUT', cuerpo, conToken: true })
+  return datos.data as PerfilCuenta
+}
+
+export async function subirFotoPerfil(archivo: File): Promise<PerfilCuenta> {
+  const formulario = new FormData()
+  formulario.append('foto', archivo)
+  const datos = await solicitar('/v1/perfil/foto', { method: 'POST', formulario, conToken: true })
+  return datos.data as PerfilCuenta
+}
+
+export async function guardarEmpresaPerfil(cuerpo: { nombre: string; correo: string }): Promise<PerfilCuenta> {
+  const datos = await solicitar('/v1/perfil/empresa', { method: 'PUT', cuerpo, conToken: true })
+  return datos.data as PerfilCuenta
 }
 
 export type ModuloMenu = {

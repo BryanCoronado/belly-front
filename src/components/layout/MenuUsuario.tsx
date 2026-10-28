@@ -1,6 +1,6 @@
-import { ChevronsUpDown, LogOut } from 'lucide-react'
+import { ChevronsUpDown, LogOut, UserRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,7 @@ export function MenuUsuario({ usuario }: { usuario: UsuarioSesion }) {
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
             <Avatar className="rounded-lg">
+              {usuario.foto ? <AvatarImage src={usuario.foto} alt={nombre} /> : null}
               <AvatarFallback className="rounded-lg">{iniciales(nombre)}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
@@ -44,11 +45,15 @@ export function MenuUsuario({ usuario }: { usuario: UsuarioSesion }) {
               <DropdownMenuLabel className="font-normal">
                 <p className="text-sm font-medium text-foreground">{nombre}</p>
                 <p className="text-xs">
-                  {esAdministrador(usuario) ? 'Administrador' : 'Usuario'} · {usuario.empresa}
+                  {esAdministrador(usuario) ? 'Administrador' : 'Usuario'} · {usuario.empresa_nombre || usuario.empresa}
                 </p>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navegar('/perfil')}>
+              <UserRound />
+              Mi perfil
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={salir}>
               <LogOut />
               Cerrar sesión

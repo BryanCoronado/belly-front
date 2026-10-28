@@ -254,7 +254,7 @@
 
 /* Modo oscuro: se redefine la paleta de Tailwind (fondos y bordes suaves) para que las clases existentes se adapten solas. */
 .dark {
-  --color-white: #171a1d;
+  --color-white: #1c2126;
   --color-emerald-50: rgb(16 185 129 / 0.1);
   --color-emerald-100: rgb(16 185 129 / 0.16);
   --color-emerald-200: rgb(16 185 129 / 0.28);
@@ -378,6 +378,21 @@
 .dark .text-zinc-700 { color: #c9d0d6; }
 .dark .text-zinc-800 { color: #e1e5e8; }
 .dark .text-zinc-900 { color: #f1f3f4; }
+.dark .text-zinc-950,
+.dark .text-black,
+.dark .text-amber-950,
+.dark .text-emerald-950,
+.dark .text-rose-950 { color: #f4f6f8; }
+
+/* Las tarjetas usan bg-white. En noche el fondo tiene que seguir al tema, si no el texto claro desaparece. */
+.dark .bg-white { background-color: #1c2126; }
+.dark .bg-white\/90,
+.dark .bg-white\/80,
+.dark .bg-white\/70,
+.dark .bg-white\/60 { background-color: rgb(28 33 38 / 0.94); }
+.dark .chat-wa .bg-white { background-color: #202c33; }
+.dark .tema-fijo.bg-white,
+.dark .tema-fijo .bg-white { background-color: #fff; }
 
 /* Zonas que siempre llevan los colores claros originales (paneles de marca, banners). */
 .dark .tema-fijo {
@@ -515,4 +530,96 @@
   border-color: rgb(16 185 129 / 0.4);
   background: rgb(16 185 129 / 0.14);
   color: #6ee7b7;
+}
+
+@keyframes belly-aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.belly-aparecer {
+  animation: belly-aparecer 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .belly-aparecer {
+    animation: none;
+  }
+}
+
+.pagina-acceso {
+  color-scheme: light;
+}
+
+.pagina-acceso .campo-acceso {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.pagina-acceso .campo-acceso > span {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #3f3f46;
+}
+
+.pagina-acceso .campo-acceso input,
+.pagina-acceso .campo-acceso select {
+  height: 2.75rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #e4e4e7;
+  background: #fff;
+  padding: 0 0.8rem;
+  color: #18181b;
+  outline: none;
+}
+
+.pagina-acceso .campo-acceso input::placeholder {
+  color: #a1a1aa;
+}
+
+.pagina-acceso .campo-acceso input:focus,
+.pagina-acceso .campo-acceso select:focus,
+.pagina-acceso .campo-tel:focus-within {
+  border-color: #18181b;
+}
+
+.pagina-acceso .campo-tel {
+  display: flex;
+  height: 2.75rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid #e4e4e7;
+  background: #fff;
+}
+
+.pagina-acceso .campo-tel span {
+  display: flex;
+  align-items: center;
+  padding: 0 0.8rem;
+  border-right: 1px solid #e4e4e7;
+  color: #3f3f46;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.pagina-acceso .campo-tel input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0 0.8rem;
+  color: #18181b;
+  outline: none;
+}
+
+.pagina-acceso .campo-tel input::placeholder {
+  color: #a1a1aa;
 }
