@@ -65,7 +65,7 @@ export type CitaRedactor = {
 export type EnvioRedactor = {
   texto: string
   archivo?: File
-  tipo?: 'sticker' | 'location'
+  tipo?: 'sticker' | 'location' | 'audio'
   latitude?: number
   longitude?: number
   name?: string
@@ -225,11 +225,17 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
       }
       recorder.onstop = () => {
         stream.getTracks().forEach((pista) => pista.stop())
-        const blob = new Blob(trozos.current, { type: recorder.mimeType || 'audio/webm' })
+        const mimeGrabado = recorder.mimeType || 'audio/webm'
+        const mime = mimeGrabado.includes('ogg')
+          ? 'audio/ogg'
+          : mimeGrabado.includes('mp4')
+            ? 'audio/mp4'
+            : 'audio/webm'
+        const blob = new Blob(trozos.current, { type: mime })
         if (blob.size < 800) return
-        const extension = blob.type.includes('ogg') ? 'ogg' : blob.type.includes('mp4') ? 'm4a' : 'webm'
-        const nota = new File([blob], `nota-de-voz.${extension}`, { type: blob.type })
-        void enviar({ texto: '', archivo: nota })
+        const extension = mime.includes('ogg') ? 'ogg' : mime.includes('mp4') ? 'm4a' : 'webm'
+        const nota = new File([blob], `nota-de-voz.${extension}`, { type: mime })
+        void enviar({ texto: '', archivo: nota, tipo: 'audio' })
       }
       grabacion.current = recorder
       recorder.start()

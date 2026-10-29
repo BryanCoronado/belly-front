@@ -470,7 +470,7 @@ export async function abrirChat(idConversacion: number): Promise<void> {
 
 export type ExtraMensaje = {
   idMensajeResponde?: string
-  tipo?: 'sticker' | 'location'
+  tipo?: 'sticker' | 'location' | 'audio'
   latitude?: number
   longitude?: number
   name?: string
@@ -525,6 +525,8 @@ export async function enviarMensaje(
   }
   if (datos.tipo) {
     formulario.append('media_type', datos.tipo)
+  } else if (archivo.type.startsWith('audio/') || archivo.name.toLowerCase().includes('nota-de-voz')) {
+    formulario.append('media_type', 'audio')
   }
   await solicitar('/v1/mensaje/enviar', { method: 'POST', formulario, conToken: true })
 }

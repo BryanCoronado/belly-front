@@ -87,7 +87,7 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         id_estado: 1,
         mensaje: envioDatos.texto || envioDatos.archivo?.name || (envioDatos.tipo === 'location' ? 'Ubicación' : ''),
         contesta: 'usuario',
-        media_type: envioDatos.tipo === 'location' ? 'location' : envioDatos.tipo === 'sticker' ? 'sticker' : envioDatos.archivo?.type.startsWith('audio/') ? 'audio' : null,
+        media_type: envioDatos.tipo === 'location' ? 'location' : envioDatos.tipo === 'sticker' ? 'sticker' : envioDatos.tipo === 'audio' || envioDatos.archivo?.type.startsWith('audio/') ? 'audio' : null,
         media_url: envioDatos.tipo === 'location' && envioDatos.latitude != null ? `https://www.google.com/maps/search/?api=1&query=${envioDatos.latitude},${envioDatos.longitude}` : null,
         cod_error: null,
         created_at: new Date().toISOString(),
