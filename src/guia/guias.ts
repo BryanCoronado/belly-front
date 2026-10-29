@@ -186,7 +186,7 @@ export const GUIAS: Record<string, PasoGuia[]> = {
       texto: 'Respuestas guardadas para las preguntas de siempre: precios, horarios, ubicación. Responden en un clic desde el chat.',
       lado: 'bottom',
     },
-    { en: 'lista', titulo: 'Tus plantillas', texto: 'El título te ayuda a encontrarla; el mensaje es lo que se envía.', lado: 'top' },
+    { en: 'lista', titulo: 'Tus respuestas', texto: 'El título te ayuda a encontrarla; el mensaje es lo que se inserta en el chat. Puedes crear, editar o borrar.', lado: 'top' },
   ],
 
   whatsapp: [

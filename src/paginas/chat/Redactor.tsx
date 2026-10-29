@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  Camera,
   FileText,
   ImagePlus,
   LayoutTemplate,
@@ -7,6 +8,7 @@ import {
   MapPin,
   Mic,
   Paperclip,
+  Plus,
   SendHorizontal,
   Smile,
   Sticker,
@@ -15,8 +17,9 @@ import {
   Zap,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { leerRespuestasRapidas } from '@/api'
+import { leerRespuestasRapidas, type RespuestaRapida } from '@/api'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +31,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { type StickerTienda } from '@/api'
 import { avisoError } from '@/lib/avisos'
+import { FormularioRespuesta } from '@/paginas/plantillas/FormularioRespuesta'
+import { CapturaCamara } from './CapturaCamara'
 import { PanelExpresiones } from './PanelExpresiones'
 
 const LIMITE_ARCHIVO_MB = 16
@@ -88,6 +93,9 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
   const [emojisAbiertos, setEmojisAbiertos] = useState(false)
   const [grabando, setGrabando] = useState(false)
   const [segundos, setSegundos] = useState(0)
+  const [camara, setCamara] = useState<'foto' | 'video' | null>(null)
+  const [crearRespuesta, setCrearRespuesta] = useState(false)
+  const consultas = useQueryClient()
   const campo = useRef<HTMLTextAreaElement>(null)
   const selector = useRef<HTMLInputElement>(null)
   const acepta = useRef('image/*')
@@ -177,6 +185,20 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
   function insertar(contenido: string) {
     setTexto((actual) => (actual.trim() ? `${actual}${contenido}` : contenido))
     campo.current?.focus()
+  }
+
+  async function usarRespuesta(respuesta: RespuestaRapida) {
+    if (respuesta.contenido) insertar(respuesta.contenido)
+    if (!respuesta.imagen_url) return
+    try {
+      const archivoImg = await fetch(respuesta.imagen_url)
+      if (!archivoImg.ok) return
+      const blob = await archivoImg.blob()
+      const ext = blob.type.includes('png') ? 'png' : 'jpg'
+      elegirArchivo(new File([blob], `${respuesta.nombre}.${ext}`, { type: blob.type || 'image/jpeg' }))
+    } catch {
+      /* el texto ya quedó */
+    }
   }
 
   async function enviarSticker(sticker: StickerTienda) {
@@ -350,10 +372,16 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-56">
             <DropdownMenuItem onClick={() => abrirSelector('image/*')}>
-              <ImagePlus /> Foto
+              <ImagePlus /> Foto de galería
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setCamara('foto')}>
+              <Camera /> Tomar foto
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => abrirSelector('video/*')}>
-              <Video /> Video
+              <Video /> Video de galería
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setCamara('video')}>
+              <Video /> Grabar video
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => abrirSelector('.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt')}>
               <FileText /> Documento
@@ -392,14 +420,18 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
             </DropdownMenuGroup>
             {respuestas.data?.length ? (
               respuestas.data.map((respuesta) => (
-                <DropdownMenuItem key={respuesta.id} onClick={() => insertar(respuesta.contenido)} className="flex-col items-start gap-0.5">
+                <DropdownMenuItem key={respuesta.id} onClick={() => void usarRespuesta(respuesta)} className="flex-col items-start gap-0.5">
                   <span className="font-medium">{respuesta.nombre}</span>
-                  <span className="line-clamp-2 text-xs text-muted-foreground">{respuesta.contenido}</span>
+                  <span className="line-clamp-2 text-xs text-muted-foreground">{respuesta.contenido || 'Imagen'}</span>
                 </DropdownMenuItem>
               ))
             ) : (
               <DropdownMenuItem disabled>{respuestas.isLoading ? 'Cargando…' : 'Aún no tienes respuestas rápidas'}</DropdownMenuItem>
             )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setCrearRespuesta(true)}>
+              <Plus /> Nueva respuesta rápida
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={alUsarPlantilla}>
               <LayoutTemplate /> Enviar plantilla de WhatsApp
             </DropdownMenuItem>
@@ -450,6 +482,26 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
           </Button>
         )}
       </div>
+
+      <CapturaCamara
+        modo={camara}
+        alCerrar={() => setCamara(null)}
+        alCapturar={(archivo) => elegirArchivo(archivo)}
+      />
+
+      <Dialog open={crearRespuesta} onOpenChange={(abrir) => !abrir && setCrearRespuesta(false)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nueva respuesta rápida</DialogTitle>
+            <DialogDescription>Queda en el rayo para usarla en cualquier chat.</DialogDescription>
+          </DialogHeader>
+          <FormularioRespuesta
+            respuesta={null}
+            alCerrar={() => setCrearRespuesta(false)}
+            alGuardar={() => void consultas.invalidateQueries({ queryKey: ['respuestas-rapidas'] })}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

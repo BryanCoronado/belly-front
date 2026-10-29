@@ -352,6 +352,7 @@ export type RespuestaRapida = {
   id: number
   nombre: string
   contenido: string
+  imagen_url?: string | null
 }
 
 export type MotivoCierre = {
@@ -527,6 +528,8 @@ export async function enviarMensaje(
     formulario.append('media_type', datos.tipo)
   } else if (archivo.type.startsWith('audio/') || archivo.name.toLowerCase().includes('nota-de-voz')) {
     formulario.append('media_type', 'audio')
+  } else if (archivo.type.startsWith('video/')) {
+    formulario.append('media_type', 'video')
   }
   await solicitar('/v1/mensaje/enviar', { method: 'POST', formulario, conToken: true })
 }
@@ -553,6 +556,24 @@ export async function enviarPlantilla(idConversacion: number, plantilla: Plantil
 export async function leerRespuestasRapidas(): Promise<RespuestaRapida[]> {
   const datos = await solicitar('/v1/plantilla-rapida/listar-por-usuario?page=1&perPage=100', { method: 'GET', conToken: true })
   return Array.isArray(datos.data) ? (datos.data as RespuestaRapida[]) : []
+}
+
+export async function guardarRespuestaRapida(
+  datos: { nombre: string; contenido: string; imagen?: File; quitarImagen?: boolean },
+  id?: number,
+): Promise<RespuestaRapida> {
+  const formulario = new FormData()
+  formulario.append('nombre', datos.nombre)
+  formulario.append('contenido', datos.contenido)
+  if (datos.imagen) formulario.append('imagen', datos.imagen)
+  if (datos.quitarImagen) formulario.append('eliminar_imagen', '1')
+  const ruta = id ? `/v1/plantilla-rapida/editar/${id}` : '/v1/plantilla-rapida/crear'
+  const respuesta = await solicitar(ruta, { method: 'POST', formulario, conToken: true })
+  return respuesta.data as RespuestaRapida
+}
+
+export async function eliminarRespuestaRapida(id: number): Promise<void> {
+  await solicitar(`/v1/plantilla-rapida/eliminar/${id}`, { method: 'DELETE', conToken: true })
 }
 
 export async function leerMotivosCierre(): Promise<MotivoCierre[]> {
