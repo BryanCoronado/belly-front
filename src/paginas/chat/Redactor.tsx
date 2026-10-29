@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  Bold,
   Camera,
   FileText,
   ImagePlus,
+  Italic,
   LayoutTemplate,
   Loader2,
   MapPin,
@@ -12,6 +14,7 @@ import {
   SendHorizontal,
   Smile,
   Sticker,
+  Strikethrough,
   Video,
   X,
   Zap,
@@ -152,11 +155,36 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
     campo.current?.focus()
   }
 
+  function envolver(marca: string) {
+    const el = campo.current
+    if (!el) return
+    const a = el.selectionStart
+    const b = el.selectionEnd
+    const seleccionado = texto.slice(a, b) || 'texto'
+    const nuevo = `${texto.slice(0, a)}${marca}${seleccionado}${marca}${texto.slice(b)}`
+    setTexto(nuevo)
+    requestAnimationFrame(() => {
+      el.focus()
+      const desde = a + marca.length
+      el.setSelectionRange(desde, desde + seleccionado.length)
+    })
+  }
+
   function alTeclear(evento: KeyboardEvent<HTMLTextAreaElement>) {
     if (evento.key === 'Escape') {
       evento.preventDefault()
       alCancelarCita?.()
       setEmojisAbiertos(false)
+      return
+    }
+    if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === 'b') {
+      evento.preventDefault()
+      envolver('*')
+      return
+    }
+    if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === 'i') {
+      evento.preventDefault()
+      envolver('_')
       return
     }
     if (evento.key === 'Enter' && !evento.shiftKey && !evento.nativeEvent.isComposing) {
@@ -301,10 +329,12 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-sm shadow-sm">
           {archivo.type.startsWith('image/') ? (
             <img src={URL.createObjectURL(archivo)} alt="" className="size-10 rounded object-cover" />
+          ) : archivo.type.startsWith('video/') ? (
+            <Video className="size-4 shrink-0 text-[var(--wa-muted)]" />
           ) : (
             <Paperclip className="size-4 shrink-0 text-[var(--wa-muted)]" />
           )}
-          <span className="truncate">{tipoArchivo === 'sticker' ? 'Sticker' : archivo.name}</span>
+          <span className="truncate">{tipoArchivo === 'sticker' ? 'Sticker' : etiquetaArchivo(archivo)}</span>
           <Button
             variant="ghost"
             size="icon-xs"
@@ -320,6 +350,11 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
         </div>
       ) : null}
       {errorArchivo ? <p className="mb-2 text-xs text-destructive">{errorArchivo}</p> : null}
+      {enviando ? (
+        <div className="mb-2 flex items-center gap-2 text-sm text-[var(--wa-muted)]">
+          <Loader2 className="size-4 animate-spin" /> Enviando…
+        </div>
+      ) : null}
 
       {emojisAbiertos ? (
         <PanelExpresiones
@@ -449,16 +484,29 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
           <Smile />
         </Button>
 
-        <textarea
-          ref={campo}
-          value={texto}
-          onChange={(evento) => setTexto(evento.target.value)}
-          onKeyDown={alTeclear}
-          rows={1}
-          placeholder={archivo ? 'Añade un comentario (opcional)' : 'Escribe un mensaje'}
-          aria-label="Mensaje"
-          className="field-sizing-content max-h-36 min-h-11 flex-1 resize-none rounded-[24px] border-0 bg-white px-4 py-2.5 text-[15px] text-[var(--wa-texto)] shadow-sm outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0"
-        />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="mb-1 flex items-center gap-0.5 pl-1">
+            <Button type="button" variant="ghost" size="icon-xs" className="text-[var(--wa-muted)]" title="Negrita (*texto*)" onClick={() => envolver('*')}>
+              <Bold />
+            </Button>
+            <Button type="button" variant="ghost" size="icon-xs" className="text-[var(--wa-muted)]" title="Cursiva (_texto_)" onClick={() => envolver('_')}>
+              <Italic />
+            </Button>
+            <Button type="button" variant="ghost" size="icon-xs" className="text-[var(--wa-muted)]" title="Tachado (~texto~)" onClick={() => envolver('~')}>
+              <Strikethrough />
+            </Button>
+          </div>
+          <textarea
+            ref={campo}
+            value={texto}
+            onChange={(evento) => setTexto(evento.target.value)}
+            onKeyDown={alTeclear}
+            rows={1}
+            placeholder={archivo ? 'Añade un comentario (opcional)' : 'Escribe un mensaje'}
+            aria-label="Mensaje"
+            className="field-sizing-content max-h-36 min-h-11 w-full resize-none rounded-[24px] border-0 bg-white px-4 py-2.5 text-[15px] text-[var(--wa-texto)] shadow-sm outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0"
+          />
+        </div>
 
         {puedeEnviar ? (
           <Button
@@ -510,4 +558,11 @@ function formatoTiempo(segundos: number): string {
   const min = Math.floor(segundos / 60)
   const seg = segundos % 60
   return `${min}:${String(seg).padStart(2, '0')}`
+}
+
+function etiquetaArchivo(archivo: File): string {
+  if (archivo.type.startsWith('image/')) return 'Foto'
+  if (archivo.type.startsWith('video/')) return 'Video'
+  if (archivo.type.startsWith('audio/')) return 'Audio'
+  return archivo.name
 }

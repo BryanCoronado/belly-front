@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { leerSesion } from '@/sesion'
 import { horaCorta } from './formato'
 import { InteractivoWa } from './InteractivoWa'
+import { TextoWhatsapp } from './textoWhatsapp'
 
 const ESTADO = {
   inicial: 1,
@@ -88,6 +89,7 @@ export function BurbujaMensaje({
           ) : null}
           <Contenido mensaje={mensaje} />
           <div className="mt-0.5 flex items-center justify-end gap-1 px-1.5 text-[11px] text-[var(--wa-muted)]">
+            {mensaje.pendiente ? <span className="mr-auto italic">Enviando…</span> : null}
             <span>{horaCorta(mensaje.created_at)}</span>
             {entrante ? null : <EstadoEnvio estado={Number(mensaje.id_estado)} pendiente={mensaje.pendiente} />}
           </div>
@@ -187,7 +189,9 @@ function Contenido({ mensaje }: { mensaje: MensajeChat }) {
       ) : null}
 
       {caption && !esSoloMarcador && tipo !== 'location' && tipo !== 'sticker' ? (
-        <p className="break-words whitespace-pre-wrap px-1.5 pt-0.5">{caption}</p>
+        <p className="break-words whitespace-pre-wrap px-1.5 pt-0.5">
+          <TextoWhatsapp texto={caption} />
+        </p>
       ) : null}
 
       {ampliada ? <VisorImagen url={ampliada} alCerrar={() => setAmpliada(null)} /> : null}

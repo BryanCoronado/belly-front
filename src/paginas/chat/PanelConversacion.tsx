@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { BurbujaMensaje, type CitaMensaje } from './BurbujaMensaje'
 import { DialogoFinalizar, DialogoPlantilla } from './Dialogos'
 import { claveDia, etiquetaDia, iniciales, leerFecha, nombreContacto, ventanaAbierta } from './formato'
+import { aFormatoWhatsapp } from './textoWhatsapp'
 import { Redactor, type CitaRedactor, type EnvioRedactor } from './Redactor'
 import { ResumenBot } from './ResumenBot'
 
@@ -72,7 +73,7 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
 
   const envio = useMutation({
     mutationFn: (envio: EnvioRedactor) =>
-      enviarMensaje(idConversacion, envio.texto, envio.archivo, {
+      enviarMensaje(idConversacion, aFormatoWhatsapp(envio.texto), envio.archivo, {
         idMensajeResponde: cita?.wamid,
         tipo: envio.tipo,
         latitude: envio.latitude,
@@ -81,14 +82,21 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
       }),
     onMutate: async (envioDatos) => {
       await consultas.cancelQueries({ queryKey: claveMensajes })
+      const archivo = envioDatos.archivo
+      const mediaType = tipoMediaEnvio(envioDatos)
       const provisional: MensajeChat = {
         id: -Date.now(),
         id_conversacion: idConversacion,
         id_estado: 1,
-        mensaje: envioDatos.texto || envioDatos.archivo?.name || (envioDatos.tipo === 'location' ? 'Ubicación' : ''),
+        mensaje: aFormatoWhatsapp(envioDatos.texto) || (envioDatos.tipo === 'location' ? 'Ubicación' : ''),
         contesta: 'usuario',
-        media_type: envioDatos.tipo === 'location' ? 'location' : envioDatos.tipo === 'sticker' ? 'sticker' : envioDatos.tipo === 'audio' || envioDatos.archivo?.type.startsWith('audio/') ? 'audio' : null,
-        media_url: envioDatos.tipo === 'location' && envioDatos.latitude != null ? `https://www.google.com/maps/search/?api=1&query=${envioDatos.latitude},${envioDatos.longitude}` : null,
+        media_type: mediaType,
+        media_url:
+          envioDatos.tipo === 'location' && envioDatos.latitude != null
+            ? `https://www.google.com/maps/search/?api=1&query=${envioDatos.latitude},${envioDatos.longitude}`
+            : archivo && (mediaType === 'image' || mediaType === 'sticker' || mediaType === 'video')
+              ? URL.createObjectURL(archivo)
+              : null,
         cod_error: null,
         created_at: new Date().toISOString(),
         pendiente: true,
@@ -314,4 +322,14 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
       )}
     </div>
   )
+}
+
+function tipoMediaEnvio(envio: EnvioRedactor): MensajeChat['media_type'] {
+  if (envio.tipo === 'location') return 'location'
+  if (envio.tipo === 'sticker') return 'sticker'
+  if (envio.tipo === 'audio' || envio.archivo?.type.startsWith('audio/')) return 'audio'
+  if (envio.archivo?.type.startsWith('image/')) return 'image'
+  if (envio.archivo?.type.startsWith('video/')) return 'video'
+  if (envio.archivo) return 'document'
+  return null
 }

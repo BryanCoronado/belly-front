@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { guardarRespuestaRapida, type RespuestaRapida } from '@/api'
 import { Campo } from '@/components/Campo'
@@ -89,6 +90,7 @@ export function FormularioRespuesta({ respuesta, alCerrar, alGuardar }: Props) {
           Cancelar
         </Button>
         <Button type="submit" disabled={guardar.isPending || nombre.trim() === '' || (contenido.trim() === '' && !imagen && !preview)}>
+          {guardar.isPending ? <Loader2 className="animate-spin" /> : null}
           {respuesta ? 'Guardar' : 'Crear'}
         </Button>
       </div>

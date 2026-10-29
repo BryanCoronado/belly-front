@@ -65,7 +65,16 @@ export function Plantillas() {
                   <Trash2 />
                 </Button>
               </div>
-              {item.imagen_url ? <img src={item.imagen_url} alt="" className="h-28 w-full rounded-lg object-cover" /> : null}
+              {item.imagen_url ? (
+                <img
+                  src={item.imagen_url}
+                  alt=""
+                  className="h-28 w-full rounded-lg object-cover"
+                  onError={(evento) => {
+                    evento.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : null}
             </article>
           ))}
         </div>
