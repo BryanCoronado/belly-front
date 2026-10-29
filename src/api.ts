@@ -90,6 +90,7 @@ type Respuesta = {
   messages?: string | { error?: string }
   message?: string
   error?: string
+  aviso?: string | null
 }
 
 export async function entrar(identificador: string, password: string): Promise<Sesion> {
@@ -325,7 +326,7 @@ export type MensajeChat = {
   cod_error: string | null
   created_at: string
   id_mensaje_whatsapp?: string | null
-  mensaje_responde_contenido?: { mensaje: string | null; contesta: string; media_type: string | null } | null
+  mensaje_responde_contenido?: { id?: number; mensaje: string | null; contesta: string; media_type: string | null } | null
   /** Botones o lista que envió el bot (se dibujan igual que en WhatsApp). */
   interactivo?: InteractivoChat
   pendiente?: boolean
@@ -439,6 +440,25 @@ export async function leerContadoresChat(): Promise<ContadoresChat> {
   return datos.data as ContadoresChat
 }
 
+export type StickerTienda = {
+  id: string
+  titulo: string
+  preview: string
+  url: string
+}
+
+export async function leerStickers(busqueda = ''): Promise<{ lista: StickerTienda[]; aviso: string | null }> {
+  const parametros = new URLSearchParams()
+  if (busqueda.trim() !== '') {
+    parametros.set('q', busqueda.trim())
+  }
+  const datos = await solicitar(`/v1/mensaje/stickers?${parametros}`, { method: 'GET', conToken: true })
+  return {
+    lista: Array.isArray(datos.data) ? (datos.data as StickerTienda[]) : [],
+    aviso: typeof datos.aviso === 'string' ? datos.aviso : null,
+  }
+}
+
 export async function leerMensajes(idConversacion: number): Promise<MensajeChat[]> {
   const datos = await solicitar(`/v1/mensaje/listar-conversacion/${idConversacion}`, { method: 'GET', conToken: true })
   return Array.isArray(datos.mensajes) ? (datos.mensajes as MensajeChat[]) : []
@@ -448,19 +468,47 @@ export async function abrirChat(idConversacion: number): Promise<void> {
   await solicitar(`/v1/conversacion/abrir/${idConversacion}`, { method: 'PUT', conToken: true })
 }
 
+export type ExtraMensaje = {
+  idMensajeResponde?: string
+  tipo?: 'sticker' | 'location'
+  latitude?: number
+  longitude?: number
+  name?: string
+  address?: string
+}
+
 export async function enviarMensaje(
   idConversacion: number,
   mensaje: string,
   archivo?: File,
-  idMensajeResponde?: string,
+  extra?: ExtraMensaje | string,
 ): Promise<void> {
+  const datos: ExtraMensaje = typeof extra === 'string' ? { idMensajeResponde: extra } : extra ?? {}
+
+  if (datos.tipo === 'location' && datos.latitude != null && datos.longitude != null) {
+    await solicitar('/v1/mensaje/enviar', {
+      method: 'POST',
+      cuerpo: {
+        id_conversacion: idConversacion,
+        media_type: 'location',
+        latitude: String(datos.latitude),
+        longitude: String(datos.longitude),
+        name: datos.name ?? 'Ubicación',
+        address: datos.address ?? '',
+        ...(datos.idMensajeResponde ? { id_mensaje_responde: datos.idMensajeResponde } : {}),
+      },
+      conToken: true,
+    })
+    return
+  }
+
   if (!archivo) {
     await solicitar('/v1/mensaje/enviar', {
       method: 'POST',
       cuerpo: {
         id_conversacion: idConversacion,
         mensaje,
-        ...(idMensajeResponde ? { id_mensaje_responde: idMensajeResponde } : {}),
+        ...(datos.idMensajeResponde ? { id_mensaje_responde: datos.idMensajeResponde } : {}),
       },
       conToken: true,
     })
@@ -472,8 +520,11 @@ export async function enviarMensaje(
   if (mensaje.trim() !== '') {
     formulario.append('mensaje', mensaje.trim())
   }
-  if (idMensajeResponde) {
-    formulario.append('id_mensaje_responde', idMensajeResponde)
+  if (datos.idMensajeResponde) {
+    formulario.append('id_mensaje_responde', datos.idMensajeResponde)
+  }
+  if (datos.tipo) {
+    formulario.append('media_type', datos.tipo)
   }
   await solicitar('/v1/mensaje/enviar', { method: 'POST', formulario, conToken: true })
 }

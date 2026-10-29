@@ -1,4 +1,4 @@
-import { AlertCircle, Bot, Check, CheckCheck, Clock3, FileText, LayoutTemplate, Reply, X } from 'lucide-react'
+import { AlertCircle, Bot, Check, CheckCheck, Clock3, FileText, LayoutTemplate, MapPin, Reply, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MensajeChat } from '@/api'
@@ -59,6 +59,9 @@ export function BurbujaMensaje({
       {puedeResponder && entrante ? <BotonResponder alClick={responder} /> : null}
       <div className="flex max-w-[85%] flex-col gap-1 sm:max-w-[65%]">
         <div
+          id={`msg-${mensaje.id}`}
+          data-mensaje-id={mensaje.id}
+          onDoubleClick={puedeResponder ? responder : undefined}
           className={cn(
             'chat-wa-burbuja relative px-1.5 pt-1 pb-0.5 text-[14.2px] leading-[19px]',
             entrante
@@ -116,6 +119,7 @@ function textoCita(mensaje: MensajeChat): string {
   if (mensaje.media_type === 'image' || mensaje.media_type === 'sticker') return 'Imagen'
   if (mensaje.media_type === 'video') return 'Video'
   if (mensaje.media_type === 'audio') return 'Audio'
+  if (mensaje.media_type === 'location') return 'Ubicación'
   if (mensaje.media_type) return 'Archivo adjunto'
   return ''
 }
@@ -154,6 +158,8 @@ function Contenido({ mensaje }: { mensaje: MensajeChat }) {
       {url && tipo === 'video' ? <video src={url} controls className="mb-0.5 max-h-72 w-full rounded-md" /> : null}
       {url && tipo === 'audio' ? <audio src={url} controls className="mb-1 w-64 max-w-full px-1" /> : null}
 
+      {tipo === 'location' ? <TarjetaUbicacion url={url} texto={mensaje.mensaje} /> : null}
+
       {url && tipo === 'document' && !esImagen ? (
         <a
           href={url}
@@ -180,7 +186,7 @@ function Contenido({ mensaje }: { mensaje: MensajeChat }) {
         </span>
       ) : null}
 
-      {caption && !esSoloMarcador ? (
+      {caption && !esSoloMarcador && tipo !== 'location' ? (
         <p className="break-words whitespace-pre-wrap px-1.5 pt-0.5">{caption}</p>
       ) : null}
 
@@ -213,6 +219,31 @@ function interpretarTexto(mensaje: string | null | undefined) {
     nombreArchivo: nombreArchivo || (tipo === 'documento' ? 'Documento' : ''),
     esSoloMarcador: resto === '',
   }
+}
+
+function TarjetaUbicacion({ url, texto }: { url: string; texto: string | null }) {
+  const mapa = url || mapaDesdeTexto(texto)
+  const titulo = texto?.replace(/^Ubicación recibida:\s*/i, '').replace(/^Se envió ubicación:\s*/i, '') || 'Ubicación'
+  if (!mapa) {
+    return <p className="px-1.5 pt-0.5">{texto || 'Ubicación'}</p>
+  }
+  return (
+    <a href={mapa} target="_blank" rel="noreferrer" className="mb-0.5 flex items-center gap-3 rounded-md bg-black/5 px-3 py-2.5 hover:bg-black/10">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#25d366] text-white">
+        <MapPin className="size-5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-medium">{titulo}</span>
+        <span className="text-[11px] text-[var(--wa-muted)]">Abrir en el mapa</span>
+      </span>
+    </a>
+  )
+}
+
+function mapaDesdeTexto(texto: string | null): string {
+  const match = texto?.match(/(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/)
+  if (!match) return ''
+  return `https://www.google.com/maps/search/?api=1&query=${match[1]},${match[2]}`
 }
 
 function esArchivoImagen(url: string, nombreArchivo: string, caption: string) {
@@ -267,18 +298,32 @@ function Cita({
   contenido: NonNullable<MensajeChat['mensaje_responde_contenido']>
   entrante: boolean
 }) {
+  const idCitado = Number(contenido.id || 0)
+
+  function irAlCitado() {
+    if (!idCitado) return
+    const destino = document.getElementById(`msg-${idCitado}`)
+    if (!destino) return
+    destino.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    destino.classList.add('ring-2', 'ring-[var(--wa-verde)]')
+    window.setTimeout(() => destino.classList.remove('ring-2', 'ring-[var(--wa-verde)]'), 1_200)
+  }
+
   return (
-    <div
+    <button
+      type="button"
+      onClick={idCitado ? irAlCitado : undefined}
       className={cn(
-        'mb-1.5 rounded border-l-[3px] px-2 py-1 text-[12px]',
+        'mb-1.5 w-full rounded border-l-[3px] px-2 py-1 text-left text-[12px]',
         entrante ? 'border-[var(--wa-verde)] bg-black/5' : 'border-[var(--wa-verde-oscuro)] bg-black/10',
+        idCitado && 'cursor-pointer hover:bg-black/10',
       )}
     >
       <span className="font-medium text-[var(--wa-verde-oscuro)]">
-        {contenido.contesta === 'cliente' ? 'Cliente' : 'Tú'}
+        {contenido.contesta === 'cliente' ? 'Cliente' : contenido.contesta === 'bot' ? 'Automático' : 'Tú'}
       </span>
       <p className="line-clamp-2 text-[var(--wa-muted)]">{contenido.mensaje || 'Archivo adjunto'}</p>
-    </div>
+    </button>
   )
 }
 

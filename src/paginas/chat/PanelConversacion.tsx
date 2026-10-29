@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, CircleCheckBig, MessageCircleMore } from 'lucide-react'
+import { ArrowLeft, Bell, BellOff, CircleCheckBig, MessageCircleMore } from 'lucide-react'
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { abrirChat, enviarMensaje, leerConversacion, leerMensajes, type MensajeChat } from '@/api'
 import { FichaCliente } from '../clientes/FichaCliente'
@@ -7,12 +7,14 @@ import { useAjustesCrm } from '../clientes/crm'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { avisoError } from '@/lib/avisos'
+import { avisoError, avisoInfo } from '@/lib/avisos'
+import { alternarSilencio, chatSilenciado } from '@/lib/preferencias-aviso'
+import { useAvisos } from '@/hooks/use-avisos'
 import { cn } from '@/lib/utils'
 import { BurbujaMensaje, type CitaMensaje } from './BurbujaMensaje'
 import { DialogoFinalizar, DialogoPlantilla } from './Dialogos'
 import { claveDia, etiquetaDia, iniciales, leerFecha, nombreContacto, ventanaAbierta } from './formato'
-import { Redactor, type CitaRedactor } from './Redactor'
+import { Redactor, type CitaRedactor, type EnvioRedactor } from './Redactor'
 import { ResumenBot } from './ResumenBot'
 
 const ESTADO_FINALIZADA = 2
@@ -34,6 +36,8 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
   const [dialogo, setDialogo] = useState<'plantilla' | 'finalizar' | null>(null)
   const [perfilAbierto, setPerfilAbierto] = useState(false)
   const [cita, setCita] = useState<CitaRedactor | null>(null)
+  const prefs = useAvisos()
+  const silenciado = prefs.silenciados.includes(idConversacion) || chatSilenciado(idConversacion)
   const ajustes = useAjustesCrm()
 
   const conversacion = useQuery({ queryKey: ['conversacion', idConversacion], queryFn: () => leerConversacion(idConversacion) })
@@ -67,24 +71,28 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
   }, [supervision, hayNoLeidos, ultimoId, marcando, marcarLeidos])
 
   const envio = useMutation({
-    mutationFn: ({ texto, archivo, idMensajeResponde }: { texto: string; archivo?: File; idMensajeResponde?: string }) =>
-      enviarMensaje(idConversacion, texto, archivo, idMensajeResponde),
-    onMutate: async ({ texto, archivo, idMensajeResponde }) => {
+    mutationFn: (envio: EnvioRedactor) =>
+      enviarMensaje(idConversacion, envio.texto, envio.archivo, {
+        idMensajeResponde: cita?.wamid,
+        tipo: envio.tipo,
+        latitude: envio.latitude,
+        longitude: envio.longitude,
+        name: envio.name,
+      }),
+    onMutate: async (envioDatos) => {
       await consultas.cancelQueries({ queryKey: claveMensajes })
       const provisional: MensajeChat = {
         id: -Date.now(),
         id_conversacion: idConversacion,
         id_estado: 1,
-        mensaje: texto || archivo?.name || '',
+        mensaje: envioDatos.texto || envioDatos.archivo?.name || (envioDatos.tipo === 'location' ? 'Ubicación' : ''),
         contesta: 'usuario',
-        media_type: null,
-        media_url: null,
+        media_type: envioDatos.tipo === 'location' ? 'location' : envioDatos.tipo === 'sticker' ? 'sticker' : envioDatos.archivo?.type.startsWith('audio/') ? 'audio' : null,
+        media_url: envioDatos.tipo === 'location' && envioDatos.latitude != null ? `https://www.google.com/maps/search/?api=1&query=${envioDatos.latitude},${envioDatos.longitude}` : null,
         cod_error: null,
         created_at: new Date().toISOString(),
         pendiente: true,
-        mensaje_responde_contenido: idMensajeResponde
-          ? { mensaje: cita?.texto ?? null, contesta: 'cliente', media_type: null }
-          : null,
+        mensaje_responde_contenido: cita?.wamid ? { mensaje: cita.texto, contesta: 'cliente', media_type: null } : null,
       }
       consultas.setQueryData<MensajeChat[]>(claveMensajes, (actuales = []) => [...actuales, provisional])
     },
@@ -133,6 +141,19 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
               </div>
             </button>
             {acciones}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-[var(--wa-muted)] hover:bg-black/5"
+              aria-label={silenciado ? 'Activar avisos de este chat' : 'Silenciar este chat'}
+              title={silenciado ? 'Avisos de este chat: apagados' : 'Silenciar este chat'}
+              onClick={() => {
+                const queda = alternarSilencio(idConversacion)
+                avisoInfo(queda ? 'Este chat ya no suena' : 'Volviste a activar los avisos de este chat')
+              }}
+            >
+              {silenciado ? <BellOff /> : <Bell />}
+            </Button>
             {finalizada ? (
               <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[var(--wa-muted)]">
                 Finalizada
@@ -178,8 +199,8 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
           enviando={envio.isPending}
           cita={cita}
           alCancelarCita={() => setCita(null)}
-          alEnviar={async (texto, archivo) => {
-            await envio.mutateAsync({ texto, archivo, idMensajeResponde: cita?.wamid })
+          alEnviar={async (datos) => {
+            await envio.mutateAsync(datos)
             setCita(null)
           }}
           alUsarPlantilla={() => setDialogo('plantilla')}

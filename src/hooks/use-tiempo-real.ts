@@ -1,9 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
-import { leerDestinoAviso, leerPerfil } from '@/api'
+import { leerContadoresChat, leerDestinoAviso, leerPerfil } from '@/api'
+import { useAvisos } from '@/hooks/use-avisos'
 import { avisoConversacion } from '@/lib/avisos'
+import { chatSilenciado, leerPrefsAviso, marcarAvisosLeidos, registrarAviso } from '@/lib/preferencias-aviso'
 import { pedirPermisoAvisos, tocarAviso } from '@/lib/sonido-aviso'
 import { esAdministrador, leerSesion } from '@/sesion'
 
@@ -48,6 +50,12 @@ export function useTiempoReal() {
     ruta: ubicacion.pathname,
     chat: Number(new URLSearchParams(ubicacion.search).get('c')) || 0,
   }
+
+  useEffect(() => {
+    if (abierto.current.chat) marcarAvisosLeidos(abierto.current.chat)
+  }, [ubicacion.pathname, ubicacion.search])
+
+  useTituloPagina()
 
   useEffect(() => {
     const token = leerSesion()?.token
@@ -95,6 +103,7 @@ export function useTiempoReal() {
 
       const resuelto = await completarAviso(aviso)
       if (!esParaMi(resuelto, yo.id, idAvisoIa.current)) return
+      if (chatSilenciado(id)) return
 
       const viendoEsteChat =
         (abierto.current.ruta === '/chats' || abierto.current.ruta === '/supervision') &&
@@ -111,6 +120,7 @@ export function useTiempoReal() {
       const descripcion = resuelto.preview || (resuelto.motivo === 'asignada' ? 'Conversación asignada' : 'Escribió un mensaje')
       const abrir = () => ir(`/chats?c=${id}`)
 
+      registrarAviso({ idConversacion: id, titulo, descripcion })
       tocarAviso()
       avisoConversacion(titulo, descripcion, abrir)
       mostrarAvisoSistema(id, titulo, descripcion, abrir)
@@ -162,8 +172,40 @@ function esParaMi(aviso: Aviso, miId: number, idAvisoIa: number | null): boolean
   return mismoId(aviso.id_usuario, miId)
 }
 
+function useTituloPagina() {
+  const prefs = useAvisos()
+  const [visible, setVisible] = useState(() => document.visibilityState === 'visible')
+  const contadores = useQuery({
+    queryKey: ['chats-contadores'],
+    queryFn: leerContadoresChat,
+    staleTime: 15_000,
+    enabled: Boolean(leerSesion()?.token),
+  })
+
+  useEffect(() => {
+    const alCambiar = () => setVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', alCambiar)
+    return () => document.removeEventListener('visibilitychange', alCambiar)
+  }, [])
+
+  useEffect(() => {
+    const bandeja = prefs.bandeja.filter((aviso) => !aviso.leido).length
+    const noLeidos = Math.max(
+      Number(contadores.data?.badge_chat || 0),
+      Number(contadores.data?.mensajes_no_leidos || 0),
+      bandeja,
+    )
+    const extra = noLeidos > 0 ? `(${noLeidos > 99 ? '99+' : noLeidos}) ` : ''
+    document.title = !visible && noLeidos > 0 ? `${extra}Nuevo mensaje` : `${extra}Belly`
+    return () => {
+      document.title = 'Belly'
+    }
+  }, [contadores.data, prefs.bandeja, visible])
+}
+
 function mostrarAvisoSistema(idChat: number, titulo: string, cuerpo: string, alAbrir: () => void) {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+  if (!leerPrefsAviso().escritorio) return
   try {
     const n = new Notification(titulo, { body: cuerpo, tag: `chat-${idChat}` })
     n.onclick = () => {

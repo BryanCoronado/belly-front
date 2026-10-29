@@ -5,7 +5,11 @@ import { guardarEmpresaPerfil, guardarPerfil, leerPerfil, subirFotoPerfil, type 
 import { Campo, CampoSelect } from '@/components/Campo'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { useAvisos } from '@/hooks/use-avisos'
 import { avisoError, avisoExito } from '@/lib/avisos'
+import { guardarPrefsAviso } from '@/lib/preferencias-aviso'
+import { pedirPermisoAvisos } from '@/lib/sonido-aviso'
 import { actualizarUsuarioSesion, esAdministrador, leerSesion } from '@/sesion'
 
 export function Perfil() {
@@ -32,6 +36,7 @@ export function Perfil() {
   return (
     <div className="mx-auto grid max-w-3xl gap-6">
       <Cuenta datos={perfil.data} />
+      <AvisosPersonales />
       {admin ? <Empresa datos={perfil.data} /> : null}
     </div>
   )
@@ -163,6 +168,39 @@ function Cuenta({ datos }: { datos: PerfilCuenta }) {
         Guardar
       </Button>
     </form>
+  )
+}
+
+function AvisosPersonales() {
+  const prefs = useAvisos()
+
+  return (
+    <section className="rounded-xl border bg-white p-5 md:p-6">
+      <h2 className="text-base font-semibold">Avisos</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Cómo te enteras cuando te escriben o te pasan un chat.</p>
+      <div className="mt-5 grid gap-4">
+        <label className="flex items-center justify-between gap-4">
+          <span>
+            <span className="block text-sm font-medium">Sonido</span>
+            <span className="block text-xs text-muted-foreground">Un tono corto cuando llega un mensaje tuyo.</span>
+          </span>
+          <Switch checked={prefs.sonido} onCheckedChange={(valor) => guardarPrefsAviso({ sonido: valor })} />
+        </label>
+        <label className="flex items-center justify-between gap-4">
+          <span>
+            <span className="block text-sm font-medium">Avisos del navegador</span>
+            <span className="block text-xs text-muted-foreground">Aunque estés en otra pestaña.</span>
+          </span>
+          <Switch
+            checked={prefs.escritorio}
+            onCheckedChange={(valor) => {
+              guardarPrefsAviso({ escritorio: valor })
+              if (valor) pedirPermisoAvisos()
+            }}
+          />
+        </label>
+      </div>
+    </section>
   )
 }
 

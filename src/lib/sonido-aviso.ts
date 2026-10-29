@@ -1,3 +1,5 @@
+import { leerPrefsAviso } from '@/lib/preferencias-aviso'
+
 let contexto: AudioContext | null = null
 
 function audio(): AudioContext | null {
@@ -10,8 +12,14 @@ function audio(): AudioContext | null {
 
 /** Dos notas cortas, como un aviso de chat, sin archivo externo. */
 export function tocarAviso() {
+  if (!leerPrefsAviso().sonido) return
   const ctx = audio()
   if (!ctx) return
+  try {
+    navigator.vibrate?.(80)
+  } catch {
+    // no todos los navegadores lo permiten
+  }
   void ctx.resume()
   const ahora = ctx.currentTime
   const osc = ctx.createOscillator()
@@ -30,5 +38,6 @@ export function tocarAviso() {
 
 export function pedirPermisoAvisos() {
   if (typeof Notification === 'undefined' || Notification.permission !== 'default') return
+  if (!leerPrefsAviso().escritorio) return
   void Notification.requestPermission()
 }

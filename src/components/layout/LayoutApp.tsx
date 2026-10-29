@@ -4,6 +4,7 @@ import { BotonTema } from '@/components/BotonTema'
 import { TransicionPagina } from '@/components/TransicionPagina'
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { BandejaAvisos } from '@/components/layout/BandejaAvisos'
 import { BotonGuia } from '@/guia/BotonGuia'
 import { useTiempoReal } from '@/hooks/use-tiempo-real'
 import { cn } from '@/lib/utils'
@@ -39,6 +40,7 @@ export function LayoutApp() {
           <Separator orientation="vertical" className="data-[orientation=vertical]:h-5" />
           <span className="truncate text-base font-medium">{tituloDeRuta(pathname)}</span>
           <div className="ml-auto flex items-center gap-2">
+            <BandejaAvisos />
             <BotonTema />
             <BotonGuia />
           </div>
