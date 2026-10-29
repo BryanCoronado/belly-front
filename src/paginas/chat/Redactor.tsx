@@ -32,6 +32,30 @@ import { PanelExpresiones } from './PanelExpresiones'
 
 const LIMITE_ARCHIVO_MB = 16
 
+async function archivoComoJpeg(origen: Blob, nombre: string): Promise<File> {
+  const bitmap = await createImageBitmap(origen)
+  const tope = 1600
+  const escala = Math.min(1, tope / Math.max(bitmap.width, bitmap.height))
+  const ancho = Math.max(1, Math.round(bitmap.width * escala))
+  const alto = Math.max(1, Math.round(bitmap.height * escala))
+  const lienzo = document.createElement('canvas')
+  lienzo.width = ancho
+  lienzo.height = alto
+  const ctx = lienzo.getContext('2d')
+  if (!ctx) {
+    bitmap.close()
+    throw new Error('Sin canvas')
+  }
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, ancho, alto)
+  ctx.drawImage(bitmap, 0, 0, ancho, alto)
+  bitmap.close()
+  const jpeg = await new Promise<Blob>((resolver, rechazar) => {
+    lienzo.toBlob((archivo) => (archivo ? resolver(archivo) : rechazar(new Error('JPEG'))), 'image/jpeg', 0.86)
+  })
+  return new File([jpeg], `${nombre}.jpg`, { type: 'image/jpeg' })
+}
+
 export type CitaRedactor = {
   wamid: string
   texto: string
@@ -160,11 +184,9 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
       const respuesta = await fetch(sticker.url)
       if (!respuesta.ok) throw new Error('Giphy no entregó el archivo')
       const blob = await respuesta.blob()
-      const mime = blob.type || 'image/webp'
-      const esWebp = mime.includes('webp')
-      const archivoSticker = new File([blob], `${sticker.id}.${esWebp ? 'webp' : 'gif'}`, { type: mime })
+      const jpeg = await archivoComoJpeg(blob, sticker.id)
       setEmojisAbiertos(false)
-      await enviar({ texto: '', archivo: archivoSticker, tipo: esWebp ? 'sticker' : undefined })
+      await enviar({ texto: '', archivo: jpeg })
     } catch {
       avisoError(new Error('No se pudo enviar el sticker.'), 'Stickers')
     }
