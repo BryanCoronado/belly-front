@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
-import { leerPerfil } from '@/api'
+import { leerDestinoAviso, leerPerfil } from '@/api'
 import { avisoConversacion } from '@/lib/avisos'
 import { pedirPermisoAvisos, tocarAviso } from '@/lib/sonido-aviso'
 import { esAdministrador, leerSesion } from '@/sesion'
@@ -12,6 +12,7 @@ type Aviso = {
   id_usuario?: number | null
   es_bot?: number
   id_aviso_ia?: number | null
+  para?: number[]
   nombre?: string | null
   preview?: string | null
   contesta?: 'cliente' | 'usuario' | 'bot' | null
@@ -19,6 +20,12 @@ type Aviso = {
 }
 
 const URL_SOCKET = import.meta.env.VITE_SOCKET_URL || undefined
+
+function mismoId(a: unknown, b: unknown): boolean {
+  const izq = Number(a)
+  const der = Number(b)
+  return izq > 0 && der > 0 && izq === der
+}
 
 /** Un solo socket para toda la app: refresca chats y avisa con sonido a quien corresponde. */
 export function useTiempoReal() {
@@ -62,14 +69,14 @@ export function useTiempoReal() {
         void consultas.invalidateQueries({ queryKey: ['mensajes', aviso.id_conversacion] })
       }
       refrescarListas()
-      avisarSiCorresponde(aviso)
+      void avisarSiCorresponde(aviso)
     })
     socket.on('conversacion', (aviso: Aviso) => {
       if (aviso.id_conversacion) {
         void consultas.invalidateQueries({ queryKey: ['conversacion', aviso.id_conversacion] })
       }
       refrescarListas()
-      avisarSiCorresponde(aviso)
+      void avisarSiCorresponde(aviso)
     })
     socket.on('contadores', refrescarListas)
     socket.io.on('reconnect', () => {
@@ -77,16 +84,17 @@ export function useTiempoReal() {
       refrescarListas()
     })
 
-    function avisarSiCorresponde(aviso: Aviso) {
+    async function avisarSiCorresponde(aviso: Aviso) {
       const id = Number(aviso.id_conversacion)
       const yo = leerSesion()?.usuario
       if (!id || !yo) return
+      if (aviso.motivo === 'estado' || aviso.motivo === 'actualizacion') return
 
       const ahora = Date.now()
       if (ultimo.current.id === id && ahora - ultimo.current.cuando < 1_400) return
 
-      const paraMi = meCorresponde(aviso, yo.id, idAvisoIa.current ?? aviso.id_aviso_ia ?? null)
-      if (!paraMi) return
+      const resuelto = await completarAviso(aviso)
+      if (!esParaMi(resuelto, yo.id, idAvisoIa.current)) return
 
       const viendoEsteChat =
         (abierto.current.ruta === '/chats' || abierto.current.ruta === '/supervision') &&
@@ -96,8 +104,11 @@ export function useTiempoReal() {
 
       ultimo.current = { id, cuando: ahora }
 
-      const titulo = aviso.motivo === 'asignada' ? `Te pasaron un chat · ${aviso.nombre || 'Cliente'}` : aviso.nombre || 'Nuevo mensaje'
-      const descripcion = aviso.preview || (aviso.motivo === 'asignada' ? 'Conversación asignada' : 'Escribió un mensaje')
+      const titulo =
+        resuelto.motivo === 'asignada'
+          ? `Nuevo chat · ${resuelto.nombre || 'Cliente'}`
+          : resuelto.nombre || 'Nuevo mensaje'
+      const descripcion = resuelto.preview || (resuelto.motivo === 'asignada' ? 'Conversación asignada' : 'Escribió un mensaje')
       const abrir = () => ir(`/chats?c=${id}`)
 
       tocarAviso()
@@ -112,32 +123,43 @@ export function useTiempoReal() {
   }, [consultas, ir])
 }
 
-function meCorresponde(aviso: Aviso, miId: number, idAvisoIa: number | null): boolean {
-  if (aviso.motivo === 'estado' || aviso.motivo === 'actualizacion') {
-    return false
-  }
-  if (aviso.motivo === 'asignada') {
-    if (Number(aviso.es_bot) === 1) {
-      return destinatarioIa(miId, idAvisoIa, aviso.id_aviso_ia)
-    }
-    return Number(aviso.id_usuario) === miId
+async function completarAviso(aviso: Aviso): Promise<Aviso> {
+  if (Number(aviso.id_usuario) > 0 || Number(aviso.es_bot) === 1 || (aviso.para && aviso.para.length > 0)) {
+    return aviso
   }
 
-  if (aviso.contesta && aviso.contesta !== 'cliente') {
+  const id = Number(aviso.id_conversacion)
+  if (!id) return aviso
+
+  try {
+    const destino = await leerDestinoAviso(id)
+    return {
+      ...aviso,
+      id_usuario: destino.id_usuario,
+      es_bot: destino.es_bot ? 1 : 0,
+      nombre: aviso.nombre || destino.nombre,
+    }
+  } catch {
+    return aviso
+  }
+}
+
+function esParaMi(aviso: Aviso, miId: number, idAvisoIa: number | null): boolean {
+  if (aviso.para?.some((id) => mismoId(id, miId))) {
+    return true
+  }
+
+  if (aviso.contesta && aviso.contesta !== 'cliente' && aviso.motivo !== 'asignada') {
     return false
   }
 
   if (Number(aviso.es_bot) === 1) {
-    return destinatarioIa(miId, idAvisoIa, aviso.id_aviso_ia)
+    const destino = Number(idAvisoIa || aviso.id_aviso_ia || 0)
+    if (destino > 0) return mismoId(destino, miId)
+    return esAdministrador(leerSesion()?.usuario)
   }
 
-  return Number(aviso.id_usuario) === miId
-}
-
-function destinatarioIa(miId: number, idAvisoIa: number | null, idSocket: number | null | undefined): boolean {
-  const destino = Number(idAvisoIa || idSocket || 0)
-  if (destino > 0) return destino === miId
-  return esAdministrador(leerSesion()?.usuario)
+  return mismoId(aviso.id_usuario, miId)
 }
 
 function mostrarAvisoSistema(idChat: number, titulo: string, cuerpo: string, alAbrir: () => void) {

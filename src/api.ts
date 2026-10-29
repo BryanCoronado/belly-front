@@ -274,6 +274,8 @@ export type ConversacionChat = {
   id: number
   id_app: number
   id_estado: number
+  id_usuario?: number | null
+  usuario_es_bot?: number | string | null
   id_cliente: number | null
   telefono: string | null
   nombre_cliente: string | null
@@ -383,19 +385,36 @@ export async function leerChats(bandeja: BandejaChat, busqueda: string, filtros:
 }
 
 type DetalleConversacion = {
-  conversacion: { id: number; id_app: number; id_estado: number }
+  conversacion: { id: number; id_app: number; id_estado: number; id_usuario?: number | null }
+  usuario?: { id: number | null; es_bot?: number }
   cliente: { id: number | null; nombre: string | null; apellido: string | null; nombre_completo: string | null; telefono: string | null }
   app: { nombre: string | null }
   detalle: { etiqueta: { nombre: string | null; color: string | null } }
 }
 
+export async function leerDestinoAviso(id: number): Promise<{
+  id_usuario: number | null
+  es_bot: boolean
+  nombre: string | null
+}> {
+  const datos = await solicitar(`/v1/conversacion/ver/${id}`, { method: 'GET', conToken: true })
+  const cuerpo = datos.data as DetalleConversacion
+  return {
+    id_usuario: cuerpo.usuario?.id ?? cuerpo.conversacion.id_usuario ?? null,
+    es_bot: Number(cuerpo.usuario?.es_bot) === 1,
+    nombre: cuerpo.cliente.nombre_completo || cuerpo.cliente.nombre || null,
+  }
+}
+
 export async function leerConversacion(id: number): Promise<ConversacionChat> {
   const datos = await solicitar(`/v1/conversacion/ver/${id}`, { method: 'GET', conToken: true })
-  const { conversacion, cliente, app, detalle } = datos.data as DetalleConversacion
+  const { conversacion, cliente, app, detalle, usuario } = datos.data as DetalleConversacion
   return {
     id: Number(conversacion.id),
     id_app: Number(conversacion.id_app),
     id_estado: Number(conversacion.id_estado),
+    id_usuario: usuario?.id ?? conversacion.id_usuario ?? null,
+    usuario_es_bot: usuario?.es_bot ?? null,
     id_cliente: cliente.id ? Number(cliente.id) : null,
     telefono: cliente.telefono,
     nombre_cliente: cliente.nombre,
