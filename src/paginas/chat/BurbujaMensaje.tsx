@@ -186,7 +186,7 @@ function Contenido({ mensaje }: { mensaje: MensajeChat }) {
         </span>
       ) : null}
 
-      {caption && !esSoloMarcador && tipo !== 'location' ? (
+      {caption && !esSoloMarcador && tipo !== 'location' && tipo !== 'sticker' ? (
         <p className="break-words whitespace-pre-wrap px-1.5 pt-0.5">{caption}</p>
       ) : null}
 
@@ -198,7 +198,7 @@ function Contenido({ mensaje }: { mensaje: MensajeChat }) {
 /** Quita marcadores tipo [Documento: x.png] y deja solo el pie de foto real, si lo hay. */
 function interpretarTexto(mensaje: string | null | undefined) {
   const crudo = mensaje?.trim() && mensaje !== '[Sin texto]' ? mensaje.trim() : ''
-  if (!crudo) {
+  if (!crudo || /^(\[Sticker\]|Se envió sticker)$/i.test(crudo)) {
     return { caption: '', nombreArchivo: '', esSoloMarcador: true }
   }
 
