@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { avisoError } from '@/lib/avisos'
 import { cn } from '@/lib/utils'
-import { BurbujaMensaje } from './BurbujaMensaje'
+import { BurbujaMensaje, type CitaMensaje } from './BurbujaMensaje'
 import { DialogoFinalizar, DialogoPlantilla } from './Dialogos'
 import { claveDia, etiquetaDia, iniciales, leerFecha, nombreContacto, ventanaAbierta } from './formato'
-import { Redactor } from './Redactor'
+import { Redactor, type CitaRedactor } from './Redactor'
 import { ResumenBot } from './ResumenBot'
 
 const ESTADO_FINALIZADA = 2
@@ -33,6 +33,7 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
   const claveMensajes = ['mensajes', idConversacion]
   const [dialogo, setDialogo] = useState<'plantilla' | 'finalizar' | null>(null)
   const [perfilAbierto, setPerfilAbierto] = useState(false)
+  const [cita, setCita] = useState<CitaRedactor | null>(null)
   const ajustes = useAjustesCrm()
 
   const conversacion = useQuery({ queryKey: ['conversacion', idConversacion], queryFn: () => leerConversacion(idConversacion) })
@@ -66,8 +67,9 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
   }, [supervision, hayNoLeidos, ultimoId, marcando, marcarLeidos])
 
   const envio = useMutation({
-    mutationFn: ({ texto, archivo }: { texto: string; archivo?: File }) => enviarMensaje(idConversacion, texto, archivo),
-    onMutate: async ({ texto, archivo }) => {
+    mutationFn: ({ texto, archivo, idMensajeResponde }: { texto: string; archivo?: File; idMensajeResponde?: string }) =>
+      enviarMensaje(idConversacion, texto, archivo, idMensajeResponde),
+    onMutate: async ({ texto, archivo, idMensajeResponde }) => {
       await consultas.cancelQueries({ queryKey: claveMensajes })
       const provisional: MensajeChat = {
         id: -Date.now(),
@@ -80,6 +82,9 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         cod_error: null,
         created_at: new Date().toISOString(),
         pendiente: true,
+        mensaje_responde_contenido: idMensajeResponde
+          ? { mensaje: cita?.texto ?? null, contesta: 'cliente', media_type: null }
+          : null,
       }
       consultas.setQueryData<MensajeChat[]>(claveMensajes, (actuales = []) => [...actuales, provisional])
     },
@@ -154,7 +159,12 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
 
       {chat ? <ResumenBot idConversacion={idConversacion} totalMensajes={mensajes.data?.length ?? 0} /> : null}
 
-      <ListaMensajes mensajes={mensajes.data} cargando={mensajes.isLoading} error={mensajes.error?.message} />
+      <ListaMensajes
+        mensajes={mensajes.data}
+        cargando={mensajes.isLoading}
+        error={mensajes.error?.message}
+        alResponder={setCita}
+      />
 
       {aviso}
 
@@ -166,7 +176,12 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         <Redactor
           ventanaAbierta={ventanaAbierta(mensajes.data)}
           enviando={envio.isPending}
-          alEnviar={(texto, archivo) => envio.mutateAsync({ texto, archivo })}
+          cita={cita}
+          alCancelarCita={() => setCita(null)}
+          alEnviar={async (texto, archivo) => {
+            await envio.mutateAsync({ texto, archivo, idMensajeResponde: cita?.wamid })
+            setCita(null)
+          }}
           alUsarPlantilla={() => setDialogo('plantilla')}
         />
       ) : null}
@@ -210,9 +225,10 @@ type PropsLista = {
   mensajes?: MensajeChat[]
   cargando: boolean
   error?: string
+  alResponder?: (cita: CitaMensaje) => void
 }
 
-function ListaMensajes({ mensajes, cargando, error }: PropsLista) {
+function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
   const contenedor = useRef<HTMLDivElement>(null)
   const pegadoAbajo = useRef(true)
   const total = mensajes?.length ?? 0
@@ -268,6 +284,7 @@ function ListaMensajes({ mensajes, cargando, error }: PropsLista) {
               <BurbujaMensaje
                 mensaje={mensaje}
                 agrupada={!nuevoDia && indice > 0 && mensajes![indice - 1].contesta === mensaje.contesta}
+                alResponder={alResponder}
               />
             </Fragment>
           )

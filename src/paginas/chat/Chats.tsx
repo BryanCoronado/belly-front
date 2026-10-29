@@ -1,7 +1,6 @@
 import { Lock } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { useGuia } from '@/guia/useGuia'
-import { useTiempoReal } from '@/hooks/use-tiempo-real'
 import { cn } from '@/lib/utils'
 import { ListaChats } from './ListaChats'
 import { PanelConversacion } from './PanelConversacion'
@@ -10,7 +9,6 @@ export function Chats() {
   const [parametros, setParametros] = useSearchParams()
   const seleccionado = Number(parametros.get('c')) || null
   useGuia('chats')
-  useTiempoReal()
 
   return (
     <div className="chat-wa flex h-[calc(100dvh-4rem)] overflow-hidden bg-white">

@@ -1,4 +1,4 @@
-import { AlertCircle, Bot, Check, CheckCheck, Clock3, FileText, LayoutTemplate, X } from 'lucide-react'
+import { AlertCircle, Bot, Check, CheckCheck, Clock3, FileText, LayoutTemplate, Reply, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MensajeChat } from '@/api'
@@ -20,7 +20,21 @@ const PLACEHOLDER_MEDIA = new RegExp(
   'is',
 )
 
-export function BurbujaMensaje({ mensaje, agrupada = false }: { mensaje: MensajeChat; agrupada?: boolean }) {
+export type CitaMensaje = {
+  wamid: string
+  texto: string
+  de: string
+}
+
+export function BurbujaMensaje({
+  mensaje,
+  agrupada = false,
+  alResponder,
+}: {
+  mensaje: MensajeChat
+  agrupada?: boolean
+  alResponder?: (cita: CitaMensaje) => void
+}) {
   const entrante = mensaje.contesta === 'cliente'
   const fallido = Number(mensaje.id_estado) === ESTADO.error
   const miId = leerSesion()?.usuario.id
@@ -28,9 +42,21 @@ export function BurbujaMensaje({ mensaje, agrupada = false }: { mensaje: Mensaje
     mensaje.contesta === 'usuario' && mensaje.autor && Number(mensaje.autor.id) !== Number(miId)
       ? mensaje.autor.nombre
       : null
+  const wamid = mensaje.id_mensaje_whatsapp?.trim() || ''
+  const puedeResponder = Boolean(alResponder && wamid && !mensaje.pendiente)
+
+  function responder() {
+    if (!alResponder || !wamid) return
+    alResponder({
+      wamid,
+      texto: textoCita(mensaje),
+      de: mensaje.contesta === 'cliente' ? 'Cliente' : mensaje.contesta === 'bot' ? 'Automático' : autorAjeno || 'Tú',
+    })
+  }
 
   return (
-    <div className={cn('flex', agrupada ? 'mt-0.5' : 'mt-2', entrante ? 'justify-start' : 'justify-end')}>
+    <div className={cn('group/burbuja flex items-center gap-1', agrupada ? 'mt-0.5' : 'mt-2', entrante ? 'justify-start' : 'justify-end')}>
+      {puedeResponder && entrante ? <BotonResponder alClick={responder} /> : null}
       <div className="flex max-w-[85%] flex-col gap-1 sm:max-w-[65%]">
         <div
           className={cn(
@@ -65,8 +91,33 @@ export function BurbujaMensaje({ mensaje, agrupada = false }: { mensaje: Mensaje
         </div>
         {mensaje.interactivo ? <InteractivoWa interactivo={mensaje.interactivo} /> : null}
       </div>
+      {puedeResponder && !entrante ? <BotonResponder alClick={responder} /> : null}
     </div>
   )
+}
+
+function BotonResponder({ alClick }: { alClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={alClick}
+      className="flex size-8 shrink-0 items-center justify-center rounded-full text-[var(--wa-muted)] opacity-80 hover:bg-black/5 hover:text-[var(--wa-texto)] sm:opacity-0 sm:group-hover/burbuja:opacity-100"
+      aria-label="Responder este mensaje"
+      title="Responder"
+    >
+      <Reply className="size-4" />
+    </button>
+  )
+}
+
+function textoCita(mensaje: MensajeChat): string {
+  const crudo = mensaje.mensaje?.trim() && mensaje.mensaje !== '[Sin texto]' ? mensaje.mensaje.trim() : ''
+  if (crudo) return crudo
+  if (mensaje.media_type === 'image' || mensaje.media_type === 'sticker') return 'Imagen'
+  if (mensaje.media_type === 'video') return 'Video'
+  if (mensaje.media_type === 'audio') return 'Audio'
+  if (mensaje.media_type) return 'Archivo adjunto'
+  return ''
 }
 
 function Contenido({ mensaje }: { mensaje: MensajeChat }) {

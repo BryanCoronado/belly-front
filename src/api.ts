@@ -107,6 +107,13 @@ export async function registrar(datos: DatosRegistro): Promise<void> {
   await solicitar('/v1/auth/registro', { method: 'POST', cuerpo: datos })
 }
 
+export type DestinoAviso = {
+  id: number
+  nombre: string
+  foto: string | null
+  admin: boolean
+}
+
 export type PerfilCuenta = {
   nombres: string
   apellidos: string
@@ -114,7 +121,8 @@ export type PerfilCuenta = {
   celular: string
   foto: string | null
   usuario: string
-  empresa: { nombre: string; correo: string }
+  empresa: { nombre: string; correo: string; id_aviso_ia: number | null }
+  destinos_aviso?: DestinoAviso[]
 }
 
 export async function leerPerfil(): Promise<PerfilCuenta> {
@@ -141,7 +149,11 @@ export async function subirFotoPerfil(archivo: File): Promise<PerfilCuenta> {
   return datos.data as PerfilCuenta
 }
 
-export async function guardarEmpresaPerfil(cuerpo: { nombre: string; correo: string }): Promise<PerfilCuenta> {
+export async function guardarEmpresaPerfil(cuerpo: {
+  nombre: string
+  correo: string
+  id_aviso_ia?: number | null
+}): Promise<PerfilCuenta> {
   const datos = await solicitar('/v1/perfil/empresa', { method: 'PUT', cuerpo, conToken: true })
   return datos.data as PerfilCuenta
 }
@@ -310,6 +322,7 @@ export type MensajeChat = {
   media_url: string | null
   cod_error: string | null
   created_at: string
+  id_mensaje_whatsapp?: string | null
   mensaje_responde_contenido?: { mensaje: string | null; contesta: string; media_type: string | null } | null
   /** Botones o lista que envió el bot (se dibujan igual que en WhatsApp). */
   interactivo?: InteractivoChat
@@ -416,9 +429,22 @@ export async function abrirChat(idConversacion: number): Promise<void> {
   await solicitar(`/v1/conversacion/abrir/${idConversacion}`, { method: 'PUT', conToken: true })
 }
 
-export async function enviarMensaje(idConversacion: number, mensaje: string, archivo?: File): Promise<void> {
+export async function enviarMensaje(
+  idConversacion: number,
+  mensaje: string,
+  archivo?: File,
+  idMensajeResponde?: string,
+): Promise<void> {
   if (!archivo) {
-    await solicitar('/v1/mensaje/enviar', { method: 'POST', cuerpo: { id_conversacion: idConversacion, mensaje }, conToken: true })
+    await solicitar('/v1/mensaje/enviar', {
+      method: 'POST',
+      cuerpo: {
+        id_conversacion: idConversacion,
+        mensaje,
+        ...(idMensajeResponde ? { id_mensaje_responde: idMensajeResponde } : {}),
+      },
+      conToken: true,
+    })
     return
   }
   const formulario = new FormData()
@@ -426,6 +452,9 @@ export async function enviarMensaje(idConversacion: number, mensaje: string, arc
   formulario.append('file', archivo)
   if (mensaje.trim() !== '') {
     formulario.append('mensaje', mensaje.trim())
+  }
+  if (idMensajeResponde) {
+    formulario.append('id_mensaje_responde', idMensajeResponde)
   }
   await solicitar('/v1/mensaje/enviar', { method: 'POST', formulario, conToken: true })
 }

@@ -13,7 +13,6 @@ import { CampoSelect } from '@/components/Campo'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useTiempoReal } from '@/hooks/use-tiempo-real'
 import { avisoError, avisoExito } from '@/lib/avisos'
 import { cn } from '@/lib/utils'
 import { esAdministrador, leerSesion } from '@/sesion'
@@ -66,7 +65,6 @@ export function Supervision() {
   const busquedaDiferida = useDeferredValue(busqueda)
   const [transfiriendo, setTransfiriendo] = useState(false)
   const consultas = useQueryClient()
-  useTiempoReal()
 
   const admin = esAdministrador(usuario)
   const chats = useQuery({

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { LayoutTemplate, Loader2, Paperclip, SendHorizontal, X, Zap } from 'lucide-react'
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { leerRespuestasRapidas } from '@/api'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,20 +15,32 @@ import {
 const TIPOS_ARCHIVO = 'image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt'
 const LIMITE_ARCHIVO_MB = 16
 
+export type CitaRedactor = {
+  wamid: string
+  texto: string
+  de: string
+}
+
 type Props = {
   ventanaAbierta: boolean
   enviando: boolean
+  cita?: CitaRedactor | null
+  alCancelarCita?: () => void
   alEnviar: (texto: string, archivo?: File) => Promise<unknown>
   alUsarPlantilla: () => void
 }
 
-export function Redactor({ ventanaAbierta, enviando, alEnviar, alUsarPlantilla }: Props) {
+export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnviar, alUsarPlantilla }: Props) {
   const [texto, setTexto] = useState('')
   const [archivo, setArchivo] = useState<File | null>(null)
   const [errorArchivo, setErrorArchivo] = useState('')
   const campo = useRef<HTMLTextAreaElement>(null)
   const selectorArchivo = useRef<HTMLInputElement>(null)
   const respuestas = useQuery({ queryKey: ['respuestas-rapidas'], queryFn: leerRespuestasRapidas, staleTime: 60_000 })
+
+  useEffect(() => {
+    if (cita) campo.current?.focus()
+  }, [cita])
 
   if (!ventanaAbierta) {
     return (
@@ -85,6 +97,23 @@ export function Redactor({ ventanaAbierta, enviando, alEnviar, alUsarPlantilla }
 
   return (
     <div className="border-t border-[var(--wa-borde)] bg-[var(--wa-panel)] px-2 py-2 sm:px-3" data-tour="redactor">
+      {cita ? (
+        <div className="mb-2 flex items-start gap-2 rounded-lg border-l-[3px] border-[var(--wa-verde)] bg-white px-3 py-2 text-sm shadow-sm">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[12px] font-medium text-[var(--wa-verde-oscuro)]">{cita.de}</p>
+            <p className="line-clamp-2 text-[13px] text-[var(--wa-muted)]">{cita.texto || 'Archivo adjunto'}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="text-[var(--wa-muted)]"
+            aria-label="Cancelar respuesta"
+            onClick={alCancelarCita}
+          >
+            <X />
+          </Button>
+        </div>
+      ) : null}
       {archivo ? (
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-sm shadow-sm">
           <Paperclip className="size-4 shrink-0 text-[var(--wa-muted)]" />

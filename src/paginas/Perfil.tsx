@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Camera, LoaderCircle } from 'lucide-react'
 import { guardarEmpresaPerfil, guardarPerfil, leerPerfil, subirFotoPerfil, type PerfilCuenta } from '@/api'
-import { Campo } from '@/components/Campo'
+import { Campo, CampoSelect } from '@/components/Campo'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { avisoError, avisoExito } from '@/lib/avisos'
@@ -167,13 +167,22 @@ function Cuenta({ datos }: { datos: PerfilCuenta }) {
 }
 
 function Empresa({ datos }: { datos: PerfilCuenta }) {
+  const consultas = useQueryClient()
   const [nombre, setNombre] = useState(datos.empresa.nombre)
   const [correo, setCorreo] = useState(datos.empresa.correo)
+  const [avisoIa, setAvisoIa] = useState(datos.empresa.id_aviso_ia ? String(datos.empresa.id_aviso_ia) : '')
 
   const guardar = useMutation({
-    mutationFn: () => guardarEmpresaPerfil({ nombre, correo }),
+    mutationFn: () =>
+      guardarEmpresaPerfil({
+        nombre,
+        correo,
+        id_aviso_ia: avisoIa ? Number(avisoIa) : null,
+      }),
     onSuccess: (guardado) => {
+      consultas.setQueryData(['perfil'], guardado)
       actualizarUsuarioSesion({ empresa_nombre: guardado.empresa.nombre })
+      setAvisoIa(guardado.empresa.id_aviso_ia ? String(guardado.empresa.id_aviso_ia) : '')
       avisoExito('Empresa actualizada')
     },
     onError: (error) => avisoError(error, 'No se pudo guardar la empresa'),
@@ -197,6 +206,22 @@ function Empresa({ datos }: { datos: PerfilCuenta }) {
           onChange={(evento) => setCorreo(evento.target.value)}
           opcional
         />
+      </div>
+      <div className="mt-4">
+        <CampoSelect
+          etiqueta="Avisos de la IA"
+          value={avisoIa}
+          onChange={(evento) => setAvisoIa(evento.target.value)}
+          ayuda="Si un chat lo atiende la IA, el aviso con sonido llega a esta persona. Si no eliges a nadie, llega al administrador."
+        >
+          <option value="">Administrador de la empresa</option>
+          {(datos.destinos_aviso ?? []).map((destino) => (
+            <option key={destino.id} value={destino.id}>
+              {destino.nombre}
+              {destino.admin ? ' · Admin' : ''}
+            </option>
+          ))}
+        </CampoSelect>
       </div>
       <Button type="submit" className="mt-5" disabled={guardar.isPending}>
         {guardar.isPending ? <LoaderCircle className="animate-spin" /> : null}

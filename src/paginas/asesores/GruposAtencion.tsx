@@ -20,7 +20,7 @@ import { avisoError, avisoExito } from '@/lib/avisos'
 import { cn } from '@/lib/utils'
 import { CLAVE_REPARTO } from './contextoReparto'
 import { SelectorHorario } from '../automatizacion/controles'
-import { SelectorEquipo } from './SelectorEquipo'
+import { FotoAsesor, SelectorEquipo, type AsesorEquipo } from './SelectorEquipo'
 import { etiquetaTurnoGrupo } from './tiposReparto'
 import { errorConflictoGrupoTurno } from './validarGruposTurno'
 
@@ -51,7 +51,7 @@ export function GruposAtencion({ alIrAReparto }: { alIrAReparto: () => void }) {
   const [abierto, setAbierto] = useState<Abierto | null>(null)
   const [borrar, setBorrar] = useState<GrupoAtencion | null>(null)
 
-  const nombres = new Map((asesores.data ?? []).map((a) => [a.id, a.nombre]))
+  const porId = new Map((asesores.data ?? []).map((a) => [a.id, a]))
   const refrescar = () => {
     void cliente.invalidateQueries({ queryKey: CLAVE })
     void cliente.invalidateQueries({ queryKey: CLAVE_REPARTO })
@@ -110,12 +110,16 @@ export function GruposAtencion({ alIrAReparto }: { alIrAReparto: () => void }) {
               </div>
               {grupo.miembros.length ? (
                 <ol className="flex flex-wrap gap-1.5">
-                  {grupo.miembros.map((id, i) => (
-                    <li key={id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-                      <span className="text-muted-foreground tabular-nums">{i + 1}.</span>
-                      {nombres.get(id) ?? 'Asesor'}
-                    </li>
-                  ))}
+                  {grupo.miembros.map((id, i) => {
+                    const asesor = porId.get(id)
+                    return (
+                      <li key={id} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-muted py-0.5 pr-2.5 pl-0.5 text-xs font-medium">
+                        <FotoAsesor nombre={asesor?.nombre ?? 'Asesor'} foto={asesor?.foto} />
+                        <span className="text-muted-foreground tabular-nums">{i + 1}.</span>
+                        <span className="truncate">{asesor?.nombre ?? 'Asesor'}</span>
+                      </li>
+                    )
+                  })}
                 </ol>
               ) : (
                 <p className="text-sm text-muted-foreground">Sin asesores.</p>
@@ -143,7 +147,7 @@ export function GruposAtencion({ alIrAReparto }: { alIrAReparto: () => void }) {
               grupo={abierto.grupo}
               otrosNombres={(grupos.data ?? []).filter((g) => g.id !== abierto.grupo?.id).map((g) => g.nombre)}
               todosGrupos={grupos.data ?? []}
-              asesores={(asesores.data ?? []).map((a) => ({ id: a.id, nombre: a.nombre, activo: a.activo }))}
+              asesores={(asesores.data ?? []).map((a) => ({ id: a.id, nombre: a.nombre, activo: a.activo, foto: a.foto }))}
               alCerrar={() => setAbierto(null)}
               alGuardar={refrescar}
             />
@@ -175,7 +179,7 @@ function FormularioGrupo({
   grupo: GrupoAtencion | null
   otrosNombres: string[]
   todosGrupos: GrupoAtencion[]
-  asesores: { id: number; nombre: string; activo: boolean }[]
+  asesores: AsesorEquipo[]
   alCerrar: () => void
   alGuardar: () => void
 }) {

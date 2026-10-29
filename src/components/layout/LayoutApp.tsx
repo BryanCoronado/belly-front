@@ -5,6 +5,7 @@ import { TransicionPagina } from '@/components/TransicionPagina'
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { BotonGuia } from '@/guia/BotonGuia'
+import { useTiempoReal } from '@/hooks/use-tiempo-real'
 import { cn } from '@/lib/utils'
 import { leerSesion } from '@/sesion'
 import { BarraLateral } from './BarraLateral'
@@ -17,6 +18,7 @@ const esPantallaCompleta = (ruta: string) => PANTALLA_COMPLETA.has(ruta) || /^\/
 export function LayoutApp() {
   const [sesion, setSesion] = useState(leerSesion)
   const { pathname } = useLocation()
+  useTiempoReal()
 
   useEffect(() => {
     const alCambiar = () => setSesion(leerSesion())
