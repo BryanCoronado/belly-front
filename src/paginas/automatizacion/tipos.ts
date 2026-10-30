@@ -6,6 +6,7 @@
   Hourglass,
   List,
   MapPin,
+  ClipboardList,
   MessageCircleQuestion,
   MessageSquareText,
   MousePointerClick,
@@ -81,6 +82,14 @@ export const META: Record<TipoPaso, MetaPaso> = {
     color: '#f59e0b',
     cabecera: 'bg-amber-500 text-white',
     suave: 'bg-amber-100 text-amber-700',
+  },
+  formulario: {
+    titulo: 'Formulario',
+    descripcion: 'Pide varios datos en un solo mensaje',
+    icono: ClipboardList,
+    color: '#ea580c',
+    cabecera: 'bg-orange-600 text-white',
+    suave: 'bg-orange-100 text-orange-700',
   },
   condicion: {
     titulo: 'Decisión',
@@ -159,11 +168,23 @@ export const META: Record<TipoPaso, MetaPaso> = {
 /** Cómo se agrupan los pasos en la barra lateral del editor. */
 export const GRUPOS_PASOS: { titulo: string; pasos: TipoPaso[] }[] = [
   { titulo: 'Enviar', pasos: ['mensaje', 'ubicacion'] },
-  { titulo: 'Preguntar', pasos: ['botones', 'lista', 'pregunta'] },
+  { titulo: 'Preguntar', pasos: ['botones', 'lista', 'pregunta', 'formulario'] },
   { titulo: 'Lógica', pasos: ['condicion', 'horario', 'espera', 'variable', 'dividir'] },
   { titulo: 'Contacto', pasos: ['temperatura'] },
   { titulo: 'Terminar', pasos: ['asesor', 'fin'] },
 ]
+
+/** En Ahorro: primero lo barato, lo que gasta más abajo. */
+export const GRUPOS_PASOS_AHORRO: { titulo: string; pasos: TipoPaso[] }[] = [
+  { titulo: 'Barato (1 mensaje)', pasos: ['formulario', 'botones', 'lista', 'asesor'] },
+  { titulo: 'También sirve', pasos: ['mensaje', 'fin', 'ubicacion'] },
+  { titulo: 'Gasta más (1 por campo)', pasos: ['pregunta'] },
+  { titulo: 'Lógica', pasos: ['condicion', 'horario', 'espera', 'variable', 'dividir'] },
+  { titulo: 'Contacto', pasos: ['temperatura'] },
+]
+
+export const PASOS_CAROS: TipoPaso[] = ['pregunta']
+export const TOPE_AHORRO = 2
 
 export const PASOS_AGREGABLES: TipoPaso[] = [
   'mensaje',
@@ -171,6 +192,7 @@ export const PASOS_AGREGABLES: TipoPaso[] = [
   'botones',
   'lista',
   'pregunta',
+  'formulario',
   'espera',
   'condicion',
   'horario',
@@ -278,6 +300,16 @@ export function datosIniciales(tipo: TipoPaso): DatosPaso {
       }
     case 'pregunta':
       return { texto: '', variable: '', validacion: 'texto', error: '' }
+    case 'formulario':
+      return {
+        texto: 'Para atenderte, respondé todo en un solo mensaje:',
+        variable: 'formulario',
+        campos: [
+          { id: nuevoId('c'), etiqueta: 'Nombre', variable: 'nombre_form' },
+          { id: nuevoId('c'), etiqueta: 'Celular', variable: 'celular_form' },
+          { id: nuevoId('c'), etiqueta: 'Consulta', variable: 'consulta' },
+        ],
+      }
     case 'condicion':
       return { variable: '', operador: 'igual', valor: '' }
     case 'variable':
@@ -332,6 +364,7 @@ export function salidasDe(tipo: TipoPaso, datos: DatosPaso): Salida[] {
         ...tiempo,
       ]
     case 'pregunta':
+    case 'formulario':
       return [{ id: 'siguiente', etiqueta: '' }, ...tiempo]
     case 'condicion':
       return [
@@ -429,8 +462,11 @@ export function resumenPaso(tipo: TipoPaso, datos: DatosPaso): string {
     case 'botones':
     case 'lista':
     case 'pregunta':
+    case 'formulario':
     case 'fin':
-      return texto(datos, 'texto') || 'Escribe el mensaje…'
+      return tipo === 'formulario'
+        ? `${camposDe(datos).length} datos en un mensaje`
+        : texto(datos, 'texto') || 'Escribe el mensaje…'
     case 'asesor':
       return `${resumenAsignacion(datos)}\n${texto(datos, 'texto') || 'Sin mensaje'}`
     case 'temperatura': {
@@ -452,4 +488,19 @@ export function resumenPaso(tipo: TipoPaso, datos: DatosPaso): string {
     case 'variable':
       return texto(datos, 'variable') ? `${texto(datos, 'variable')} = ${texto(datos, 'valor')}` : 'Elige el nombre del dato…'
   }
+}
+
+export const PASOS_QUE_MANDAN: TipoPaso[] = ['mensaje', 'botones', 'lista', 'pregunta', 'formulario', 'ubicacion', 'asesor', 'fin']
+
+export function pasoCobraMensaje(tipo: TipoPaso): boolean {
+  return PASOS_QUE_MANDAN.includes(tipo)
+}
+
+export function camposDe(datos: DatosPaso): { id: string; etiqueta?: string; variable?: string }[] {
+  return Array.isArray(datos.campos) ? (datos.campos as { id: string; etiqueta?: string; variable?: string }[]) : []
+}
+
+/** Cuántos mensajes de WhatsApp puede mandar este flujo (cada paso que habla cuenta 1). */
+export function mensajesDelFlujo(pasos: { tipo: TipoPaso }[]): number {
+  return pasos.filter((paso) => PASOS_QUE_MANDAN.includes(paso.tipo)).length
 }

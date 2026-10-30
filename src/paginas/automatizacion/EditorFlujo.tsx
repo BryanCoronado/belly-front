@@ -16,6 +16,7 @@ import '@xyflow/react/dist/style.css'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CircleCheck, LoaderCircle, MousePointerClick, Pause, Play, Save, Settings2, ShieldCheck, TriangleAlert } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
   cambiarEstadoFlujo,
   guardarFlujo,
@@ -27,8 +28,10 @@ import {
   type TipoPaso,
 } from '@/api'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { avisoError, avisoExito, avisoInfo } from '@/lib/avisos'
+import { useModoAhorro } from '@/lib/modo-ahorro'
 import { useTema } from '@/lib/tema'
 import { cn } from '@/lib/utils'
 import { ConfiguracionFlujo } from './ConfiguracionFlujo'
@@ -37,7 +40,21 @@ import { NodoVisual } from './NodoVisual'
 import { PanelNodo } from './PanelNodo'
 import { Simulador } from './Simulador'
 import { nuevoId } from '@/lib/editorPasos'
-import { GRUPOS_PASOS, META, PASOS_AGREGABLES, VARIABLES_BASE, datosIniciales, resumenInicio, salidasDe } from './tipos'
+import {
+  GRUPOS_PASOS,
+  GRUPOS_PASOS_AHORRO,
+  META,
+  PASOS_AGREGABLES,
+  PASOS_CAROS,
+  TOPE_AHORRO,
+  VARIABLES_BASE,
+  camposDe,
+  datosIniciales,
+  mensajesDelFlujo,
+  pasoCobraMensaje,
+  resumenInicio,
+  salidasDe,
+} from './tipos'
 
 const TIPOS_NODO = { paso: NodoVisual }
 const FORMATO_ARRASTRE = 'application/x-belly-paso'
@@ -78,6 +95,7 @@ export function EditorFlujo() {
 function Lienzo({ flujo }: { flujo: Flujo }) {
   const consultas = useQueryClient()
   const { oscuro } = useTema()
+  const { ahorro } = useModoAhorro()
   const { screenToFlowPosition, fitView, deleteElements } = useReactFlow<NodoRF>()
   const contenedor = useRef<HTMLDivElement>(null)
 
@@ -88,6 +106,7 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
   const [panel, setPanel] = useState<'paso' | 'probar'>('paso')
   const [yaProbo, setYaProbo] = useState(false)
   const [configurando, setConfigurando] = useState(false)
+  const [confirmarCaro, setConfirmarCaro] = useState(false)
   const [revision, setRevision] = useState<{ firma: string; datos: RevisionFlujo } | null>(null)
 
   const definicion = useMemo(() => aDefinicion(nodos, aristas), [nodos, aristas])
@@ -121,8 +140,14 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
 
   const variables = useMemo(() => {
     const propias = nodos
-      .filter((n) => n.data.tipo === 'pregunta' || n.data.tipo === 'variable')
-      .map((n) => String(n.data.datos.variable ?? '').trim().toLowerCase().replace(/\s+/g, '_'))
+      .filter((n) => n.data.tipo === 'pregunta' || n.data.tipo === 'variable' || n.data.tipo === 'formulario')
+      .flatMap((n) => {
+        if (n.data.tipo === 'formulario') {
+          return camposDe(n.data.datos).map((c) => String(c.variable ?? ''))
+        }
+        return [String(n.data.datos.variable ?? '')]
+      })
+      .map((v) => v.trim().toLowerCase().replace(/\s+/g, '_'))
       .filter(Boolean)
     return [...new Set([...VARIABLES_BASE.map((v) => v.nombre), ...propias])]
   }, [nodos])
@@ -240,25 +265,6 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
     onError: (error) => avisoError(error, 'No se pudo revisar el flujo'),
   })
 
-  const alternar = useMutation({
-    mutationFn: async (encender: boolean) => {
-      if (sinGuardar) {
-        await guardarFlujo(flujo.id, { nombre: nombre.trim(), definicion })
-        setGuardado({ firma, nombre: nombre.trim() })
-      }
-      return cambiarEstadoFlujo(flujo.id, encender)
-    },
-    onSuccess: (nuevo) => {
-      setActivo(nuevo.activo)
-      void consultas.invalidateQueries({ queryKey: ['flujos'] })
-      avisoExito(nuevo.activo ? 'Flujo activado' : 'Flujo pausado', nuevo.activo ? 'Ya responde a tus clientes por WhatsApp.' : undefined)
-    },
-    onError: (error) => {
-      avisoError(error, 'No se pudo cambiar el estado')
-      void revisar.mutateAsync(firma).catch(() => undefined)
-    },
-  })
-
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
@@ -272,6 +278,26 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
     return () => window.removeEventListener('keydown', alTeclear)
   })
 
+  const alternar = useMutation({
+    mutationFn: async ({ encender, forzar }: { encender: boolean; forzar?: boolean }) => {
+      if (sinGuardar) {
+        await guardarFlujo(flujo.id, { nombre: nombre.trim(), definicion })
+        setGuardado({ firma, nombre: nombre.trim() })
+      }
+      return cambiarEstadoFlujo(flujo.id, encender, forzar)
+    },
+    onSuccess: (nuevo) => {
+      setActivo(nuevo.activo)
+      setConfirmarCaro(false)
+      void consultas.invalidateQueries({ queryKey: ['flujos'] })
+      avisoExito(nuevo.activo ? 'Flujo activado' : 'Flujo pausado', nuevo.activo ? 'Ya responde a tus clientes por WhatsApp.' : undefined)
+    },
+    onError: (error) => {
+      avisoError(error, 'No se pudo cambiar el estado')
+      void revisar.mutateAsync(firma).catch(() => undefined)
+    },
+  })
+
   useEffect(() => {
     if (!sinGuardar) {
       return
@@ -282,10 +308,22 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
   }, [sinGuardar])
 
   const ocupado = guardar.isPending || alternar.isPending
+  const totalMensajes = mensajesDelFlujo(nodos.map((n) => n.data))
+  const largoParaAhorro = ahorro && totalMensajes > TOPE_AHORRO
+  const grupos = ahorro ? GRUPOS_PASOS_AHORRO : GRUPOS_PASOS
+
+  function pedirActivar() {
+    if (largoParaAhorro) {
+      setConfirmarCaro(true)
+      return
+    }
+    alternar.mutate({ encender: true })
+  }
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] flex-col bg-white">
-      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2 md:px-4">
+    <div className="flex min-h-0 flex-1 flex-col bg-background">
+      <div className="flex flex-wrap items-center gap-2 border-b px-2 py-2 md:px-4">
+        <SidebarTrigger className="md:hidden" />
         <Link to="/automatizacion" aria-label="Volver" className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted">
           <ArrowLeft className="size-4" />
         </Link>
@@ -294,7 +332,7 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
           onChange={(e) => setNombre(e.target.value)}
           maxLength={120}
           aria-label="Nombre del flujo"
-          className="h-9 min-w-40 max-w-md flex-1 rounded-lg border border-transparent bg-transparent px-2 text-base font-semibold outline-none hover:border-input focus:border-ring focus:ring-3 focus:ring-ring/40"
+          className="h-9 min-w-0 max-w-md flex-1 rounded-lg border border-transparent bg-transparent px-2 text-base font-semibold outline-none hover:border-input focus:border-ring focus:ring-3 focus:ring-ring/40"
         />
         <span
           className={cn(
@@ -306,52 +344,72 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
           {activo ? 'Activo' : 'Pausado'}
         </span>
         {sinGuardar ? <span className="text-xs text-amber-600">Cambios sin guardar</span> : null}
+        <span
+          className={cn(
+            'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold',
+            largoParaAhorro ? 'bg-rose-100 text-rose-800' : 'bg-primary/10 text-primary',
+          )}
+          title="Cada paso que habla es un mensaje de WhatsApp que puede cobrar Meta"
+        >
+          ~{totalMensajes} {totalMensajes === 1 ? 'mensaje' : 'mensajes'}
+          {ahorro ? ` · tope ${TOPE_AHORRO}` : ''}
+        </span>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => setConfigurando(true)} disabled={!inicio}>
+          <Button variant="outline" size="sm" onClick={() => setConfigurando(true)} disabled={!inicio}>
             <Settings2 />
-            Configurar
+            <span className="hidden sm:inline">Configurar</span>
           </Button>
-          <Button variant="outline" onClick={() => revisar.mutate(firma)} disabled={revisar.isPending}>
+          <Button variant="outline" size="sm" onClick={() => revisar.mutate(firma)} disabled={revisar.isPending}>
             {revisar.isPending ? <LoaderCircle className="animate-spin" /> : <ShieldCheck />}
-            Revisar
+            <span className="hidden sm:inline">Revisar</span>
           </Button>
           <Button
             variant={panel === 'probar' ? 'secondary' : 'outline'}
+            size="sm"
             onClick={() => {
               setYaProbo(true)
               setPanel(panel === 'probar' ? 'paso' : 'probar')
             }}
           >
             <Play />
-            Probar
+            <span className="hidden sm:inline">Probar</span>
           </Button>
-          <Button variant="outline" onClick={() => guardar.mutate()} disabled={!sinGuardar || ocupado}>
+          <Button variant="outline" size="sm" onClick={() => guardar.mutate()} disabled={!sinGuardar || ocupado}>
             {guardar.isPending ? <LoaderCircle className="animate-spin" /> : <Save />}
-            Guardar
+            <span className="hidden sm:inline">Guardar</span>
           </Button>
           {activo ? (
-            <Button variant="outline" onClick={() => alternar.mutate(false)} disabled={ocupado}>
+            <Button variant="outline" size="sm" onClick={() => alternar.mutate({ encender: false })} disabled={ocupado}>
               <Pause />
-              Pausar
+              <span className="hidden sm:inline">Pausar</span>
             </Button>
           ) : (
-            <Button onClick={() => alternar.mutate(true)} disabled={ocupado}>
+            <Button size="sm" onClick={pedirActivar} disabled={ocupado} variant={largoParaAhorro ? 'secondary' : 'default'}>
               {alternar.isPending ? <LoaderCircle className="animate-spin" /> : <Play />}
-              Activar
+              <span className="hidden sm:inline">Activar</span>
             </Button>
           )}
         </div>
       </div>
 
+      {ahorro ? (
+        <div className={cn('border-b px-4 py-2 text-sm', largoParaAhorro ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-primary/20 bg-primary/10 text-primary')}>
+          {largoParaAhorro
+            ? `Este flujo manda ~${totalMensajes} mensajes. En ahorro conviene ${TOPE_AHORRO} o menos. Podés armarlo, pero para activarlo hay que confirmar.`
+            : `Modo ahorro: formulario o botones, y pasar a un asesor. Cada tarjeta que habla cuenta 1 mensaje.`}
+        </div>
+      ) : null}
+
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-56 shrink-0 space-y-1 overflow-y-auto border-r bg-white p-3 md:block">
-          {GRUPOS_PASOS.map((grupo) => (
+        <aside className="hidden w-56 shrink-0 space-y-1 overflow-y-auto border-r bg-background p-3 md:block">
+          {grupos.map((grupo) => (
             <div key={grupo.titulo} className="space-y-1 pb-2">
               <p className="px-1 pt-1 pb-0.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{grupo.titulo}</p>
               {grupo.pasos.map((tipo) => {
                 const meta = META[tipo]
                 const Icono = meta.icono
+                const caro = PASOS_CAROS.includes(tipo)
                 return (
                   <button
                     key={tipo}
@@ -363,14 +421,21 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
                     }}
                     onClick={() => agregarPaso(tipo)}
                     title={meta.descripcion}
-                    className="group flex w-full cursor-grab items-center gap-2.5 rounded-lg border border-transparent p-1.5 text-left transition-colors hover:border-zinc-200 hover:bg-zinc-50 active:cursor-grabbing"
+                    className={cn(
+                      'group flex w-full cursor-grab items-center gap-2.5 rounded-lg border p-1.5 text-left transition-colors active:cursor-grabbing',
+                      ahorro && caro
+                        ? 'border-rose-200 bg-rose-50/70 hover:border-rose-300'
+                        : 'border-transparent hover:border-zinc-200 hover:bg-zinc-50',
+                    )}
                   >
                     <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-md', meta.suave)}>
                       <Icono className="size-4" />
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium">{meta.titulo}</span>
-                      <span className="block truncate text-[11px] text-muted-foreground">{meta.descripcion}</span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {ahorro && pasoCobraMensaje(tipo) ? (caro ? '1 mensaje por campo' : '1 mensaje') : meta.descripcion}
+                      </span>
                     </span>
                   </button>
                 )
@@ -378,7 +443,9 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
             </div>
           ))}
           <p className="px-1 pt-1 text-[11px] leading-relaxed text-muted-foreground">
-            Arrastra un paso al lienzo o haz clic para agregarlo. Une los pasos jalando desde el punto de color hasta el siguiente paso.
+            {ahorro
+              ? 'En ahorro: un formulario o unos botones y pasá a un asesor. Pedir un dato varias veces gasta 1 mensaje cada vez.'
+              : 'Arrastra un paso al lienzo o haz clic para agregarlo. Une los pasos jalando desde el punto de color hasta el siguiente paso.'}
           </p>
         </aside>
 
@@ -420,7 +487,7 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
           </ReactFlow>
         </div>
 
-        <aside className="hidden w-[22rem] shrink-0 flex-col border-l bg-white lg:flex">
+        <aside className="hidden w-[22rem] shrink-0 flex-col border-l bg-background lg:flex">
           <div className="flex shrink-0 gap-1 border-b p-2">
             {(['paso', 'probar'] as const).map((pestana) => (
               <button
@@ -479,6 +546,27 @@ function Lienzo({ flujo }: { flujo: Flujo }) {
           alCambiar={(datos) => cambiarDatos(inicio.id, datos)}
         />
       ) : null}
+
+      <Dialog open={confirmarCaro} onOpenChange={(abrir) => !alternar.isPending && setConfirmarCaro(abrir)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Este flujo habla de más</DialogTitle>
+            <DialogDescription>
+              Manda unos {totalMensajes} mensajes. En modo ahorro conviene {TOPE_AHORRO}: un formulario o botones y pasar a
+              un asesor. Si lo prendés igual, cada envío come el cupo de WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmarCaro(false)} disabled={alternar.isPending}>
+              Seguir recortando
+            </Button>
+            <Button onClick={() => alternar.mutate({ encender: true, forzar: true })} disabled={alternar.isPending}>
+              {alternar.isPending ? <LoaderCircle className="animate-spin" /> : <Play />}
+              Activarlo igual
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

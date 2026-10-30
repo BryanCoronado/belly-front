@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { nuevoId } from '@/lib/editorPasos'
+import { useModoAhorro } from '@/lib/modo-ahorro'
 import { cn } from '@/lib/utils'
 import type { NodoRF } from './conversion'
 import { etiquetaTurnoGrupo } from '../asesores/tiposReparto'
@@ -23,6 +24,7 @@ import {
   OPERADORES,
   UNIDADES_ESPERA,
   VALIDACIONES,
+  camposDe,
   opcionesDe,
   resumenInicio,
   texto,
@@ -37,8 +39,9 @@ type Props = {
   alConfigurar: () => void
 }
 
-const ENVIA_MENSAJE = ['mensaje', 'ubicacion', 'botones', 'lista', 'pregunta', 'asesor', 'fin']
-const ESPERA_RESPUESTA = ['botones', 'lista', 'pregunta']
+const ENVIA_MENSAJE = ['mensaje', 'ubicacion', 'botones', 'lista', 'pregunta', 'formulario', 'asesor', 'fin']
+const ESPERA_RESPUESTA = ['botones', 'lista', 'pregunta', 'formulario']
+const MAX_CAMPOS = 8
 
 export function PanelNodo({ nodo, variables, alCambiar, alDuplicar, alEliminar, alConfigurar }: Props) {
   const { tipo, datos, problemas } = nodo.data
@@ -74,7 +77,13 @@ export function PanelNodo({ nodo, variables, alCambiar, alDuplicar, alEliminar, 
         {tipo === 'mensaje' ? <FormMensaje datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'botones' ? <FormBotones datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'lista' ? <FormLista datos={datos} poner={poner} variables={variables} /> : null}
-        {tipo === 'pregunta' ? <FormPregunta datos={datos} poner={poner} variables={variables} /> : null}
+        {tipo === 'pregunta' ? (
+          <>
+            <AvisoPreguntaCara />
+            <FormPregunta datos={datos} poner={poner} variables={variables} />
+          </>
+        ) : null}
+        {tipo === 'formulario' ? <FormFormulario datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'condicion' ? <FormCondicion datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'horario' ? <FormTurnos /> : null}
         {tipo === 'variable' ? <FormVariable datos={datos} poner={poner} variables={variables} /> : null}
@@ -134,6 +143,16 @@ function ResumenInicio({ datos, alConfigurar }: { datos: DatosPaso; alConfigurar
     </div>
   )
 }
+function AvisoPreguntaCara() {
+  const { ahorro } = useModoAhorro()
+  if (!ahorro) return null
+  return (
+    <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+      En ahorro este paso es caro: cada dato es un mensaje. Mejor un <b>Formulario</b> (varios datos, un envío).
+    </p>
+  )
+}
+
 type FormProps = { datos: DatosPaso; poner: (parcial: DatosPaso) => void; variables: string[] }
 
 // ───────────────────────── formularios por paso ─────────────────────────
@@ -356,6 +375,74 @@ function FormPregunta({ datos, poner, variables }: FormProps) {
         opcional
         ayuda="A la tercera respuesta inválida pasa a un asesor."
       />
+    </>
+  )
+}
+
+function FormFormulario({ datos, poner }: FormProps) {
+  const campos = camposDe(datos)
+
+  return (
+    <>
+      <Area
+        etiqueta="Mensaje que ve el cliente"
+        valor={texto(datos, 'texto')}
+        alCambiar={(v) => poner({ texto: v })}
+        variables={[]}
+        max={LARGO_CUERPO}
+        ayuda="Un solo envío. El cliente responde todo junto y el bot guarda cada dato."
+      />
+      <div className="space-y-2">
+        <Label>Datos a pedir</Label>
+        {campos.map((campo, indice) => (
+          <div key={campo.id} className="grid gap-2 rounded-lg border p-3">
+            <Texto
+              etiqueta="Cómo se lo pedís"
+              valor={campo.etiqueta ?? ''}
+              alCambiar={(etiqueta) =>
+                poner({ campos: campos.map((c, i) => (i === indice ? { ...c, etiqueta } : c)) })
+              }
+              marcador="Nombre"
+            />
+            <Texto
+              etiqueta="Nombre del dato"
+              valor={campo.variable ?? ''}
+              alCambiar={(variable) =>
+                poner({ campos: campos.map((c, i) => (i === indice ? { ...c, variable } : c)) })
+              }
+              marcador="nombre"
+              ayuda={campo.variable ? `Luego usás {{${campo.variable}}}` : 'Sin espacios, por ejemplo: nombre'}
+            />
+            {campos.length > 1 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="justify-start text-destructive"
+                onClick={() => poner({ campos: campos.filter((_, i) => i !== indice) })}
+              >
+                <Trash2 />
+                Quitar
+              </Button>
+            ) : null}
+          </div>
+        ))}
+        {campos.length < MAX_CAMPOS ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              poner({ campos: [...campos, { id: nuevoId('c'), etiqueta: '', variable: '' }] })
+            }
+          >
+            <Plus />
+            Agregar dato
+          </Button>
+        ) : (
+          <p className="text-xs text-muted-foreground">Hasta {MAX_CAMPOS} datos en un formulario.</p>
+        )}
+      </div>
     </>
   )
 }

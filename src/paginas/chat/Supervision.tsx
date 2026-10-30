@@ -10,6 +10,8 @@ import {
   type EstadoSupervision,
 } from '@/api'
 import { CampoSelect } from '@/components/Campo'
+import { AvisoMeta } from '@/components/layout/AvisoMeta'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -101,15 +103,19 @@ export function Supervision() {
   }
 
   return (
-    <div className="chat-wa flex h-[calc(100dvh-4rem)] overflow-hidden bg-white">
+    <div className="chat-wa flex min-h-0 flex-1 overflow-hidden bg-white">
       <aside
         className={cn(
           'flex min-h-0 w-full flex-col border-r border-[var(--wa-borde)] bg-white md:w-80 md:shrink-0 lg:w-96',
           seleccionado && 'hidden md:flex',
         )}
       >
-        <div className="space-y-2.5 bg-[var(--wa-panel)] px-3 py-2.5">
-          <p className="px-1 pt-1 text-[19px] font-medium">Supervisión</p>
+        <div className="space-y-2.5 bg-[var(--wa-panel)] px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
+          <div className="flex items-center gap-1">
+            <SidebarTrigger className="-ml-1 md:hidden" />
+            <p className="px-1 text-[19px] font-medium">Supervisión</p>
+            <AvisoMeta compacto className="ml-auto md:hidden" />
+          </div>
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--wa-muted)]" />
             <input
@@ -190,15 +196,15 @@ export function Supervision() {
           key={seleccionado}
           idConversacion={seleccionado}
           alVolver={() => setParametros({})}
-          className="flex-1"
+          className="min-h-0 flex-1"
           supervision
           acciones={
             chat && abierto ? (
               <>
                 {!esMio ? (
                   <Button
-                    size="sm"
-                    className="bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde)]/90"
+                    size="icon"
+                    className="bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde)]/90 sm:h-7 sm:w-auto sm:px-2.5"
                     disabled={tomar.isPending}
                     onClick={() => tomar.mutate()}
                   >
@@ -208,8 +214,8 @@ export function Supervision() {
                 ) : null}
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="border-[var(--wa-borde)] bg-white text-[var(--wa-texto)] hover:bg-white/80"
+                  size="icon"
+                  className="border-[var(--wa-borde)] bg-white text-[var(--wa-texto)] hover:bg-white/80 sm:h-7 sm:w-auto sm:px-2.5"
                   onClick={() => setTransfiriendo(true)}
                 >
                   <ArrowRightLeft /> <span className="hidden sm:inline">Pasar a…</span>
@@ -219,10 +225,11 @@ export function Supervision() {
           }
           aviso={
             chat && abierto && !esMio ? (
-              <p className="flex items-center gap-2 border-t border-[var(--wa-borde)] bg-[#fff8e6] px-4 py-2 text-[12px] text-[#7a5b00] dark:bg-[#2a2614] dark:text-[#e6cf8a]">
+              <p className="flex min-w-0 items-start gap-2 border-t border-[var(--wa-borde)] bg-[#fff8e6] px-3 py-2 text-[12px] leading-snug text-[#7a5b00] dark:bg-[#2a2614] dark:text-[#e6cf8a]">
                 <FotoAsesor chat={chat} mio={false} />
-                <span className="truncate">
-                  Lo atiende <strong className="font-medium">{quienAtiende(chat)}</strong>. Si escribes aquí, el cliente recibe tu mensaje.
+                <span className="min-w-0 flex-1">
+                  Lo atiende <strong className="font-medium">{quienAtiende(chat)}</strong>.
+                  <span className="hidden sm:inline"> Si escribes aquí, el cliente recibe tu mensaje.</span>
                 </span>
               </p>
             ) : null

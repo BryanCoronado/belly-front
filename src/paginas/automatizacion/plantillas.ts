@@ -1,7 +1,7 @@
 import type { DefinicionFlujo } from '@/api'
 
 export type PlantillaFlujo = {
-  id: 'blanco' | 'menu' | 'horario' | 'seguimiento'
+  id: 'blanco' | 'menu' | 'horario' | 'seguimiento' | 'ahorro'
   titulo: string
   descripcion: string
   /** null = usa el flujo básico que crea el servidor. */
@@ -11,6 +11,37 @@ export type PlantillaFlujo = {
 const s = 'siguiente'
 
 export const PLANTILLAS: PlantillaFlujo[] = [
+  {
+    id: 'ahorro',
+    titulo: 'Ahorro: un toque y asesor',
+    descripcion: 'Un mensaje con botones y pasa a una persona. Gasta 1 o 2 envíos, no una charla.',
+    definicion: {
+      nodos: [
+        { id: 'inicio', tipo: 'inicio', x: 0, y: 120, datos: { disparador: 'primer_mensaje', palabras: [], exacta: false, audiencia: 'nuevos', repetir: 'una_vez' } },
+        {
+          id: 'menu',
+          tipo: 'botones',
+          x: 340,
+          y: 60,
+          datos: {
+            texto: '¡Hola {{nombre}}! 👋 ¿En qué te ayudamos?',
+            botones: [
+              { id: 'ventas', titulo: 'Quiero comprar' },
+              { id: 'soporte', titulo: 'Necesito soporte' },
+              { id: 'otra', titulo: 'Otra consulta' },
+            ],
+          },
+        },
+        { id: 'asesor', tipo: 'asesor', x: 760, y: 80, datos: { texto: 'Un asesor te escribe en un momento. 🙌' } },
+      ],
+      conexiones: [
+        { id: 'c1', desde: 'inicio', salida: s, hacia: 'menu' },
+        { id: 'c2', desde: 'menu', salida: 'ventas', hacia: 'asesor' },
+        { id: 'c3', desde: 'menu', salida: 'soporte', hacia: 'asesor' },
+        { id: 'c4', desde: 'menu', salida: 'otra', hacia: 'asesor' },
+      ],
+    },
+  },
   {
     id: 'menu',
     titulo: 'Menú de bienvenida',

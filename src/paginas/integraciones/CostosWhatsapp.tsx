@@ -3,6 +3,7 @@ import { CircleAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { leerCostosWhatsapp } from '@/api'
 import { CabeceraPagina } from '@/components/CabeceraPagina'
+import { InterruptorModoAhorro } from '@/components/InterruptorModoAhorro'
 import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -10,14 +11,21 @@ import { cn } from '@/lib/utils'
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 export function CostosWhatsapp() {
-  const consulta = useQuery({ queryKey: ['costos-whatsapp'], queryFn: leerCostosWhatsapp, staleTime: 60_000 })
+  const consulta = useQuery({
+    queryKey: ['costos-whatsapp'],
+    queryFn: leerCostosWhatsapp,
+    staleTime: 0,
+    refetchInterval: 60_000,
+  })
 
   return (
     <div className="space-y-6">
       <CabeceraPagina
         titulo="Costos de WhatsApp"
-        descripcion="Lo que Meta cobra por los mensajes que salen de tu número. El cliente no te cuesta nada."
+        descripcion="Solo el reporte oficial de Meta. Belly no suma chats locales: si los borrás, el cupo no cambia."
       />
+
+      <InterruptorModoAhorro />
 
       {consulta.isPending ? (
         <div className="grid gap-3 sm:grid-cols-3">
@@ -76,6 +84,7 @@ function Detalle({ data }: { data: Awaited<ReturnType<typeof leerCostosWhatsapp>
         <p className="mt-2 text-sm text-muted-foreground">
           Usaste {usado}. Del 1.001 en adelante Meta cobra unos US$ 0,03 por mensaje entregado. El 1 de cada mes vuelve a 1.000.
         </p>
+        <p className="mt-1 text-xs text-muted-foreground">{etiquetaFuente(data)}</p>
       </section>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -134,8 +143,8 @@ function Detalle({ data }: { data: Awaited<ReturnType<typeof leerCostosWhatsapp>
       ) : null}
 
       <p className="text-xs text-muted-foreground">
-        Lo que el equipo escribe en la app de WhatsApp Business (si el número está en coexistencia) no aparece acá y no se cobra.
-        Fuente: {data.fuente === 'meta' ? 'Meta' : 'Belly'}.
+        Meta tarda en publicar (a veces horas). No hay forma oficial de ver el cupo al segundo.
+        Borrar chats en Belly no reinicia los 1.000: eso lo lleva WhatsApp.
       </p>
     </div>
   )
@@ -154,4 +163,11 @@ function Cuadro({ titulo, valor, detalle }: { titulo: string; valor: string; det
 function dinero(usd: number): string {
   if (usd <= 0) return 'US$ 0'
   return `US$ ${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function etiquetaFuente(data: { fuente: string; actualizado_at?: string | null }): string {
+  const cuando = data.actualizado_at
+    ? new Date(data.actualizado_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
+    : ''
+  return cuando ? `Reporte oficial de Meta · consultado ${cuando}` : 'Reporte oficial de Meta'
 }

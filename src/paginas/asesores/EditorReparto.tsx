@@ -369,7 +369,7 @@ function Lienzo({
           </div>
         </div>
 
-        <div className="flex h-[calc(100dvh-15rem)] min-h-[560px] flex-col md:flex-row">
+        <div className="flex h-[min(36rem,calc(100dvh-12rem))] min-h-72 flex-col md:flex-row">
           <aside className="hidden w-[17.5rem] shrink-0 space-y-1 overflow-y-auto border-r p-3 lg:block xl:w-72">
             {GRUPOS_PASOS.map((grupo) => (
               <div key={grupo.titulo} className="space-y-1 pb-2">

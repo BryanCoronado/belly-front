@@ -117,15 +117,94 @@
     --sidebar-ring: oklch(0.696 0.17 162.48);
 }
 
+/* Modo ahorro: el CRM se pone cálido para que se note que cada mensaje cuenta. */
+html[data-ahorro='1'] {
+    --background: oklch(0.985 0.018 75);
+    --foreground: oklch(0.28 0.04 50);
+    --card: oklch(0.995 0.012 80);
+    --card-foreground: oklch(0.28 0.04 50);
+    --popover: oklch(0.995 0.012 80);
+    --popover-foreground: oklch(0.28 0.04 50);
+    --primary: oklch(0.7 0.16 55);
+    --primary-foreground: oklch(0.99 0.01 80);
+    --secondary: oklch(0.96 0.03 80);
+    --secondary-foreground: oklch(0.35 0.06 50);
+    --muted: oklch(0.955 0.025 80);
+    --muted-foreground: oklch(0.5 0.04 55);
+    --accent: oklch(0.95 0.04 75);
+    --accent-foreground: oklch(0.35 0.08 50);
+    --border: oklch(0.9 0.04 75);
+    --input: oklch(0.9 0.04 75);
+    --ring: oklch(0.72 0.16 55);
+    --sidebar: oklch(0.975 0.03 75);
+    --sidebar-foreground: oklch(0.28 0.04 50);
+    --sidebar-primary: oklch(0.7 0.16 55);
+    --sidebar-primary-foreground: oklch(0.99 0.01 80);
+    --sidebar-accent: oklch(0.94 0.05 70);
+    --sidebar-accent-foreground: oklch(0.4 0.1 50);
+    --sidebar-border: oklch(0.9 0.04 75);
+    --sidebar-ring: oklch(0.72 0.16 55);
+}
+
+html[data-ahorro='1'].dark {
+    --background: #1a1610;
+    --foreground: #f4ead8;
+    --card: #221c14;
+    --card-foreground: #f4ead8;
+    --popover: #2a2218;
+    --popover-foreground: #f4ead8;
+    --primary: oklch(0.78 0.14 70);
+    --primary-foreground: oklch(0.22 0.04 55);
+    --secondary: #2c2418;
+    --secondary-foreground: #f4ead8;
+    --muted: #2c2418;
+    --muted-foreground: #c4b496;
+    --accent: #332a1c;
+    --accent-foreground: #f4ead8;
+    --border: oklch(1 0.02 80 / 12%);
+    --input: oklch(1 0.02 80 / 14%);
+    --ring: oklch(0.78 0.14 70);
+    --sidebar: #1c1710;
+    --sidebar-foreground: #f4ead8;
+    --sidebar-primary: oklch(0.78 0.14 70);
+    --sidebar-primary-foreground: oklch(0.22 0.04 55);
+    --sidebar-accent: rgb(245 158 11 / 0.16);
+    --sidebar-accent-foreground: #fbbf24;
+    --sidebar-border: oklch(1 0.02 80 / 10%);
+    --sidebar-ring: oklch(0.78 0.14 70);
+}
+
+html[data-ahorro='1'] .chat-wa,
+html[data-ahorro='1'] [class*='chat-wa'] {
+    --wa-verde: #d97706;
+    --wa-verde-oscuro: #b45309;
+    --wa-verde-claro: #fde68a;
+    --wa-fondo: #f5edd8;
+    --wa-panel: #f3ead6;
+    --wa-badge: #d97706;
+}
+
+html[data-ahorro='1'].dark .chat-wa,
+html[data-ahorro='1'].dark [class*='chat-wa'] {
+    --wa-verde: #f59e0b;
+    --wa-verde-oscuro: #fbbf24;
+    --wa-verde-claro: #5c4310;
+    --wa-fondo: #1a1610;
+    --wa-panel: #2a2218;
+    --wa-badge: #f59e0b;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
     }
-  body {
-    @apply bg-background text-foreground antialiased;
-    }
   html {
     @apply font-sans;
+    transition: background-color 0.7s ease, color 0.5s ease;
+    }
+  body {
+    @apply bg-background text-foreground antialiased;
+    transition: background-color 0.7s ease, color 0.5s ease;
     }
 }
 .driver-popover.belly-guia {
@@ -203,6 +282,7 @@
 
 /* Chat estilo WhatsApp Web */
 .chat-wa {
+  overscroll-behavior: contain;
   --wa-verde: #00a884;
   --wa-verde-oscuro: #008069;
   --wa-verde-claro: #d9fdd3;
@@ -501,6 +581,29 @@
   --wa-dia-texto: #8696a0;
   --color-white: #202c33;
   --color-black: #ffffff;
+}
+
+html[data-ahorro='1'] .chat-wa {
+  --wa-verde: #d97706;
+  --wa-verde-oscuro: #b45309;
+  --wa-verde-claro: #fde68a;
+  --wa-fondo: #f5edd8;
+  --wa-panel: #f3ead6;
+  --wa-badge: #d97706;
+  --wa-seleccion: #f3ead6;
+  --wa-hover: #efe4c8;
+}
+
+html[data-ahorro='1'].dark .chat-wa {
+  --wa-verde: #f59e0b;
+  --wa-verde-oscuro: #fbbf24;
+  --wa-verde-claro: #5c4310;
+  --wa-fondo: #1a1610;
+  --wa-panel: #2a2218;
+  --wa-badge: #f59e0b;
+  --wa-seleccion: #2a2218;
+  --wa-hover: #332a1c;
+  --wa-burbuja-in: #2a2218;
 }
 
 .dark .chat-wa-fondo {

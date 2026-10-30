@@ -1,4 +1,4 @@
-import { useState, type HTMLAttributes, type ReactNode } from 'react'
+import { useState, type ComponentType, type HTMLAttributes, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowRight,
@@ -24,6 +24,7 @@ import {
   type PendienteDashboard,
 } from '@/api'
 import { Bienvenida } from '@/components/Bienvenida'
+import { IconoTelegram } from '@/components/IconoTelegram'
 import { IconoWhatsapp } from '@/components/IconoWhatsapp'
 import { PrimerosPasos } from '@/components/PrimerosPasos'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -476,6 +477,7 @@ function Integraciones({ conectado, cargando }: { conectado: boolean; cargando: 
             )}
           </Link>
         </li>
+        <FilaProxima icono={IconoTelegram} titulo="Telegram" />
         <FilaProxima icono={Wallet} titulo="Ventas" />
         <FilaProxima icono={Mail} titulo="Correo" />
       </ul>
@@ -483,7 +485,7 @@ function Integraciones({ conectado, cargando }: { conectado: boolean; cargando: 
   )
 }
 
-function FilaProxima({ icono: Icono, titulo }: { icono: LucideIcon; titulo: string }) {
+function FilaProxima({ icono: Icono, titulo }: { icono: LucideIcon | ComponentType<{ className?: string }>; titulo: string }) {
   return (
     <li className="flex items-center gap-3 px-5 py-3.5 opacity-60">
       <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">

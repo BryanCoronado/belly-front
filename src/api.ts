@@ -122,7 +122,7 @@ export type PerfilCuenta = {
   celular: string
   foto: string | null
   usuario: string
-  empresa: { nombre: string; correo: string; id_aviso_ia: number | null }
+  empresa: { nombre: string; correo: string; id_aviso_ia: number | null; modo_ahorro?: boolean }
   destinos_aviso?: DestinoAviso[]
 }
 
@@ -154,6 +154,7 @@ export async function guardarEmpresaPerfil(cuerpo: {
   nombre: string
   correo: string
   id_aviso_ia?: number | null
+  modo_ahorro?: boolean
 }): Promise<PerfilCuenta> {
   const datos = await solicitar('/v1/perfil/empresa', { method: 'PUT', cuerpo, conToken: true })
   return datos.data as PerfilCuenta
@@ -683,7 +684,23 @@ export type CostosWhatsapp = {
   categorias: CategoriaCostoWhatsapp[]
   dias: DiaCostoWhatsapp[]
   aviso: string | null
-  fuente: 'meta' | 'local'
+  fuente: 'meta' | 'local' | 'entregas'
+  actualizado_at?: string | null
+  modo_ahorro?: boolean
+}
+
+export type ModoEmpresa = {
+  modo_ahorro: boolean
+}
+
+export async function leerModoEmpresa(): Promise<ModoEmpresa> {
+  const datos = await solicitar('/v1/empresa/modo', { method: 'GET', conToken: true })
+  return datos.data as ModoEmpresa
+}
+
+export async function guardarModoEmpresa(modo_ahorro: boolean): Promise<ModoEmpresa> {
+  const datos = await solicitar('/v1/empresa/modo', { method: 'PUT', cuerpo: { modo_ahorro }, conToken: true })
+  return datos.data as ModoEmpresa
 }
 
 export async function leerCostosWhatsapp(): Promise<CostosWhatsapp> {
@@ -731,6 +748,7 @@ export type TipoPaso =
   | 'botones'
   | 'lista'
   | 'pregunta'
+  | 'formulario'
   | 'condicion'
   | 'horario'
   | 'variable'
@@ -769,6 +787,7 @@ export type ResumenFlujo = {
   descripcion: string | null
   activo: boolean
   pasos: number
+  mensajes?: number
   disparador: { tipo: string; palabras: string[]; audiencia: 'nuevos' | 'todos'; repetir: 'una_vez' | 'cada_horas' | 'siempre' }
   conversaciones_activas: number
   estadisticas: { total: number; derivadas: number; terminadas: number }
@@ -839,8 +858,8 @@ export async function guardarFlujo(
   return datos.data as Flujo
 }
 
-export async function cambiarEstadoFlujo(id: number, activo: boolean): Promise<Flujo> {
-  const datos = await solicitar(`${RUTA_FLUJOS}/${id}/estado`, { method: 'PUT', cuerpo: { activo }, conToken: true })
+export async function cambiarEstadoFlujo(id: number, activo: boolean, forzar = false): Promise<Flujo> {
+  const datos = await solicitar(`${RUTA_FLUJOS}/${id}/estado`, { method: 'PUT', cuerpo: { activo, forzar }, conToken: true })
   return datos.data as Flujo
 }
 

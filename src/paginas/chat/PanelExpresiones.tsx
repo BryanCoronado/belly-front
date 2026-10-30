@@ -22,7 +22,7 @@ export function PanelExpresiones({ alEmoji, alSticker }: Props) {
   })
 
   return (
-    <div className="mb-2 overflow-hidden rounded-xl bg-white shadow-sm">
+    <div className="mb-2 max-h-[min(18rem,45dvh)] overflow-hidden rounded-xl bg-white shadow-sm sm:max-h-none">
       <div className="flex border-b">
         <button
           type="button"
@@ -46,7 +46,7 @@ export function PanelExpresiones({ alEmoji, alSticker }: Props) {
           theme={oscuro ? Theme.DARK : Theme.LIGHT}
           emojiStyle={EmojiStyle.APPLE}
           width="100%"
-          height={320}
+          height={260}
           searchPlaceHolder="Buscar emoji"
           previewConfig={{ showPreview: false }}
           lazyLoadEmojis
@@ -65,7 +65,7 @@ export function PanelExpresiones({ alEmoji, alSticker }: Props) {
           ) : stickers.data?.aviso ? (
             <p className="px-2 py-6 text-center text-sm text-muted-foreground">{stickers.data.aviso}</p>
           ) : stickers.data?.lista.length ? (
-            <div className="grid max-h-72 grid-cols-4 gap-2 overflow-y-auto">
+            <div className="grid max-h-52 grid-cols-4 gap-2 overflow-y-auto sm:max-h-72">
               {stickers.data.lista.map((sticker) => (
                 <button
                   key={sticker.id}

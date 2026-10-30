@@ -11,18 +11,18 @@ export function Chats() {
   useGuia('chats')
 
   return (
-    <div className="chat-wa flex h-[calc(100dvh-4rem)] overflow-hidden bg-white">
+    <div className="chat-wa flex min-h-0 flex-1 overflow-hidden bg-white">
       <ListaChats
         seleccionado={seleccionado}
         alSeleccionar={(chat) => setParametros({ c: String(chat.id) })}
-        className={cn('w-full md:w-80 lg:w-96 md:shrink-0', seleccionado && 'hidden md:flex')}
+        className={cn('flex w-full min-h-0 md:w-80 md:shrink-0 lg:w-96', seleccionado && 'hidden md:flex')}
       />
       {seleccionado ? (
         <PanelConversacion
           key={seleccionado}
           idConversacion={seleccionado}
           alVolver={() => setParametros({})}
-          className="flex-1"
+          className="min-h-0 flex-1"
         />
       ) : (
         <div className="chat-wa-fondo hidden flex-1 flex-col items-center justify-center gap-4 px-8 text-center md:flex">

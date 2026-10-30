@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Camera, LoaderCircle } from 'lucide-react'
 import { guardarEmpresaPerfil, guardarPerfil, leerPerfil, subirFotoPerfil, type PerfilCuenta } from '@/api'
+import { InterruptorModoAhorro } from '@/components/InterruptorModoAhorro'
 import { Campo, CampoSelect } from '@/components/Campo'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,7 @@ export function Perfil() {
     <div className="mx-auto grid max-w-3xl gap-6">
       <Cuenta datos={perfil.data} />
       <AvisosPersonales />
+      {admin ? <InterruptorModoAhorro /> : null}
       {admin ? <Empresa datos={perfil.data} /> : null}
     </div>
   )
@@ -96,7 +98,7 @@ function Cuenta({ datos }: { datos: PerfilCuenta }) {
   const fotoActual = foto.data?.foto ?? datos.foto
 
   return (
-    <form className="rounded-xl border bg-white p-5 md:p-6" onSubmit={enviar}>
+    <form className="rounded-xl border bg-card p-5 md:p-6" onSubmit={enviar}>
       <h2 className="text-base font-semibold">Tu cuenta</h2>
       <p className="mt-1 text-sm text-muted-foreground">Este es el usuario con el que entras: {datos.usuario}</p>
 
@@ -175,7 +177,7 @@ function AvisosPersonales() {
   const prefs = useAvisos()
 
   return (
-    <section className="rounded-xl border bg-white p-5 md:p-6">
+    <section className="rounded-xl border bg-card p-5 md:p-6">
       <h2 className="text-base font-semibold">Avisos</h2>
       <p className="mt-1 text-sm text-muted-foreground">Cómo te enteras cuando te escriben o te pasan un chat.</p>
       <div className="mt-5 grid gap-4">
@@ -232,7 +234,7 @@ function Empresa({ datos }: { datos: PerfilCuenta }) {
   }
 
   return (
-    <form className="rounded-xl border bg-white p-5 md:p-6" onSubmit={enviar}>
+    <form className="rounded-xl border bg-card p-5 md:p-6" onSubmit={enviar}>
       <h2 className="text-base font-semibold">Empresa</h2>
       <p className="mt-1 text-sm text-muted-foreground">Solo el administrador puede cambiar estos datos.</p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">

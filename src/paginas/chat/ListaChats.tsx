@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { CheckCheck, ListFilter, MessagesSquare, Search, X } from 'lucide-react'
 import { useDeferredValue, useState, type ReactNode } from 'react'
 import { leerChats, leerContadoresChat, type BandejaChat, type ConversacionChat, type FiltrosChat } from '@/api'
+import { AvisoMeta } from '@/components/layout/AvisoMeta'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -46,8 +48,12 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
 
   return (
     <aside className={cn('flex min-h-0 flex-col border-r border-[var(--wa-borde)] bg-white', className)}>
-      <div className="space-y-2.5 bg-[var(--wa-panel)] px-3 py-2.5">
-        <p className="px-1 pt-1 text-[19px] font-medium">Chats</p>
+      <div className="space-y-2.5 bg-[var(--wa-panel)] px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-1">
+          <SidebarTrigger className="-ml-1 md:hidden" />
+          <p className="px-1 text-[19px] font-medium">Chats</p>
+          <AvisoMeta compacto className="ml-auto md:hidden" />
+        </div>
         <div className="flex gap-1.5">
           <div className="relative min-w-0 flex-1" data-tour="buscar-chat">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--wa-muted)]" />

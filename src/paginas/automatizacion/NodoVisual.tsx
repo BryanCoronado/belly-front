@@ -1,15 +1,19 @@
 import { useEffect } from 'react'
 import { Handle, Position, useUpdateNodeInternals, type NodeProps } from '@xyflow/react'
 import { Timer, TriangleAlert } from 'lucide-react'
+import { useModoAhorro } from '@/lib/modo-ahorro'
 import { cn } from '@/lib/utils'
 import type { NodoRF } from './conversion'
-import { META, resumenPaso, salidasDe } from './tipos'
+import { META, PASOS_CAROS, pasoCobraMensaje, resumenPaso, salidasDe } from './tipos'
 
 const ESTILO_PUNTO = { width: 14, height: 14, border: '3px solid var(--card)' } as const
 
 export function NodoVisual({ id, data, selected }: NodeProps<NodoRF>) {
+  const { ahorro } = useModoAhorro()
   const meta = META[data.tipo]
   const Icono = meta.icono
+  const cobra = pasoCobraMensaje(data.tipo)
+  const caro = PASOS_CAROS.includes(data.tipo)
   const salidas = salidasDe(data.tipo, data.datos)
   const conEtiquetas = salidas.length > 1
   const actualizarPuntos = useUpdateNodeInternals()
@@ -24,9 +28,10 @@ export function NodoVisual({ id, data, selected }: NodeProps<NodoRF>) {
   return (
     <div
       className={cn(
-        'w-64 rounded-xl bg-white shadow-md ring-1 ring-black/10 transition-shadow',
+        'w-64 rounded-xl bg-card shadow-md ring-1 ring-black/10 transition-shadow',
         selected && 'shadow-xl ring-2',
         tieneProblemas && 'ring-2 ring-rose-400',
+        ahorro && caro && 'ring-2 ring-rose-300',
       )}
       style={selected && !tieneProblemas ? { boxShadow: `0 0 0 2px ${meta.color}, 0 10px 24px -8px ${meta.color}66` } : undefined}
     >
@@ -41,6 +46,11 @@ export function NodoVisual({ id, data, selected }: NodeProps<NodoRF>) {
       <div className={cn('relative flex items-center gap-2 rounded-t-xl px-3 py-2 text-sm font-semibold', meta.cabecera)}>
         <Icono className="size-4" />
         <span className="flex-1 truncate">{meta.titulo}</span>
+        {ahorro && cobra ? (
+          <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-bold', caro ? 'bg-white/90 text-rose-700' : 'bg-white/20')}>
+            1 msg
+          </span>
+        ) : null}
         {tieneProblemas ? <TriangleAlert className="size-4 text-white" /> : null}
         {!conEtiquetas && salidas[0] ? (
           <Handle

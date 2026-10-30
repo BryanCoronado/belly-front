@@ -125,10 +125,10 @@ export function CapturaCamara({ modo, alCerrar, alCapturar }: Props) {
 
   return (
     <Dialog open={modo !== null} onOpenChange={(abrir) => !abrir && alCerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-md:inset-x-0 max-md:bottom-0 max-md:top-auto max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-b-none sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{modo === 'video' ? 'Grabar video' : 'Tomar foto'}</DialogTitle>
-          <DialogDescription>Usa la cámara de esta computadora. El archivo se adjunta al mensaje.</DialogDescription>
+          <DialogDescription>El archivo se adjunta al mensaje.</DialogDescription>
         </DialogHeader>
         <div className="overflow-hidden rounded-xl bg-black">
           <video ref={video} playsInline muted className="aspect-video w-full object-cover" />

@@ -31,7 +31,7 @@ export function ResumenBot({ idConversacion, totalMensajes }: { idConversacion: 
   const desplegado = abierto ?? datos.estado === 'derivada'
 
   return (
-    <div className="border-b border-[var(--wa-borde)] bg-emerald-50/80 text-sm dark:bg-emerald-950/30">
+    <div className="shrink-0 border-b border-[var(--wa-borde)] bg-emerald-50/80 text-sm dark:bg-emerald-950/30">
       <button
         type="button"
         onClick={() => setAbierto(!desplegado)}

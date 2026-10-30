@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { avisoError, avisoExito } from '@/lib/avisos'
+import { useModoAhorro } from '@/lib/modo-ahorro'
 import { cn } from '@/lib/utils'
 import { contarVariables, textoPlantilla } from '../chat/formato'
 import { CLASE_SELECT, useAjustesCrm } from '../clientes/crm'
@@ -50,6 +51,7 @@ export function NuevoEnvio() {
   const [variables, setVariables] = useState<string[]>([])
   const [nombre, setNombre] = useState(nombrePorDefecto)
   const [confirmando, setConfirmando] = useState(false)
+  const { ahorro } = useModoAhorro()
   const areaTexto = useRef<HTMLTextAreaElement>(null)
 
   const audiencia = useQuery({ queryKey: [...CLAVE_ENVIOS, 'audiencia', filtros], queryFn: () => leerAudienciaEnvio(filtros) })
@@ -258,6 +260,9 @@ export function NuevoEnvio() {
             <DialogDescription>
               Se mandará a {destinatarios} {destinatarios === 1 ? 'cliente' : 'clientes'}. Las respuestas llegarán al chat de quien los atiende. Una vez enviado,
               no se puede deshacer.
+              {ahorro
+                ? ' Estás en modo ahorro: este envío masivo gasta el cupo (o se cobra) por cada destinatario.'
+                : ''}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

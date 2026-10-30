@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { type StickerTienda } from '@/api'
 import { avisoError } from '@/lib/avisos'
+import { useModoAhorro } from '@/lib/modo-ahorro'
 import { FormularioRespuesta } from '@/paginas/plantillas/FormularioRespuesta'
 import { CapturaCamara } from './CapturaCamara'
 import { PanelExpresiones } from './PanelExpresiones'
@@ -99,6 +100,7 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
   const [camara, setCamara] = useState<'foto' | 'video' | null>(null)
   const [crearRespuesta, setCrearRespuesta] = useState(false)
   const consultas = useQueryClient()
+  const { ahorro } = useModoAhorro()
   const campo = useRef<HTMLTextAreaElement>(null)
   const selector = useRef<HTMLInputElement>(null)
   const acepta = useRef('image/*')
@@ -116,11 +118,11 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
   if (!ventanaAbierta) {
     return (
       <div
-        className="flex items-center justify-between gap-3 border-t border-[var(--wa-borde)] bg-[#fff4ce] px-4 py-2.5 dark:bg-[#2f2a1a]"
+        className="flex flex-col gap-2 border-t border-[var(--wa-borde)] bg-[#fff4ce] px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] dark:bg-[#2f2a1a] sm:flex-row sm:items-center sm:justify-between sm:px-4"
         data-tour="redactor"
       >
         <p className="text-sm text-[#5c4b1f] dark:text-[#e5d28a]">Pasaron 24 h: solo puedes enviar una plantilla.</p>
-        <Button size="sm" className="bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)]" onClick={alUsarPlantilla}>
+        <Button size="sm" className="w-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] sm:w-auto" onClick={alUsarPlantilla}>
           <LayoutTemplate /> Plantilla
         </Button>
       </div>
@@ -312,7 +314,12 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
   }
 
   return (
-    <div className="border-t border-[var(--wa-borde)] bg-[var(--wa-panel)] px-2 py-2 sm:px-3" data-tour="redactor">
+    <div className="shrink-0 border-t border-[var(--wa-borde)] bg-[var(--wa-panel)] px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-3" data-tour="redactor">
+      {ahorro ? (
+        <p className="mb-2 rounded-lg bg-primary/10 px-3 py-1.5 text-[12px] text-primary">
+          Modo ahorro · este envío consume el cupo de WhatsApp. Si podés, contestá desde el celular.
+        </p>
+      ) : null}
       {cita ? (
         <div className="mb-2 flex items-start gap-2 rounded-lg border-l-[3px] border-[var(--wa-verde)] bg-white px-3 py-2 text-sm shadow-sm">
           <div className="min-w-0 flex-1">
@@ -366,20 +373,22 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
       ) : null}
 
       {grabando ? (
-        <div className="mb-2 flex items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm shadow-sm">
+        <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm shadow-sm">
           <span className="size-2.5 animate-pulse rounded-full bg-red-500" />
           <span className="tabular-nums text-[var(--wa-texto)]">{formatoTiempo(segundos)}</span>
-          <span className="text-[var(--wa-muted)]">Soltar para enviar</span>
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => detenerGrabacion(true)}>
-            Cancelar
-          </Button>
-          <Button size="sm" className="bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)]" onClick={() => detenerGrabacion(false)}>
-            Enviar audio
-          </Button>
+          <span className="hidden text-[var(--wa-muted)] sm:inline">Soltar para enviar</span>
+          <div className="ml-auto flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => detenerGrabacion(true)}>
+              Cancelar
+            </Button>
+            <Button size="sm" className="bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)]" onClick={() => detenerGrabacion(false)}>
+              Enviar
+            </Button>
+          </div>
         </div>
       ) : null}
 
-      <div className="flex items-end gap-1">
+      <div className="flex min-w-0 items-end gap-0.5 sm:gap-1">
         <input
           ref={selector}
           type="file"
@@ -396,8 +405,8 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
             render={
               <Button
                 variant="ghost"
-                size="icon-lg"
-                className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)]"
+                size="icon"
+                className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)] sm:size-9"
                 aria-label="Adjuntar"
                 title="Adjuntar"
               />
@@ -412,18 +421,24 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
             <DropdownMenuItem onClick={() => setCamara('foto')}>
               <Camera /> Tomar foto
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => abrirSelector('video/*')}>
-              <Video /> Video de galería
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setCamara('video')}>
-              <Video /> Grabar video
-            </DropdownMenuItem>
+            {ahorro ? null : (
+              <DropdownMenuItem onClick={() => abrirSelector('video/*')}>
+                <Video /> Video de galería
+              </DropdownMenuItem>
+            )}
+            {ahorro ? null : (
+              <DropdownMenuItem onClick={() => setCamara('video')}>
+                <Video /> Grabar video
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => abrirSelector('.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt')}>
               <FileText /> Documento
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => abrirSelector('image/webp,.webp', 'sticker')}>
-              <Sticker /> Sticker (WebP)
-            </DropdownMenuItem>
+            {ahorro ? null : (
+              <DropdownMenuItem onClick={() => abrirSelector('image/webp,.webp', 'sticker')}>
+                <Sticker /> Sticker (WebP)
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => abrirSelector('audio/*')}>
               <Mic /> Audio
             </DropdownMenuItem>
@@ -439,8 +454,8 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
             render={
               <Button
                 variant="ghost"
-                size="icon-lg"
-                className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)]"
+                size="icon"
+                className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)] sm:size-9"
                 aria-label="Respuestas rápidas"
                 title="Respuestas rápidas"
                 data-tour="respuestas-rapidas"
@@ -475,8 +490,8 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
 
         <Button
           variant="ghost"
-          size="icon-lg"
-          className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)]"
+          size="icon"
+          className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)] sm:size-9"
           aria-label="Emojis y stickers"
           title="Emojis y stickers"
           onClick={() => setEmojisAbiertos((v) => !v)}
@@ -484,8 +499,8 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
           <Smile />
         </Button>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-1 flex items-center gap-0.5 pl-1">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <div className="mb-1 hidden items-center gap-0.5 pl-1 sm:flex">
             <Button type="button" variant="ghost" size="icon-xs" className="text-[var(--wa-muted)]" title="Negrita (*texto*)" onClick={() => envolver('*')}>
               <Bold />
             </Button>
@@ -504,14 +519,14 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
             rows={1}
             placeholder={archivo ? 'Añade un comentario (opcional)' : 'Escribe un mensaje'}
             aria-label="Mensaje"
-            className="field-sizing-content max-h-36 min-h-11 w-full resize-none rounded-[24px] border-0 bg-white px-4 py-2.5 text-[15px] text-[var(--wa-texto)] shadow-sm outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0"
+            className="field-sizing-content max-h-36 min-h-10 w-full min-w-0 max-w-full resize-none rounded-[24px] border-0 bg-white px-3 py-2 text-[15px] text-[var(--wa-texto)] shadow-sm outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0 sm:min-h-11 sm:px-4 sm:py-2.5"
           />
         </div>
 
         {puedeEnviar ? (
           <Button
-            size="icon-lg"
-            className="rounded-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] disabled:bg-[#aebac1] disabled:opacity-100"
+            size="icon"
+            className="shrink-0 rounded-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] disabled:bg-[#aebac1] disabled:opacity-100 sm:size-9"
             aria-label="Enviar"
             disabled={enviando}
             onClick={() => void enviar()}
@@ -520,8 +535,8 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
           </Button>
         ) : (
           <Button
-            size="icon-lg"
-            className="rounded-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)]"
+            size="icon"
+            className="shrink-0 rounded-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] sm:size-9"
             aria-label={grabando ? 'Detener audio' : 'Grabar audio'}
             disabled={enviando}
             onClick={() => (grabando ? detenerGrabacion(false) : void empezarGrabacion())}

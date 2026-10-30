@@ -58,7 +58,7 @@ export function BurbujaMensaje({
   return (
     <div className={cn('group/burbuja flex items-center gap-1', agrupada ? 'mt-0.5' : 'mt-2', entrante ? 'justify-start' : 'justify-end')}>
       {puedeResponder && entrante ? <BotonResponder alClick={responder} /> : null}
-      <div className="flex max-w-[85%] flex-col gap-1 sm:max-w-[65%]">
+      <div className="flex max-w-[min(92%,20rem)] flex-col gap-1 sm:max-w-[65%]">
         <div
           id={`msg-${mensaje.id}`}
           data-mensaje-id={mensaje.id}
@@ -106,7 +106,7 @@ function BotonResponder({ alClick }: { alClick: () => void }) {
     <button
       type="button"
       onClick={alClick}
-      className="flex size-8 shrink-0 items-center justify-center rounded-full text-[var(--wa-muted)] opacity-80 hover:bg-black/5 hover:text-[var(--wa-texto)] sm:opacity-0 sm:group-hover/burbuja:opacity-100"
+      className="hidden size-8 shrink-0 items-center justify-center rounded-full text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)] sm:flex sm:opacity-0 sm:group-hover/burbuja:opacity-100"
       aria-label="Responder este mensaje"
       title="Responder"
     >

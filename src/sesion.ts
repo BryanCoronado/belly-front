@@ -8,6 +8,7 @@ export type UsuarioSesion = {
   apellidos: string | null
   foto?: string | null
   sudo?: number
+  modo_ahorro?: boolean
 }
 
 export type Sesion = {

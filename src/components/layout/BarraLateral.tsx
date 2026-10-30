@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Leaf } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { leerMenu } from '@/api'
 import { LogoMarca } from '@/components/Marca'
@@ -23,6 +23,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import { ocultaEnAhorro, useModoAhorro } from '@/lib/modo-ahorro'
 import { esAdministrador, type UsuarioSesion } from '@/sesion'
 import { MenuUsuario } from './MenuUsuario'
 import { COSTOS_WHATSAPP, EQUIPO, NAVEGACION, SUPERVISION, gruposDesdeMenu, type EnlaceNavegacion, type GrupoNavegacion } from './navegacion'
@@ -32,12 +33,16 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   const admin = esAdministrador(usuario)
   const menu = useQuery({ queryKey: ['menu-modulos'], queryFn: leerMenu })
   const { conectado, cargando } = useWhatsappConectado()
+  const { ahorro } = useModoAhorro()
   const pendiente = admin && !cargando && !conectado
-  const grupos = integracionesPrimero(
-    conCostos(
-      conSupervision(conEquipo(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin), admin),
-      admin,
+  const grupos = paraAhorro(
+    integracionesPrimero(
+      conCostos(
+        conSupervision(conEquipo(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin), admin),
+        admin,
+      ),
     ),
+    ahorro,
   )
 
   return (
@@ -49,16 +54,24 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
               <LogoMarca className="size-9 rounded-xl" />
               <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-[15px] font-semibold">Belly</span>
-                <span className="truncate text-xs text-muted-foreground">{usuario.empresa_nombre || usuario.empresa}</span>
+                <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                  <span className="truncate">{usuario.empresa_nombre || usuario.empresa}</span>
+                  {ahorro ? (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                      <Leaf className="size-2.5" />
+                      Ahorro
+                    </span>
+                  ) : null}
+                </span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="gap-1 px-1" data-tour="menu">
+      <SidebarContent className="gap-1 overflow-y-auto px-1" data-tour="menu">
         {grupos.map((grupo) => (
-          <SidebarGroup key={grupo.titulo}>
+          <SidebarGroup key={grupo.titulo} className="py-1">
             <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/80">{grupo.titulo}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
@@ -85,8 +98,20 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
 }
 
 const BOTON = 'h-10 rounded-lg px-3 text-[14px] text-foreground/75 hover:text-foreground'
-const BOTON_ACTIVO = 'data-active:bg-emerald-50 data-active:font-semibold data-active:text-emerald-800'
+const BOTON_ACTIVO = 'data-active:bg-primary/10 data-active:font-semibold data-active:text-primary'
 const RUTA_WHATSAPP = '/integraciones/whatsapp'
+
+function paraAhorro(grupos: GrupoNavegacion[], ahorro: boolean): GrupoNavegacion[] {
+  if (!ahorro) {
+    return grupos
+  }
+  return grupos
+    .map((grupo) => ({
+      ...grupo,
+      enlaces: grupo.enlaces.filter((enlace) => !ocultaEnAhorro(enlace.ruta)),
+    }))
+    .filter((grupo) => grupo.enlaces.length > 0)
+}
 
 function esGrupoIntegraciones(grupo: GrupoNavegacion): boolean {
   return grupo.titulo.toLowerCase() === 'integraciones'
@@ -167,14 +192,18 @@ function ItemMenu({ enlace, ruta, pendiente = false }: { enlace: EnlaceNavegacio
 }
 
 function conEquipo(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {
-  if (!admin || grupos.length === 0) {
+  if (!admin || grupos.some((grupo) => grupo.enlaces.some((enlace) => enlace.ruta === EQUIPO.ruta))) {
     return grupos
   }
-  const [primero, ...resto] = grupos
-  if (primero.enlaces.some((enlace) => enlace.ruta === EQUIPO.ruta)) {
+  const indice = grupos.findIndex(
+    (grupo) =>
+      grupo.titulo.toLowerCase() === 'general' ||
+      grupo.enlaces.some((enlace) => enlace.ruta === '/inicio' || enlace.ruta === '/dashboard'),
+  )
+  if (indice < 0) {
     return grupos
   }
-  return [{ ...primero, enlaces: [...primero.enlaces, EQUIPO] }, ...resto]
+  return grupos.map((grupo, i) => (i === indice ? { ...grupo, enlaces: [...grupo.enlaces, EQUIPO] } : grupo))
 }
 
 function conCostos(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {

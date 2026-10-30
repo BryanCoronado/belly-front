@@ -18,13 +18,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { avisoError, avisoExito } from '@/lib/avisos'
+import { useModoAhorro } from '@/lib/modo-ahorro'
 import { cn } from '@/lib/utils'
+import { TOPE_AHORRO } from './tipos'
 import { PLANTILLAS, type PlantillaFlujo } from './plantillas'
 
 const CLAVE = ['flujos']
 
 export function Flujos() {
   const [creando, setCreando] = useState(false)
+  const { ahorro } = useModoAhorro()
   const flujos = useQuery({ queryKey: CLAVE, queryFn: listarFlujos })
   const lista = flujos.data ?? []
 
@@ -32,7 +35,11 @@ export function Flujos() {
     <div className="space-y-6">
       <CabeceraPagina
         titulo="Respuestas automáticas"
-        descripcion="Arma un asistente que conteste solo por WhatsApp con botones y mensajes que tú escribes."
+        descripcion={
+          ahorro
+            ? 'Modo ahorro: un formulario o botones y pasar a un asesor. Un flujo de más de 2 mensajes pide confirmación para activarse.'
+            : 'Arma un asistente que conteste solo por WhatsApp con botones y mensajes que tú escribes.'
+        }
         acciones={
           <Button size="lg" onClick={() => setCreando(true)}>
             <Plus />
@@ -117,11 +124,16 @@ function Tarjeta({ flujo }: { flujo: ResumenFlujo }) {
   const consultas = useQueryClient()
   const navegar = useNavigate()
   const [confirmando, setConfirmando] = useState(false)
+  const [confirmarCaro, setConfirmarCaro] = useState(false)
+  const { ahorro } = useModoAhorro()
   const refrescar = () => consultas.invalidateQueries({ queryKey: CLAVE })
+  const mensajes = flujo.mensajes ?? flujo.pasos
+  const largo = ahorro && mensajes > TOPE_AHORRO
 
   const alternar = useMutation({
-    mutationFn: (activo: boolean) => cambiarEstadoFlujo(flujo.id, activo),
+    mutationFn: ({ activo, forzar }: { activo: boolean; forzar?: boolean }) => cambiarEstadoFlujo(flujo.id, activo, forzar),
     onSuccess: (nuevo) => {
+      setConfirmarCaro(false)
       void refrescar()
       avisoExito(nuevo.activo ? 'Flujo activado' : 'Flujo pausado')
     },
@@ -177,6 +189,11 @@ function Tarjeta({ flujo }: { flujo: ResumenFlujo }) {
             {flujo.disparador.audiencia === 'nuevos' ? 'Contactos nuevos' : 'Todos los contactos'}
           </span>
           <span className="rounded-full bg-zinc-100 px-2 py-1 font-medium text-zinc-600">{flujo.pasos} pasos</span>
+          {ahorro ? (
+            <span className={cn('rounded-full px-2 py-1 font-medium', largo ? 'bg-rose-50 text-rose-700' : 'bg-primary/10 text-primary')}>
+              ~{mensajes} {mensajes === 1 ? 'mensaje' : 'mensajes'}
+            </span>
+          ) : null}
           {flujo.conversaciones_activas > 0 ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1 font-medium text-sky-700">
               <MessagesSquare className="size-3" />
@@ -191,7 +208,13 @@ function Tarjeta({ flujo }: { flujo: ResumenFlujo }) {
           <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
             <Switch
               checked={flujo.activo}
-              onCheckedChange={(v) => alternar.mutate(v)}
+              onCheckedChange={(v) => {
+                if (v && largo) {
+                  setConfirmarCaro(true)
+                  return
+                }
+                alternar.mutate({ activo: v })
+              }}
               disabled={alternar.isPending}
               className="data-checked:bg-emerald-500"
             />
@@ -210,6 +233,27 @@ function Tarjeta({ flujo }: { flujo: ResumenFlujo }) {
           </div>
         </div>
       </div>
+
+      <Dialog open={confirmarCaro} onOpenChange={(abrir) => !alternar.isPending && setConfirmarCaro(abrir)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Este flujo habla de más</DialogTitle>
+            <DialogDescription>
+              Manda unos {mensajes} mensajes. En modo ahorro conviene {TOPE_AHORRO}. Si lo prendés igual, cada envío come el
+              cupo de WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmarCaro(false)} disabled={alternar.isPending}>
+              Cancelar
+            </Button>
+            <Button onClick={() => alternar.mutate({ activo: true, forzar: true })} disabled={alternar.isPending}>
+              {alternar.isPending ? <LoaderCircle className="animate-spin" /> : null}
+              Activarlo igual
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={confirmando} onOpenChange={setConfirmando}>
         <DialogContent>
@@ -239,7 +283,7 @@ function DialogoNuevo({ abierto, alCerrar }: { abierto: boolean; alCerrar: () =>
   const navegar = useNavigate()
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
-  const [plantilla, setPlantilla] = useState<PlantillaFlujo['id']>('menu')
+  const [plantilla, setPlantilla] = useState<PlantillaFlujo['id']>('ahorro')
 
   const crear = useMutation({
     mutationFn: async () => {
@@ -298,7 +342,7 @@ function DialogoNuevo({ abierto, alCerrar }: { abierto: boolean; alCerrar: () =>
                     onClick={() => setPlantilla(p.id)}
                     className={cn(
                       'flex items-start gap-3 rounded-lg border p-3 text-left transition-colors',
-                      elegido ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'hover:bg-zinc-50',
+                      elegido ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'hover:bg-muted/60',
                     )}
                   >
                     <span

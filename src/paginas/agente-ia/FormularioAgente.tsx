@@ -188,7 +188,7 @@ export function FormularioAgente({ agente, modelos, otrosNombres, alEliminar }: 
           min={1}
           max={100}
           alCambiar={(max_respuestas) => poner({ max_respuestas })}
-          ayuda="Para que nadie quede hablando solo con el asistente demasiado tiempo."
+          ayuda="Para que nadie quede hablando solo con el asistente demasiado tiempo. En modo ahorro el tope real es 2, aunque acá pongas más."
         />
         <div className="grid gap-2">
           <Label htmlFor="mensaje-traspaso">Mensaje al pasar el chat</Label>

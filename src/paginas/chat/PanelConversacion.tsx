@@ -116,9 +116,9 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
   const nombre = chat ? nombreContacto(chat) : ''
 
   return (
-    <section className={cn('flex min-h-0 flex-col', className)}>
+    <section className={cn('flex h-full min-h-0 flex-col', className)}>
       <header
-        className="flex items-center gap-3 border-b border-[var(--wa-borde)] bg-[var(--wa-panel)] px-3 py-2.5"
+        className="flex min-w-0 shrink-0 items-center gap-1.5 border-b border-[var(--wa-borde)] bg-[var(--wa-panel)] px-2 py-2 sm:gap-3 sm:px-3 sm:py-2.5"
         data-tour="cabecera-chat"
       >
         <Button
@@ -148,6 +148,7 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
                 </p>
               </div>
             </button>
+            <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
             {acciones}
             <Button
               variant="ghost"
@@ -163,20 +164,21 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
               {silenciado ? <BellOff /> : <Bell />}
             </Button>
             {finalizada ? (
-              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[var(--wa-muted)]">
+              <span className="hidden rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[var(--wa-muted)] sm:inline">
                 Finalizada
               </span>
             ) : (
               <Button
                 variant="outline"
-                size="sm"
-                className="border-[var(--wa-borde)] bg-white text-[var(--wa-texto)] hover:bg-white/80"
+                size="icon"
+                className="border-[var(--wa-borde)] bg-white text-[var(--wa-texto)] hover:bg-white/80 sm:h-7 sm:w-auto sm:px-2.5"
                 onClick={() => setDialogo('finalizar')}
                 data-tour="finalizar-chat"
               >
                 <CircleCheckBig /> <span className="hidden sm:inline">Finalizar</span>
               </Button>
             )}
+            </div>
           </>
         ) : (
           <div className="flex flex-1 items-center gap-3">
@@ -276,7 +278,7 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
         const elemento = evento.currentTarget
         pegadoAbajo.current = elemento.scrollHeight - elemento.scrollTop - elemento.clientHeight < DISTANCIA_PEGADO_ABAJO
       }}
-      className="chat-wa-fondo min-h-0 flex-1 overflow-y-auto px-3 py-2 sm:px-16"
+      className="chat-wa-fondo min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 sm:px-8 lg:px-16"
       data-tour="mensajes-chat"
     >
       {cargando ? (
