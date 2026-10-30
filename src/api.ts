@@ -657,6 +657,40 @@ export async function leerWhatsappConectado(): Promise<boolean> {
   return Boolean((datos.data as { conectado?: boolean } | undefined)?.conectado)
 }
 
+export type CategoriaCostoWhatsapp = {
+  categoria: string
+  tipo: string
+  volumen: number
+  costo: number
+}
+
+export type DiaCostoWhatsapp = {
+  fecha: string
+  gratis: number
+  cobrados: number
+  costo: number
+}
+
+export type CostosWhatsapp = {
+  numero: string
+  nombre: string
+  mes: string
+  cupo: number
+  usados_gratis: number
+  restantes: number
+  cobrados: number
+  costo_usd: number
+  categorias: CategoriaCostoWhatsapp[]
+  dias: DiaCostoWhatsapp[]
+  aviso: string | null
+  fuente: 'meta' | 'local'
+}
+
+export async function leerCostosWhatsapp(): Promise<CostosWhatsapp> {
+  const datos = await solicitar(`${RUTA_WHATSAPP}/costos`, { method: 'GET', conToken: true })
+  return datos.data as CostosWhatsapp
+}
+
 export async function leerEstadoWhatsapp(): Promise<EstadoWhatsapp> {
   const datos = await solicitar(RUTA_WHATSAPP, { method: 'GET', conToken: true })
   return datos.data as EstadoWhatsapp

@@ -34,6 +34,13 @@ export function Integraciones() {
           estado={cargando ? null : conectado ? 'Conectado' : 'Sin conectar'}
           destacado={!cargando && conectado}
         />
+        <Tarjeta
+          titulo="Costos WhatsApp"
+          texto="Cupo de 1.000 y lo que Meta cobra"
+          icono={Wallet}
+          ruta="/integraciones/costos"
+          estado={conectado ? 'Este mes' : 'Requiere WhatsApp'}
+        />
         {PROXIMAS.map((integracion) => (
           <Tarjeta key={integracion.titulo} {...integracion} estado="Próximamente" />
         ))}

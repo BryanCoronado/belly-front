@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils'
 import { esAdministrador, type UsuarioSesion } from '@/sesion'
 import { MenuUsuario } from './MenuUsuario'
-import { EQUIPO, NAVEGACION, SUPERVISION, gruposDesdeMenu, type EnlaceNavegacion, type GrupoNavegacion } from './navegacion'
+import { COSTOS_WHATSAPP, EQUIPO, NAVEGACION, SUPERVISION, gruposDesdeMenu, type EnlaceNavegacion, type GrupoNavegacion } from './navegacion'
 
 export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   const { pathname } = useLocation()
@@ -34,7 +34,10 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   const { conectado, cargando } = useWhatsappConectado()
   const pendiente = admin && !cargando && !conectado
   const grupos = integracionesPrimero(
-    conSupervision(conEquipo(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin), admin),
+    conCostos(
+      conSupervision(conEquipo(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin), admin),
+      admin,
+    ),
   )
 
   return (
@@ -172,6 +175,17 @@ function conEquipo(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[]
     return grupos
   }
   return [{ ...primero, enlaces: [...primero.enlaces, EQUIPO] }, ...resto]
+}
+
+function conCostos(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {
+  if (!admin || grupos.some((grupo) => grupo.enlaces.some((enlace) => enlace.ruta === COSTOS_WHATSAPP.ruta))) {
+    return grupos
+  }
+  const indice = grupos.findIndex(esGrupoIntegraciones)
+  if (indice < 0) {
+    return [...grupos, { titulo: 'Integraciones', enlaces: [COSTOS_WHATSAPP] }]
+  }
+  return grupos.map((grupo, i) => (i === indice ? { ...grupo, enlaces: [...grupo.enlaces, COSTOS_WHATSAPP] } : grupo))
 }
 
 function conSupervision(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {

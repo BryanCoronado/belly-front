@@ -13,6 +13,7 @@ import {
   Smartphone,
   UserRoundSearch,
   Users,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -45,6 +46,7 @@ const ICONOS: Record<string, IconoNav> = {
   bot: Bot,
   sparkles: Bot,
   send: Send,
+  wallet: Wallet,
 }
 
 const TONOS = [
@@ -75,6 +77,7 @@ const TONO_RUTA: Record<string, string> = {
   '/plantillas': 'bg-cyan-100 text-cyan-700',
   '/integraciones': 'bg-green-100 text-green-700',
   '/integraciones/whatsapp': 'bg-green-100 text-green-700',
+  '/integraciones/costos': 'bg-lime-100 text-lime-700',
 }
 
 const RUTAS_FRONT: Record<string, string> = {
@@ -142,9 +145,19 @@ export const NAVEGACION: GrupoNavegacion[] = [
   },
   {
     titulo: 'Integraciones',
-    enlaces: [{ titulo: 'WhatsApp', ruta: '/integraciones/whatsapp', icono: IconoWhatsapp, tono: TONO_RUTA['/integraciones/whatsapp'] }],
+    enlaces: [
+      { titulo: 'WhatsApp', ruta: '/integraciones/whatsapp', icono: IconoWhatsapp, tono: TONO_RUTA['/integraciones/whatsapp'] },
+      { titulo: 'Costos WhatsApp', ruta: '/integraciones/costos', icono: Wallet, tono: TONO_RUTA['/integraciones/costos'] },
+    ],
   },
 ]
+
+export const COSTOS_WHATSAPP: EnlaceNavegacion = {
+  titulo: 'Costos WhatsApp',
+  ruta: '/integraciones/costos',
+  icono: Wallet,
+  tono: TONO_RUTA['/integraciones/costos'],
+}
 
 export const INTEGRACIONES: EnlaceNavegacion = {
   titulo: 'Integraciones',
@@ -171,7 +184,7 @@ export function gruposDesdeMenu(grupos: GrupoMenu[]): GrupoNavegacion[] {
 
 export function tituloDeRuta(ruta: string): string {
   if (ruta === '/perfil') return 'Mi perfil'
-  const plano = aplanar([...NAVEGACION.flatMap((grupo) => grupo.enlaces), EQUIPO, SUPERVISION, INTEGRACIONES])
+  const plano = aplanar([...NAVEGACION.flatMap((grupo) => grupo.enlaces), EQUIPO, SUPERVISION, INTEGRACIONES, COSTOS_WHATSAPP])
   const exacto = plano.find((item) => item.ruta === ruta)
   if (exacto) {
     return exacto.titulo
