@@ -35,7 +35,7 @@ function aplicar(ahorro: boolean) {
 }
 
 /** Reproduce el barrido al cambiar de modo (cubre → aplica → revela). */
-export async function transformarModo(haciaAhorro: boolean, aplicarCambio: () => Promise<void>) {
+export async function transformarModo(haciaAhorro: boolean, aplicarCambio: () => Promise<unknown>) {
   if (ocupada) {
     await aplicarCambio()
     return
