@@ -86,7 +86,7 @@ export function ConexionWhatsapp() {
   if (!admin) {
     return (
       <div className="space-y-6">
-        <CabeceraPagina titulo="WhatsApp" descripcion="WhatsApp Business de tu empresa." />
+        <CabeceraPagina titulo="WhatsApp" descripcion="WhatsApp Business de tu empresa. El plan de Belly es el CRM. Los mensajes los cobra Meta a tu Facebook, no nosotros." />
         <Aviso>Solo el administrador puede conectarlo.</Aviso>
       </div>
     )
@@ -100,7 +100,7 @@ export function ConexionWhatsapp() {
     <div className="min-w-0 space-y-6">
       <CabeceraPagina
         titulo="WhatsApp"
-        descripcion="Conecta el WhatsApp de tu empresa"
+        descripcion="Conecta el WhatsApp de tu empresa. Belly es el CRM. Los mensajes los cobra Meta, no nosotros."
         acciones={
           datos ? (
             <>
@@ -259,7 +259,7 @@ function Asistente({ estado, alActualizar }: PropsPaso) {
         </ol>
       </nav>
 
-      <section data-tour="paso-contenido" className="min-w-0 overflow-hidden rounded-xl border bg-white">
+      <section data-tour="paso-contenido" className="superficie min-w-0 overflow-hidden">
         {activo === 0 ? (
           <PasoAppMeta estado={estado} alActualizar={alActualizar} alGuardar={alAvanzar} />
         ) : null}
@@ -610,10 +610,10 @@ function PanelPaso({
   return (
     <>
       <header className="space-y-1 border-b px-4 py-4 sm:px-7 sm:py-5">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
           Paso {indice + 1} de {PASOS.length}
         </p>
-        <h2 className="text-xl font-semibold tracking-tight">{titulo}</h2>
+        <h2 className="font-heading text-[1.25rem] leading-tight font-bold tracking-[-0.03em]">{titulo}</h2>
         <p className="text-sm text-muted-foreground">{ayuda}</p>
       </header>
       <div className="grid min-w-0 gap-6 px-4 py-5 sm:px-7 sm:py-6 xl:grid-cols-[minmax(0,1fr)_280px] xl:gap-8">

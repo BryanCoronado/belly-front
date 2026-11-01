@@ -6,7 +6,7 @@ import { entrar } from '@/api'
 import { LayoutAcceso } from '@/components/layout/LayoutAcceso'
 import { Button } from '@/components/ui/button'
 import { avisoError, avisoExito } from '@/lib/avisos'
-import { consumirSesionVencida, guardarSesion, leerSesion, nombreVisible } from '@/sesion'
+import { consumirSesionVencida, guardarSesion, leerSesion, nombreVisible, rutaTrasEntrar } from '@/sesion'
 
 const CREDENCIALES_VACIAS = { identificador: '', password: '' }
 
@@ -23,7 +23,7 @@ export function Login() {
     onSuccess: (sesion) => {
       guardarSesion(sesion)
       avisoExito('Sesión iniciada', `Bienvenido, ${nombreVisible(sesion.usuario)}.`)
-      navegar('/inicio', { replace: true })
+      navegar(rutaTrasEntrar(sesion.usuario), { replace: true })
     },
     onError: (error) => avisoError(error, 'No se pudo iniciar sesión'),
   })

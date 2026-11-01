@@ -82,7 +82,7 @@ export function DetalleEnvio() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{envio.nombre}</h1>
+              <h1 className="truncate font-heading text-[1.65rem] leading-none font-bold tracking-[-0.035em] sm:text-[1.85rem]">{envio.nombre}</h1>
               <Estado {...ESTADO_ENVIO[envio.estado]} />
             </div>
             <p className="text-sm text-muted-foreground">
@@ -99,7 +99,7 @@ export function DetalleEnvio() {
         </div>
       </div>
 
-      <div className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+      <div className="space-y-4 superficie p-4 sm:p-5">
         <div className="flex items-baseline justify-between gap-2">
           <p className="text-sm font-medium">
             <span className="text-2xl font-semibold tabular-nums">{enviados}</span>

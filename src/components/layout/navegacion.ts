@@ -1,4 +1,5 @@
 import {
+  BookImage,
   Bot,
   Boxes,
   CircleUserRound,
@@ -42,6 +43,7 @@ const ICONOS: Record<string, IconoNav> = {
   person_alt: UserRoundSearch,
   people: CircleUserRound,
   store: Boxes,
+  book: BookImage,
   whatsapp: IconoWhatsapp,
   bot: Bot,
   sparkles: Bot,
@@ -64,6 +66,7 @@ const TONO_RUTA: Record<string, string> = {
   '/inicio': 'bg-emerald-100 text-emerald-700',
   '/dashboard': 'bg-emerald-100 text-emerald-700',
   '/equipo': 'bg-violet-100 text-violet-700',
+  '/cuenta': 'bg-violet-100 text-violet-700',
   '/chats': 'bg-sky-100 text-sky-700',
   '/supervision': 'bg-indigo-100 text-indigo-700',
   '/conversaciones/chat/mis_clientes': 'bg-amber-100 text-amber-700',
@@ -74,10 +77,12 @@ const TONO_RUTA: Record<string, string> = {
   '/automatizacion': 'bg-violet-100 text-violet-700',
   '/agente-ia': 'bg-zinc-100 text-zinc-700',
   '/productos': 'bg-orange-100 text-orange-700',
+  '/catalogo': 'bg-orange-100 text-orange-700',
   '/plantillas': 'bg-cyan-100 text-cyan-700',
   '/integraciones': 'bg-green-100 text-green-700',
   '/integraciones/whatsapp': 'bg-green-100 text-green-700',
   '/integraciones/costos': 'bg-lime-100 text-lime-700',
+  '/integraciones/catalogo': 'bg-orange-100 text-orange-700',
 }
 
 const RUTAS_FRONT: Record<string, string> = {
@@ -86,9 +91,17 @@ const RUTAS_FRONT: Record<string, string> = {
   '/conversaciones/chat/mis_conversaciones': '/chats',
   '/conversaciones/chat/mis_plantillas': '/plantillas',
   '/conversaciones/configuracion': '/integraciones/whatsapp',
+  '/integraciones/catalogo': '/catalogo',
   '/leads': '/clientes',
   '/leads/clientes': '/clientes',
   '/leads/lista-negra': '/lista-negra',
+}
+
+export const CUENTA: EnlaceNavegacion = {
+  titulo: 'Plan y pagos',
+  ruta: '/cuenta',
+  icono: Wallet,
+  tono: TONO_RUTA['/cuenta'],
 }
 
 export const EQUIPO: EnlaceNavegacion = {
@@ -141,14 +154,14 @@ export const NAVEGACION: GrupoNavegacion[] = [
   },
   {
     titulo: 'Catálogo',
-    enlaces: [{ titulo: 'Productos', ruta: '/productos', icono: Boxes, tono: TONO_RUTA['/productos'] }],
+    enlaces: [
+      { titulo: 'Productos', ruta: '/productos', icono: Boxes, tono: TONO_RUTA['/productos'] },
+      { titulo: 'Mi Catálogo', ruta: '/catalogo', icono: BookImage, tono: TONO_RUTA['/catalogo'] },
+    ],
   },
   {
     titulo: 'Integraciones',
-    enlaces: [
-      { titulo: 'WhatsApp', ruta: '/integraciones/whatsapp', icono: IconoWhatsapp, tono: TONO_RUTA['/integraciones/whatsapp'] },
-      { titulo: 'Costos WhatsApp', ruta: '/integraciones/costos', icono: Wallet, tono: TONO_RUTA['/integraciones/costos'] },
-    ],
+    enlaces: [{ titulo: 'Integraciones', ruta: '/integraciones', icono: Smartphone, tono: TONO_RUTA['/integraciones'] }],
   },
 ]
 
@@ -183,13 +196,19 @@ export function gruposDesdeMenu(grupos: GrupoMenu[]): GrupoNavegacion[] {
 }
 
 export function tituloDeRuta(ruta: string): string {
-  if (ruta === '/perfil') return 'Mi perfil'
-  const plano = aplanar([...NAVEGACION.flatMap((grupo) => grupo.enlaces), EQUIPO, SUPERVISION, INTEGRACIONES, COSTOS_WHATSAPP])
-  const exacto = plano.find((item) => item.ruta === ruta)
-  if (exacto) {
-    return exacto.titulo
+  return moduloDeRuta(ruta)?.titulo ?? (ruta === '/perfil' ? 'Mi perfil' : '')
+}
+
+export function moduloDeRuta(ruta: string): EnlaceNavegacion | null {
+  if (ruta === '/perfil') {
+    return { titulo: 'Mi perfil', ruta: '/perfil', icono: CircleUserRound, tono: 'bg-violet-100 text-violet-700' }
   }
-  return plano.find((item) => ruta.startsWith(item.ruta) && item.ruta !== '/inicio')?.titulo ?? ''
+  const plano = aplanar([...NAVEGACION.flatMap((grupo) => grupo.enlaces), CUENTA, EQUIPO, SUPERVISION, INTEGRACIONES, COSTOS_WHATSAPP])
+  return (
+    plano.find((item) => item.ruta === ruta) ??
+    plano.find((item) => ruta.startsWith(item.ruta) && item.ruta !== '/inicio' && item.ruta !== '/') ??
+    null
+  )
 }
 
 function enlaceDesdeModulo(modulo: ModuloMenu, indice = 0): EnlaceNavegacion {

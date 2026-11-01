@@ -35,13 +35,13 @@ export function TablaResponsiva<T>({ filas, columnas, clave, cargando, acciones,
   const secundarias = columnas.filter((columna) => !columna.principal)
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-xs" data-tour="lista">
+    <div className="superficie overflow-hidden" data-tour="lista">
       <div className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               {columnas.map((columna) => (
-                <TableHead key={columna.titulo} className="h-11 px-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                <TableHead key={columna.titulo} className="h-11 px-4 text-[11px] font-semibold tracking-[0.07em] text-muted-foreground uppercase">
                   {columna.titulo}
                 </TableHead>
               ))}

@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Copy, Plus, Settings2, Trash2, TriangleAlert } from 'lucide-react'
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { leerGruposAtencion, type DatosPaso, type TipoArchivoFlujo } from '@/api'
+import type { EnvioCatalogo } from '@/paginas/catalogo/mensajeProducto'
+import { ListaProductosCatalogo } from '@/paginas/catalogo/SelectorCatalogo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,7 +41,7 @@ type Props = {
   alConfigurar: () => void
 }
 
-const ENVIA_MENSAJE = ['mensaje', 'ubicacion', 'botones', 'lista', 'pregunta', 'formulario', 'asesor', 'fin']
+const ENVIA_MENSAJE = ['mensaje', 'catalogo', 'ubicacion', 'botones', 'lista', 'pregunta', 'formulario', 'asesor', 'fin']
 const ESPERA_RESPUESTA = ['botones', 'lista', 'pregunta', 'formulario']
 const MAX_CAMPOS = 8
 
@@ -75,6 +77,7 @@ export function PanelNodo({ nodo, variables, alCambiar, alDuplicar, alEliminar, 
 
         {tipo === 'inicio' ? <ResumenInicio datos={datos} alConfigurar={alConfigurar} /> : null}
         {tipo === 'mensaje' ? <FormMensaje datos={datos} poner={poner} variables={variables} /> : null}
+        {tipo === 'catalogo' ? <FormCatalogo datos={datos} poner={poner} /> : null}
         {tipo === 'botones' ? <FormBotones datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'lista' ? <FormLista datos={datos} poner={poner} variables={variables} /> : null}
         {tipo === 'pregunta' ? (
@@ -203,6 +206,38 @@ function FormMensaje({ datos, poner, variables }: FormProps) {
   )
 }
 
+function FormCatalogo({ datos, poner }: { datos: DatosPaso; poner: (parcial: DatosPaso) => void }) {
+  function aplicar(envio: EnvioCatalogo, extra?: { producto?: { id: number }; familia?: { id: number } }) {
+    poner({
+      modo: envio.modo,
+      texto: envio.texto,
+      media: envio.imagen_url ? 'imagen' : 'ninguno',
+      url: envio.imagen_url ?? '',
+      id_producto: extra?.producto?.id ?? 0,
+      id_familia: extra?.familia?.id ?? 0,
+    })
+  }
+
+  return (
+    <>
+      <Nota>
+        El bot envía la foto y un mensaje armado (nombre, precio, descripción). Si más adelante cambias el producto, vuelve a
+        elegirlo aquí para actualizar el paso.
+      </Nota>
+      {texto(datos, 'texto') ? (
+        <div className="space-y-2 rounded-xl border p-3">
+          {texto(datos, 'url') ? <img src={texto(datos, 'url')} alt="" className="h-28 w-full rounded-lg object-cover" /> : null}
+          <p className="text-sm whitespace-pre-line">{texto(datos, 'texto')}</p>
+        </div>
+      ) : null}
+      <div className="overflow-hidden rounded-xl border">
+        <p className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">Elegir del catálogo</p>
+        <ListaProductosCatalogo alElegir={aplicar} />
+      </div>
+    </>
+  )
+}
+
 function FormEspera({ datos, poner }: Omit<FormProps, 'variables'>) {
   const unidad = texto(datos, 'unidad') || 'horas'
 
@@ -324,6 +359,7 @@ function FormLista({ datos, poner, variables }: FormProps) {
             />
           </div>
         ))}
+        <CargarProductosEnLista datos={datos} poner={poner} opciones={opciones} />
         {opciones.length < MAX_OPCIONES ? (
           <Button
             variant="outline"
@@ -338,6 +374,49 @@ function FormLista({ datos, poner, variables }: FormProps) {
         )}
       </div>
     </>
+  )
+}
+
+function CargarProductosEnLista({
+  datos,
+  poner,
+  opciones,
+}: {
+  datos: DatosPaso
+  poner: (parcial: DatosPaso) => void
+  opciones: { id: string; titulo: string; descripcion?: string }[]
+}) {
+  const [abierto, setAbierto] = useState(false)
+
+  return (
+    <div className="space-y-2">
+      <Button type="button" variant="outline" size="sm" onClick={() => setAbierto((v) => !v)}>
+        Cargar productos del catálogo
+      </Button>
+      {abierto ? (
+        <div className="overflow-hidden rounded-xl border">
+          <ListaProductosCatalogo
+            compacto
+            alElegir={(envio, extra) => {
+              if (extra?.producto) {
+                if (opciones.length >= MAX_OPCIONES) return
+                const titulo = extra.producto.nombre.slice(0, LARGO_OPCION)
+                const descripcion = envio.texto.split('\n')[2]?.slice(0, LARGO_DESCRIPCION) ?? ''
+                poner({
+                  texto: texto(datos, 'texto') || 'Elige un producto:',
+                  boton: texto(datos, 'boton') || 'Ver productos',
+                  opciones: [...opciones, { id: nuevoId('o'), titulo, descripcion }],
+                })
+                return
+              }
+              if (extra?.familia) {
+                poner({ texto: envio.texto.slice(0, LARGO_CUERPO), boton: texto(datos, 'boton') || 'Ver productos' })
+              }
+            }}
+          />
+        </div>
+      ) : null}
+    </div>
   )
 }
 

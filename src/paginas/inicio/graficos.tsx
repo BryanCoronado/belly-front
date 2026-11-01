@@ -5,7 +5,7 @@ import type { ParteDashboard, PuntoActividad } from '@/api'
 import { useTema } from '@/lib/tema'
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-const FUENTE = 'Geist Variable, ui-sans-serif, system-ui, sans-serif'
+const FUENTE = 'Plus Jakarta Sans Variable, ui-sans-serif, system-ui, sans-serif'
 
 function etiquetaDia(fecha: string): string {
   const partes = fecha.split('-')
@@ -14,12 +14,12 @@ function etiquetaDia(fecha: string): string {
 
 function paleta(oscuro: boolean) {
   return {
-    eje: oscuro ? '#9aa3ab' : '#a1a1aa',
-    leyenda: oscuro ? '#c9d0d6' : '#71717a',
-    grilla: oscuro ? 'rgba(255,255,255,0.08)' : '#f4f4f5',
-    valor: oscuro ? '#f4f4f5' : '#18181b',
-    anillo: oscuro ? '#1c2126' : '#ffffff',
-    pista: oscuro ? 'rgba(255,255,255,0.08)' : '#ffe4e6',
+    eje: oscuro ? '#a8aec8' : '#7a7594',
+    leyenda: oscuro ? '#c4b5fd' : '#6b6588',
+    grilla: oscuro ? 'rgba(167,139,250,0.1)' : '#ebe6f7',
+    valor: oscuro ? '#eef0ff' : '#1a1530',
+    anillo: oscuro ? '#15182a' : '#fbfaff',
+    pista: oscuro ? 'rgba(167,139,250,0.12)' : '#ece6fb',
     tooltip: (oscuro ? 'dark' : 'light') as 'dark' | 'light',
   }
 }
@@ -79,7 +79,7 @@ export function GraficoActividad({ puntos }: { puntos: PuntoActividad[] }) {
     () =>
       base(oscuro, {
         chart: { type: 'line', stacked: false },
-        colors: ['#10b981', '#0ea5e9', '#f59e0b'],
+        colors: ['#5B46B4', '#A78BFA', '#0B1026'],
         stroke: { width: [0, 0, 3], curve: 'smooth' },
         fill: { opacity: [1, 1, 0.18], type: ['solid', 'solid', 'gradient'] },
         plotOptions: { bar: { columnWidth: '52%', borderRadius: 5, borderRadiusApplication: 'end' } },
@@ -189,7 +189,7 @@ export function AnilloResultado({ ganados, perdidos }: { ganados: number; perdid
     () =>
       base(oscuro, {
         chart: { type: 'radialBar' },
-        colors: ['#10b981'],
+        colors: ['#7C6CF5'],
         plotOptions: {
           radialBar: {
             hollow: { size: '64%' },
@@ -216,7 +216,7 @@ export function AnilloResultado({ ganados, perdidos }: { ganados: number; perdid
       <div className="mt-1 flex justify-center gap-6 text-sm">
         <p>
           <span className="text-muted-foreground">Ganados </span>
-          <span className="font-semibold tabular-nums text-emerald-600">{ganados}</span>
+          <span className="font-semibold tabular-nums text-primary">{ganados}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Perdidos </span>
@@ -227,12 +227,12 @@ export function AnilloResultado({ ganados, perdidos }: { ganados: number; perdid
   )
 }
 
-export function MiniSpark({ valores, color = '#10b981' }: { valores: number[]; color?: string }) {
+export function MiniSpark({ valores, color = '#7C6CF5' }: { valores: number[]; color?: string }) {
   const opciones = useMemo<ApexOptions>(
     () => ({
       chart: { sparkline: { enabled: true }, animations: { enabled: false }, toolbar: { show: false } },
-      stroke: { curve: 'smooth', width: 2, colors: [color] },
-      fill: { type: 'gradient', gradient: { shadeIntensity: 0.7, opacityFrom: 0.35, opacityTo: 0.04, stops: [0, 100] }, colors: [color] },
+      stroke: { curve: 'straight', width: 1.5, colors: [color] },
+      fill: { opacity: 0 },
       tooltip: { enabled: false },
       colors: [color],
     }),
@@ -242,8 +242,8 @@ export function MiniSpark({ valores, color = '#10b981' }: { valores: number[]; c
   if (valores.length < 2) return null
 
   return (
-    <div className="mt-2">
-      <Chart type="area" height={28} series={[{ data: valores }]} options={opciones} />
+    <div className="-mx-1">
+      <Chart type="area" height={36} series={[{ data: valores }]} options={opciones} />
     </div>
   )
 }

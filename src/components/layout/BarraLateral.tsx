@@ -26,7 +26,16 @@ import { cn } from '@/lib/utils'
 import { ocultaEnAhorro, useModoAhorro } from '@/lib/modo-ahorro'
 import { esAdministrador, type UsuarioSesion } from '@/sesion'
 import { MenuUsuario } from './MenuUsuario'
-import { COSTOS_WHATSAPP, EQUIPO, NAVEGACION, SUPERVISION, gruposDesdeMenu, type EnlaceNavegacion, type GrupoNavegacion } from './navegacion'
+import {
+  CUENTA,
+  EQUIPO,
+  INTEGRACIONES,
+  NAVEGACION,
+  SUPERVISION,
+  gruposDesdeMenu,
+  type EnlaceNavegacion,
+  type GrupoNavegacion,
+} from './navegacion'
 
 export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   const { pathname } = useLocation()
@@ -37,8 +46,8 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   const pendiente = admin && !cargando && !conectado
   const grupos = paraAhorro(
     integracionesPrimero(
-      conCostos(
-        conSupervision(conEquipo(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin), admin),
+      conIntegraciones(
+        conSupervision(conEquipo(conCuenta(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin), admin), admin),
         admin,
       ),
     ),
@@ -47,15 +56,17 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-16 justify-center">
+      <SidebarHeader className="h-[4.25rem] justify-center">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link to="/inicio" />}>
-              <LogoMarca className="size-9 rounded-xl" />
-              <div className="grid flex-1 text-left leading-tight">
-                <span className="truncate text-[15px] font-semibold">Belly</span>
-                <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-                  <span className="truncate">{usuario.empresa_nombre || usuario.empresa}</span>
+            <SidebarMenuButton size="lg" render={<Link to="/inicio" />} className="h-12 group-data-[collapsible=icon]:size-10!">
+              <LogoMarca className="size-11" />
+              <div className="grid min-w-0 flex-1 text-left leading-tight">
+                <span className="truncate text-[15px] font-bold tracking-[-0.03em]">
+                  {usuario.empresa_nombre || usuario.empresa || 'Tu empresa'}
+                </span>
+                <span className="flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+                  <span>Belly</span>
                   {ahorro ? (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                       <Leaf className="size-2.5" />
@@ -72,7 +83,7 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
       <SidebarContent className="gap-1 overflow-y-auto px-1" data-tour="menu">
         {grupos.map((grupo) => (
           <SidebarGroup key={grupo.titulo} className="py-1">
-            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/80">{grupo.titulo}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-[10.5px] font-semibold tracking-[0.08em] text-muted-foreground/70 uppercase">{grupo.titulo}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
                 {grupo.enlaces.map((enlace) => (
@@ -80,7 +91,7 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
                     key={`${grupo.titulo}-${enlace.ruta}-${enlace.titulo}`}
                     enlace={enlace}
                     ruta={pathname}
-                    pendiente={pendiente && enlace.ruta === RUTA_WHATSAPP}
+                    pendiente={pendiente && (enlace.ruta === '/integraciones' || enlace.ruta === RUTA_WHATSAPP)}
                   />
                 ))}
               </SidebarMenu>
@@ -97,7 +108,7 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   )
 }
 
-const BOTON = 'h-10 rounded-lg px-3 text-[14px] text-foreground/75 hover:text-foreground'
+const BOTON = 'h-10 rounded-lg px-3 text-[13.5px] font-medium tracking-[-0.015em] text-foreground/75 hover:text-foreground'
 const BOTON_ACTIVO = 'data-active:bg-primary/10 data-active:font-semibold data-active:text-primary'
 const RUTA_WHATSAPP = '/integraciones/whatsapp'
 
@@ -113,8 +124,12 @@ function paraAhorro(grupos: GrupoNavegacion[], ahorro: boolean): GrupoNavegacion
     .filter((grupo) => grupo.enlaces.length > 0)
 }
 
+function esRutaIntegracion(ruta: string): boolean {
+  return ruta === '/integraciones' || ruta.startsWith('/integraciones/')
+}
+
 function esGrupoIntegraciones(grupo: GrupoNavegacion): boolean {
-  return grupo.titulo.toLowerCase() === 'integraciones'
+  return grupo.titulo.toLowerCase().includes('integracion') || grupo.enlaces.some((enlace) => esRutaIntegracion(enlace.ruta))
 }
 
 /** Lo primero que debe ver quien administra es conectar WhatsApp, por eso el grupo va arriba. */
@@ -165,7 +180,7 @@ function ItemMenu({ enlace, ruta, pendiente = false }: { enlace: EnlaceNavegacio
           <SidebarMenuButton className={cn(BOTON, enHijo && 'font-semibold text-foreground')} />
         }
       >
-        <Icono className={enHijo ? 'text-emerald-700' : 'text-muted-foreground'} />
+        <Icono className={enHijo ? 'text-primary' : 'text-muted-foreground'} />
         <span>{enlace.titulo}</span>
         <ChevronRight className="ml-auto text-muted-foreground transition-transform duration-200 group-data-open/desplegable:rotate-90" />
       </CollapsibleTrigger>
@@ -176,7 +191,7 @@ function ItemMenu({ enlace, ruta, pendiente = false }: { enlace: EnlaceNavegacio
               <SidebarMenuSubButton
                 className={cn(
                   'h-9 rounded-lg px-3 text-[13.5px] text-foreground/70 hover:text-foreground',
-                  'data-active:bg-emerald-50 data-active:font-medium data-active:text-emerald-800',
+                  'data-active:bg-primary/10 data-active:font-medium data-active:text-primary',
                 )}
                 isActive={estaEn(hijo.ruta)}
                 render={<Link to={hijo.ruta} />}
@@ -189,6 +204,21 @@ function ItemMenu({ enlace, ruta, pendiente = false }: { enlace: EnlaceNavegacio
       </CollapsibleContent>
     </Collapsible>
   )
+}
+
+function conCuenta(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {
+  if (!admin || grupos.some((grupo) => grupo.enlaces.some((enlace) => enlace.ruta === CUENTA.ruta))) {
+    return grupos
+  }
+  const indice = grupos.findIndex(
+    (grupo) =>
+      grupo.titulo.toLowerCase() === 'general' ||
+      grupo.enlaces.some((enlace) => enlace.ruta === '/inicio' || enlace.ruta === '/dashboard'),
+  )
+  if (indice < 0) {
+    return [{ titulo: 'Cuenta', enlaces: [CUENTA] }, ...grupos]
+  }
+  return grupos.map((grupo, i) => (i === indice ? { ...grupo, enlaces: [...grupo.enlaces, CUENTA] } : grupo))
 }
 
 function conEquipo(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {
@@ -206,15 +236,23 @@ function conEquipo(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[]
   return grupos.map((grupo, i) => (i === indice ? { ...grupo, enlaces: [...grupo.enlaces, EQUIPO] } : grupo))
 }
 
-function conCostos(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {
-  if (!admin || grupos.some((grupo) => grupo.enlaces.some((enlace) => enlace.ruta === COSTOS_WHATSAPP.ruta))) {
+function conIntegraciones(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {
+  if (!admin) {
     return grupos
   }
+
   const indice = grupos.findIndex(esGrupoIntegraciones)
   if (indice < 0) {
-    return [...grupos, { titulo: 'Integraciones', enlaces: [COSTOS_WHATSAPP] }]
+    return [{ titulo: 'Integraciones', enlaces: [INTEGRACIONES] }, ...grupos]
   }
-  return grupos.map((grupo, i) => (i === indice ? { ...grupo, enlaces: [...grupo.enlaces, COSTOS_WHATSAPP] } : grupo))
+
+  return grupos.map((grupo, i) => {
+    if (i !== indice) {
+      return grupo
+    }
+    const extras = grupo.enlaces.filter((enlace) => !esRutaIntegracion(enlace.ruta))
+    return { titulo: 'Integraciones', enlaces: [INTEGRACIONES, ...extras] }
+  })
 }
 
 function conSupervision(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {

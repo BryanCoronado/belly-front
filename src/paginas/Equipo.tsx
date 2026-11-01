@@ -527,7 +527,7 @@ function PanelGrupos({ admin }: { admin: boolean }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border bg-card px-6 py-14 text-center">
+        <div className="superficie px-6 py-14 text-center">
           <FolderKanban className="mx-auto mb-3 size-6 text-emerald-600" />
           <p className="font-medium">Aún no hay grupos</p>
           <p className="text-sm text-muted-foreground">Crea un grupo y agrega a las personas que trabajan juntas.</p>
@@ -562,7 +562,7 @@ function TarjetaGrupo({
   const resto = miembros.length - AVATARES_VISIBLES
 
   return (
-    <article className="flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-xs" data-tour="tarjeta-grupo">
+    <article className="superficie flex flex-col gap-4 p-5" data-tour="tarjeta-grupo">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate font-semibold">{grupo.grupo}</h3>

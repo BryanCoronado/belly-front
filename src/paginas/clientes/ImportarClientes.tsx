@@ -49,8 +49,8 @@ export function ImportarClientes() {
         </Link>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Importar clientes</h1>
-            <p className="text-sm text-muted-foreground sm:text-base">Carga tu base desde un archivo CSV o TXT y luego escríbeles con una plantilla.</p>
+            <h1 className="font-heading text-[1.65rem] leading-none font-bold tracking-[-0.035em] sm:text-[1.85rem]">Importar clientes</h1>
+            <p className="max-w-2xl text-[0.9375rem] leading-relaxed text-muted-foreground">Carga tu base desde un archivo CSV o TXT y luego escríbeles con una plantilla.</p>
           </div>
           <ol className="flex items-center gap-2 text-sm" aria-label="Pasos">
             {PASOS.map((item, indice) => {
@@ -143,7 +143,7 @@ function PasoArchivo({ alLeer }: { alLeer: (archivo: ArchivoLeido) => void }) {
         <input ref={entrada} type="file" accept=".csv,.txt,.tsv,text/csv,text/plain" className="sr-only" onChange={(e) => void abrir(e.target.files?.[0])} tabIndex={-1} />
       </button>
 
-      <aside className="space-y-4 rounded-xl border bg-card p-5">
+      <aside className="space-y-4 superficie p-5">
         <div className="space-y-1">
           <h2 className="font-semibold">¿No tienes el formato?</h2>
           <p className="text-sm text-muted-foreground">Descarga la plantilla, llénala y súbela. Cualquier otro archivo con títulos parecidos también sirve.</p>
@@ -246,7 +246,7 @@ function PasoRevisar({
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="min-w-0 space-y-6">
-        <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
+        <div className="flex items-center gap-3 superficie p-4">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
             <FileSpreadsheet className="size-5 text-muted-foreground" />
           </span>
@@ -273,7 +273,7 @@ function PasoRevisar({
               La primera fila son títulos
             </label>
           </div>
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <div className="overflow-x-auto superficie">
             <table className="w-full min-w-max text-sm">
               <thead>
                 <tr className="border-b bg-muted/40">
@@ -335,17 +335,17 @@ function PasoRevisar({
 
       <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl border bg-card p-4">
+          <div className="superficie p-4">
             <p className="text-2xl font-semibold tabular-nums">{validas.toLocaleString('es')}</p>
             <p className="text-xs text-muted-foreground">listos para importar</p>
           </div>
-          <div className="rounded-xl border bg-card p-4">
+          <div className="superficie p-4">
             <p className={cn('text-2xl font-semibold tabular-nums', conProblema ? 'text-amber-600' : '')}>{conProblema.toLocaleString('es')}</p>
             <p className="text-xs text-muted-foreground">con problemas</p>
           </div>
         </div>
 
-        <div className="space-y-4 rounded-xl border bg-card p-4">
+        <div className="space-y-4 superficie p-4">
           <div className="grid gap-2">
             <Label htmlFor="importar-pais">Números sin código de país</Label>
             <select
@@ -448,7 +448,7 @@ function PasoRevisar({
         </div>
 
         {importando ? (
-          <div className="space-y-2 rounded-xl border bg-card p-4">
+          <div className="space-y-2 superficie p-4">
             <div className="flex items-center justify-between text-sm">
               <span className="inline-flex items-center gap-2 font-medium">
                 <LoaderCircle className="size-4 animate-spin" />
@@ -480,7 +480,7 @@ function PasoResultado({ resultado, alReiniciar }: { resultado: ResultadoImporta
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border bg-card p-6 sm:p-8">
+      <div className="superficie p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <span className="flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
@@ -519,7 +519,7 @@ function PasoResultado({ resultado, alReiniciar }: { resultado: ResultadoImporta
               Descargar lista
             </Button>
           </div>
-          <div className="max-h-96 overflow-auto rounded-xl border bg-card">
+          <div className="max-h-96 overflow-auto superficie">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/80 backdrop-blur">
                 <tr className="text-left text-xs text-muted-foreground">

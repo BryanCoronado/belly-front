@@ -92,7 +92,7 @@ export function GruposAtencion({ alIrAReparto }: { alIrAReparto: () => void }) {
       ) : grupos.data?.length ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {grupos.data.map((grupo) => (
-            <article key={grupo.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4" style={{ borderTop: `4px solid ${grupo.color}` }}>
+            <article key={grupo.id} className="superficie flex flex-col gap-3 p-4" style={{ borderTop: `4px solid ${grupo.color}` }}>
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate font-semibold">{grupo.nombre}</h3>

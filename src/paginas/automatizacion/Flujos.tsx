@@ -159,20 +159,20 @@ function Tarjeta({ flujo }: { flujo: ResumenFlujo }) {
   })
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border bg-white shadow-xs transition-shadow hover:shadow-md">
-      <div className={cn('h-1.5', flujo.activo ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-zinc-200')} />
+    <div className="superficie group flex flex-col overflow-hidden transition-colors hover:border-primary/35">
+      <div className={cn('h-1.5', flujo.activo ? 'bg-primary' : 'bg-border')} />
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="flex items-start gap-3">
           <div
             className={cn(
               'flex size-11 shrink-0 items-center justify-center rounded-xl',
-              flujo.activo ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-500',
+              flujo.activo ? 'bg-primary/12 text-primary' : 'bg-muted text-muted-foreground',
             )}
           >
             <Workflow className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <Link to={`/automatizacion/${flujo.id}`} className="block truncate font-semibold hover:text-emerald-700">
+            <Link to={`/automatizacion/${flujo.id}`} className="block truncate font-semibold hover:text-primary">
               {flujo.nombre}
             </Link>
             <p className="line-clamp-2 min-h-8 text-xs text-muted-foreground">{flujo.descripcion || 'Sin descripción'}</p>
@@ -184,7 +184,7 @@ function Tarjeta({ flujo }: { flujo: ResumenFlujo }) {
             <Zap className="size-3" />
             {etiquetaDisparador(flujo)}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 font-medium text-emerald-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 font-medium text-primary">
             <UsersRound className="size-3" />
             {flujo.disparador.audiencia === 'nuevos' ? 'Contactos nuevos' : 'Todos los contactos'}
           </span>
@@ -218,7 +218,7 @@ function Tarjeta({ flujo }: { flujo: ResumenFlujo }) {
               disabled={alternar.isPending}
               className="data-checked:bg-emerald-500"
             />
-            <span className={flujo.activo ? 'text-emerald-700' : 'text-muted-foreground'}>{flujo.activo ? 'Activo' : 'Pausado'}</span>
+            <span className={flujo.activo ? 'text-primary' : 'text-muted-foreground'}>{flujo.activo ? 'Activo' : 'Pausado'}</span>
           </label>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={() => duplicar.mutate()} disabled={duplicar.isPending} aria-label="Duplicar" title="Duplicar">

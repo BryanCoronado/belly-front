@@ -48,7 +48,7 @@ export function AgenteIa() {
         <>
           <ConexionOpenAi conexion={estado.data.conexion} />
 
-          <section className="flex flex-col gap-3 rounded-lg border bg-white px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <section className="superficie flex flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
             <p className="min-w-0 text-muted-foreground">
               <span className="font-medium text-foreground">Para que atienda chats</span> ponlo en el reparto (por ejemplo, fuera de turno).
             </p>
@@ -76,8 +76,8 @@ export function AgenteIa() {
             {idActual !== null ? (
               <DetalleAgente key={idActual} id={idActual} estado={estado.data} alEliminar={() => setElegido(null)} />
             ) : (
-              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-white p-10 text-center">
-                <span className="flex size-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-600">
+              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-primary/25 bg-primary/4 p-10 text-center">
+                <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Bot className="size-6" />
                 </span>
                 <p className="font-medium">Crea el primero</p>
@@ -121,12 +121,12 @@ function TarjetaAgente({ agente, activa, conectada, alElegir }: { agente: Resume
       type="button"
       onClick={alElegir}
       className={cn(
-        'w-full rounded-lg border bg-white p-3 text-left transition-colors',
-        activa ? 'border-zinc-300 ring-1 ring-zinc-300' : 'hover:bg-zinc-50',
+        'w-full rounded-lg border bg-card p-3 text-left transition-colors',
+        activa ? 'border-primary/40 ring-1 ring-primary/20' : 'hover:bg-primary/6',
       )}
     >
       <div className="flex items-center gap-2">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Bot className="size-4" />
         </span>
         <span className="min-w-0 flex-1 truncate font-medium">{agente.nombre}</span>
@@ -148,7 +148,7 @@ function DetalleAgente({ id, estado, alEliminar }: { id: number; estado: EstadoI
   }
 
   return (
-    <section className="min-w-0 rounded-xl border bg-white">
+    <section className="superficie min-w-0">
       <div className="-mx-1 overflow-x-auto border-b px-2 py-2">
         <div className="flex w-max gap-1 rounded-lg bg-muted p-1">
         {PESTANAS.map((item) => {

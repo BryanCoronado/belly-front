@@ -52,7 +52,7 @@ export function Plantillas() {
       ) : lista.data?.length ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-tour="lista">
           {lista.data.map((item) => (
-            <article key={item.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+            <article key={item.id} className="flex flex-col gap-3 superficie p-4">
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate font-semibold">{item.nombre}</h3>

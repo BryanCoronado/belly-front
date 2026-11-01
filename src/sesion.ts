@@ -8,6 +8,7 @@ export type UsuarioSesion = {
   apellidos: string | null
   foto?: string | null
   sudo?: number
+  operador?: boolean
   modo_ahorro?: boolean
 }
 
@@ -60,13 +61,14 @@ export function cerrarSesion() {
 
 /** El API rechazó el token (vencido o inválido): borra la sesión y manda al login. */
 export function expulsarPorTokenVencido() {
-  if (expulsando || window.location.pathname === '/' || window.location.pathname === '/registro') {
+  const ruta = window.location.pathname
+  if (expulsando || ruta === '/' || ruta === '/registro' || ruta === '/acceso' || ruta.startsWith('/c/')) {
     return
   }
   expulsando = true
   marcarSesionVencida()
   cerrarSesion()
-  window.location.replace('/')
+  window.location.replace(ruta.startsWith('/operador') ? '/acceso' : '/')
 }
 
 export function consumirSesionVencida(): boolean {
@@ -100,9 +102,26 @@ function tokenVencido(token: string): boolean {
 
 export function nombreVisible(usuario: UsuarioSesion): string {
   const nombre = [usuario.nombres, usuario.apellidos].filter(Boolean).join(' ').trim()
-  return nombre || usuario.usuario
+  return arreglarNombre(nombre || usuario.usuario)
+}
+
+function arreglarNombre(texto: string): string {
+  return texto
+    .replace(/Due\uFFFDo/g, 'Dueño')
+    .replace(/Due�o/g, 'Dueño')
+    .replace(/Due├▒o/g, 'Dueño')
+    .replace(/DueÃ±o/g, 'Dueño')
 }
 
 export function esAdministrador(usuario?: UsuarioSesion | null): boolean {
   return Number(usuario?.sudo) === 1
+}
+
+/** Dueño de Belly: cuenta aparte, no una empresa del CRM. */
+export function esOperador(usuario?: UsuarioSesion | null): boolean {
+  return usuario?.operador === true
+}
+
+export function rutaTrasEntrar(usuario?: UsuarioSesion | null): string {
+  return esOperador(usuario) ? '/operador' : '/inicio'
 }

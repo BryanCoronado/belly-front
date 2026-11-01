@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight, CircleCheck, Mail, Receipt, Store } from 'lucide-react'
+import { BookImage, ChevronRight, CircleCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { leerCostosWhatsapp, leerEstadoWhatsapp } from '@/api'
+import { leerCostosWhatsapp, leerEstadoWhatsapp, leerVitrina } from '@/api'
 import { CabeceraPagina } from '@/components/CabeceraPagina'
 import { IconoTelegram } from '@/components/IconoTelegram'
 import { IconoWhatsapp } from '@/components/IconoWhatsapp'
@@ -11,12 +11,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useWhatsappConectado } from '@/hooks/use-whatsapp'
 import { cn } from '@/lib/utils'
 import { esAdministrador, leerSesion } from '@/sesion'
-
-const PROXIMAS = [
-  { titulo: 'Telegram', texto: 'Otro canal para atender clientes', icono: IconoTelegram },
-  { titulo: 'Ventas', texto: 'Cotizaciones y pedidos desde el chat', icono: Store },
-  { titulo: 'Correo', texto: 'Bandeja junto a las conversaciones', icono: Mail },
-]
 
 export function Integraciones() {
   const admin = esAdministrador(leerSesion()?.usuario)
@@ -39,16 +33,13 @@ export function Integraciones() {
 
   return (
     <div className="space-y-8">
-      <CabeceraPagina titulo="Integraciones" descripcion="WhatsApp de tu empresa y lo que se sume después." />
+      <CabeceraPagina titulo="Integraciones" descripcion="WhatsApp y tu catálogo. Lo demás se suma cuando esté listo." />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Link
-          to="/integraciones/whatsapp"
-          className="group flex flex-col justify-between gap-6 rounded-xl border bg-white p-5 transition-colors hover:border-zinc-400 sm:p-6 lg:col-span-2"
-        >
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <article className="superficie flex flex-col gap-5 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
-            <span className="flex size-14 items-center justify-center rounded-xl border bg-white">
-              <IconoWhatsapp className="size-8" />
+            <span className="flex size-12 items-center justify-center rounded-xl bg-[#25D366]/10">
+              <IconoWhatsapp className="size-7" />
             </span>
             {cargando ? (
               <Skeleton className="h-5 w-24" />
@@ -64,96 +55,108 @@ export function Integraciones() {
 
           <div className="space-y-1">
             <p className="text-lg font-semibold">WhatsApp Business</p>
-            {etiquetaNumero ? (
-              <p className="text-sm tabular-nums text-foreground">{etiquetaNumero}</p>
-            ) : null}
+            {etiquetaNumero ? <p className="text-sm tabular-nums">{etiquetaNumero}</p> : null}
             <p className="text-sm text-muted-foreground">
-              {conectado
-                ? 'Mensajes y chat de tus clientes.'
-                : 'Conectalo para atender chats desde Belly.'}
+              {conectado ? 'Mensajes y chat de tus clientes.' : 'Conectalo para atender chats desde Belly.'}
             </p>
           </div>
 
-          <span className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-fit')}>
-            {conectado ? 'Configurar' : 'Conectar'}
-            <ChevronRight className="size-4" />
-          </span>
-        </Link>
-
-        <Link
-          to="/integraciones/costos"
-          className="flex flex-col justify-between gap-5 rounded-xl border bg-white p-5 transition-colors hover:border-zinc-400 sm:p-6"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <span className="flex size-11 items-center justify-center rounded-lg border bg-white text-zinc-700">
-              <Receipt className="size-5" />
-            </span>
-            <Badge className="bg-zinc-100 text-zinc-600">{conectado ? 'Este mes' : 'WhatsApp'}</Badge>
-          </div>
-
-          <div className="space-y-1">
-            <p className="font-semibold">Costos WhatsApp</p>
-            <p className="text-sm text-muted-foreground">
-              {conectado
-                ? 'Cupo de 1.000 y lo que Meta cobra.'
-                : 'Se ve cuando WhatsApp ya está conectado.'}
-            </p>
-          </div>
-
-          {costos.data ? (
-            <Cupo usados={costos.data.usados_gratis} cupo={costos.data.cupo} restantes={costos.data.restantes} />
-          ) : (
-            <span className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-fit')}>
-              Ver costos
+          <div className="mt-auto flex flex-wrap items-center gap-3">
+            <Link to="/integraciones/whatsapp" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-fit')}>
+              {conectado ? 'Configurar' : 'Conectar'}
               <ChevronRight className="size-4" />
-            </span>
-          )}
-        </Link>
-      </div>
+            </Link>
+            {conectado ? (
+              <Link to="/integraciones/costos" className="text-sm text-muted-foreground hover:text-foreground">
+                Ver costos
+              </Link>
+            ) : null}
+          </div>
+        </article>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Más adelante</h2>
-        <ul className="overflow-hidden rounded-xl border bg-white">
-          {PROXIMAS.map((item) => (
-            <li
-              key={item.titulo}
-              className="flex items-center gap-3 border-b px-4 py-3.5 last:border-b-0 sm:px-5"
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-white text-zinc-500">
-                <item.icono className="size-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{item.titulo}</p>
-                <p className="text-xs text-muted-foreground">{item.texto}</p>
-              </div>
-              <span className="text-xs text-muted-foreground">Próximamente</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <TarjetaCatalogo admin={admin} />
+        <TarjetaProxima
+          icono={IconoTelegram}
+          titulo="Telegram"
+          texto="Otro canal para atender clientes."
+          estado="En prueba"
+        />
+      </div>
     </div>
   )
 }
 
-function Cupo({ usados, cupo, restantes }: { usados: number; cupo: number; restantes: number }) {
-  const porcentaje = cupo > 0 ? Math.min(100, Math.round((usados / cupo) * 100)) : 0
-  const apretado = restantes <= 150
+function TarjetaCatalogo({ admin }: { admin: boolean }) {
+  const vitrina = useQuery({
+    queryKey: ['catalogo-vitrina'],
+    queryFn: leerVitrina,
+    enabled: admin,
+    staleTime: 60_000,
+  })
+  const publicado = vitrina.data?.publicado === true
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-baseline justify-between gap-2 text-sm">
-        <span className="tabular-nums font-medium">
-          {usados} / {cupo}
+    <article className="superficie flex flex-col gap-5 p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex size-12 items-center justify-center rounded-xl bg-[#0B1026]/8 text-[#0B1026]">
+          <BookImage className="size-6" />
         </span>
-        <span className={cn('text-xs', apretado ? 'text-amber-700' : 'text-muted-foreground')}>
-          {restantes} gratis
-        </span>
+        {!admin ? null : vitrina.isLoading ? (
+          <Skeleton className="h-5 w-24" />
+        ) : publicado ? (
+          <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
+            <CircleCheck />
+            Publicado
+          </Badge>
+        ) : (
+          <Badge className="border-amber-200 bg-amber-50 text-amber-800">Sin publicar</Badge>
+        )}
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-zinc-100">
-        <div
-          className={cn('h-full rounded-full', porcentaje >= 100 ? 'bg-rose-500' : apretado ? 'bg-amber-500' : 'bg-emerald-500')}
-          style={{ width: `${porcentaje}%` }}
-        />
+      <div className="space-y-1">
+        <p className="text-lg font-semibold">Mi Catálogo</p>
+        <p className="text-sm text-muted-foreground">
+          {publicado
+            ? 'Tienda pública: carrusel de banners, productos, enlace y QR.'
+            : 'Arma una tienda con carrusel, productos, un enlace y un QR.'}
+        </p>
+      </div>
+      <div className="mt-auto flex flex-wrap items-center gap-3">
+        <Link to="/catalogo" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-fit')}>
+          {publicado ? 'Configurar' : 'Crear catálogo'}
+          <ChevronRight className="size-4" />
+        </Link>
+        {admin ? (
+          <Link to="/catalogo?pestana=portada" className="text-sm text-muted-foreground hover:text-foreground">
+            Carrusel
+          </Link>
+        ) : null}
+      </div>
+    </article>
+  )
+}
+
+function TarjetaProxima({
+  icono: Icono,
+  titulo,
+  texto,
+  estado,
+}: {
+  icono: typeof IconoTelegram
+  titulo: string
+  texto: string
+  estado: string
+}) {
+  return (
+    <div className="superficie flex flex-col gap-5 p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+          <Icono className="size-6" />
+        </span>
+        <Badge variant="secondary">{estado}</Badge>
+      </div>
+      <div className="space-y-1">
+        <p className="text-lg font-semibold">{titulo}</p>
+        <p className="text-sm text-muted-foreground">{texto}</p>
       </div>
     </div>
   )

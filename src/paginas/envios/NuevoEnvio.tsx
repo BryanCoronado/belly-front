@@ -122,7 +122,7 @@ export function NuevoEnvio() {
           <ArrowLeft className="size-4" />
           Envíos masivos
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Nuevo envío</h1>
+        <h1 className="font-heading text-[1.65rem] leading-none font-bold tracking-[-0.035em] sm:text-[1.85rem]">Nuevo envío</h1>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -236,7 +236,7 @@ export function NuevoEnvio() {
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-          <div className="rounded-xl border bg-card p-4">
+          <div className="superficie p-4">
             <p className="mb-3 text-sm font-medium">Así se verá</p>
             <VistaPrevia modo={modo} mensaje={mensaje} plantilla={plantilla} encabezado={encabezado} cuerpo={cuerpo} valores={valores} desde={variablesEncabezado} />
           </div>
@@ -282,7 +282,7 @@ export function NuevoEnvio() {
 
 function Seccion({ numero, titulo, ayuda, children }: { numero: number; titulo: string; ayuda?: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+    <section className="space-y-4 superficie p-4 sm:p-5">
       <div className="flex gap-3">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">{numero}</span>
         <div className="space-y-0.5">

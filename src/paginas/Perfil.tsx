@@ -24,6 +24,7 @@ export function Perfil() {
       apellidos: perfil.data.apellidos,
       foto: perfil.data.foto,
       empresa_nombre: perfil.data.empresa.nombre,
+      operador: perfil.data.operador,
     })
   }, [perfil.data])
 
@@ -98,7 +99,7 @@ function Cuenta({ datos }: { datos: PerfilCuenta }) {
   const fotoActual = foto.data?.foto ?? datos.foto
 
   return (
-    <form className="rounded-xl border bg-card p-5 md:p-6" onSubmit={enviar}>
+    <form className="superficie p-5 md:p-6" onSubmit={enviar}>
       <h2 className="text-base font-semibold">Tu cuenta</h2>
       <p className="mt-1 text-sm text-muted-foreground">Este es el usuario con el que entras: {datos.usuario}</p>
 
@@ -177,7 +178,7 @@ function AvisosPersonales() {
   const prefs = useAvisos()
 
   return (
-    <section className="rounded-xl border bg-card p-5 md:p-6">
+    <section className="superficie p-5 md:p-6">
       <h2 className="text-base font-semibold">Avisos</h2>
       <p className="mt-1 text-sm text-muted-foreground">Cómo te enteras cuando te escriben o te pasan un chat.</p>
       <div className="mt-5 grid gap-4">
@@ -234,7 +235,7 @@ function Empresa({ datos }: { datos: PerfilCuenta }) {
   }
 
   return (
-    <form className="rounded-xl border bg-card p-5 md:p-6" onSubmit={enviar}>
+    <form className="superficie p-5 md:p-6" onSubmit={enviar}>
       <h2 className="text-base font-semibold">Empresa</h2>
       <p className="mt-1 text-sm text-muted-foreground">Solo el administrador puede cambiar estos datos.</p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">

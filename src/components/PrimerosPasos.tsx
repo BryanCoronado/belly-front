@@ -38,21 +38,21 @@ export function PrimerosPasos({ className }: { className?: string }) {
   if (hechos === pasos.length) return null
 
   return (
-    <section className={cn('rounded-xl border bg-white', className)} data-tour="primeros-pasos">
-      <header className="flex items-center justify-between gap-3 border-b px-5 py-4">
-        <h2 className="font-semibold">Primeros pasos</h2>
+    <section className={cn('superficie overflow-hidden', className)} data-tour="primeros-pasos">
+      <header className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 sm:px-5 sm:pt-5">
+        <h2 className="font-heading text-lg font-bold tracking-[-0.03em]">Primeros pasos</h2>
         <span className="text-sm text-muted-foreground tabular-nums">
           {hechos} de {pasos.length}
         </span>
       </header>
-      <ol className="divide-y">
+      <ol className="divide-y border-t">
         {pasos.map((paso) => (
           <li key={paso.ruta}>
-            <Link to={paso.ruta} className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-zinc-50">
+            <Link to={paso.ruta} className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-primary/6">
               <span
                 className={cn(
                   'flex size-5 shrink-0 items-center justify-center rounded-full',
-                  paso.hecho ? 'bg-emerald-600 text-white' : 'border border-zinc-300',
+                  paso.hecho ? 'bg-primary text-primary-foreground' : 'border border-primary/25',
                 )}
               >
                 {paso.hecho ? <Check className="size-3" /> : null}

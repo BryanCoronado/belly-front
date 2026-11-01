@@ -10,13 +10,14 @@ import { marcarRecienRegistrado } from '@/lib/onboarding'
 import { PAISES_TELEFONO, paisPorCodigo, soloDigitos } from '@/lib/paises'
 import { guardarSesion } from '@/sesion'
 
-const TOTAL_PASOS = 4
+const TOTAL_PASOS = 5
 
 const PASOS = [
-  { titulo: 'Tu negocio', descripcion: 'Así va a aparecer Belly para tu equipo.' },
-  { titulo: 'Sobre ti', descripcion: 'Con el correo vas a entrar después.' },
-  { titulo: 'Tu WhatsApp', descripcion: 'El número con el que atiendes a tus clientes.' },
-  { titulo: 'Tu contraseña', descripcion: 'Mínimo 8 caracteres. Guárdala bien.' },
+  { titulo: 'Tu negocio', descripcion: 'El nombre real de tu empresa. Así va a verse en Belly.' },
+  { titulo: 'Sobre ti', descripcion: 'Nombre, apellido y un correo que uses de verdad.' },
+  { titulo: 'Tu WhatsApp', descripcion: 'El número con el que atiendes. WhatsApp (Meta) cobra sus mensajes aparte del plan.' },
+  { titulo: 'Tu contraseña', descripcion: 'Mínimo 8 caracteres, con letras y números.' },
+  { titulo: 'Confirma', descripcion: 'Revisa los datos. Si algo está mal, vuelve atrás.' },
 ] as const
 
 const REGISTRO_VACIO: DatosRegistro = {
@@ -25,16 +26,19 @@ const REGISTRO_VACIO: DatosRegistro = {
   nombres: '',
   apellidos: '',
   correo: '',
+  correo_confirmado: '',
   username: '',
   password: '',
   codigo_pais: '51',
   celular: '',
+  web: '',
 }
 
 export function Registro() {
   const navegar = useNavigate()
   const [paso, setPaso] = useState(1)
   const [datos, setDatos] = useState(REGISTRO_VACIO)
+  const [clave2, setClave2] = useState('')
   const [errorPaso, setErrorPaso] = useState<string | null>(null)
 
   const alta = useMutation({
@@ -73,7 +77,7 @@ export function Registro() {
 
   function enviar(evento: FormEvent) {
     evento.preventDefault()
-    const error = validarPaso(paso, datos)
+    const error = validarPaso(paso, datos, clave2)
     if (error) {
       setErrorPaso(error)
       return
@@ -119,14 +123,25 @@ export function Registro() {
         {paso === 2 ? (
           <>
             <label className="campo-acceso">
-              <span>Nombre completo</span>
+              <span>Nombre</span>
               <input
                 name="nombres"
-                placeholder="María Quispe"
+                placeholder="María"
                 value={datos.nombres}
                 onChange={cambiar}
-                autoComplete="name"
+                autoComplete="given-name"
                 autoFocus
+                required
+              />
+            </label>
+            <label className="campo-acceso">
+              <span>Apellido</span>
+              <input
+                name="apellidos"
+                placeholder="Quispe"
+                value={datos.apellidos}
+                onChange={cambiar}
+                autoComplete="family-name"
                 required
               />
             </label>
@@ -141,6 +156,10 @@ export function Registro() {
                 autoComplete="email"
                 required
               />
+            </label>
+            <label className="sr-only" aria-hidden>
+              Sitio web
+              <input name="web" value={datos.web} onChange={cambiar} tabIndex={-1} autoComplete="off" />
             </label>
           </>
         ) : null}
@@ -162,6 +181,9 @@ export function Registro() {
               </select>
             </label>
 
+            <p className="text-sm leading-relaxed text-zinc-500">
+              El plan es Belly. Cada mensaje que mandes por la API lo cobra Meta a tu cuenta de Facebook. Los primeros 1.000 de servicio del mes son gratis.
+            </p>
             <label className="campo-acceso">
               <span>WhatsApp</span>
               <div className="campo-tel">
@@ -184,20 +206,73 @@ export function Registro() {
         ) : null}
 
         {paso === 4 ? (
-          <label className="campo-acceso">
-            <span>Contraseña</span>
-            <input
-              name="password"
-              type="password"
-              placeholder="Mínimo 8 caracteres"
-              value={datos.password}
-              onChange={cambiar}
-              autoComplete="new-password"
-              minLength={8}
-              autoFocus
-              required
-            />
-          </label>
+          <>
+            <label className="campo-acceso">
+              <span>Contraseña</span>
+              <input
+                name="password"
+                type="password"
+                placeholder="Letras y números, mínimo 8"
+                value={datos.password}
+                onChange={cambiar}
+                autoComplete="new-password"
+                minLength={8}
+                autoFocus
+                required
+              />
+            </label>
+            <label className="campo-acceso">
+              <span>Repite la contraseña</span>
+              <input
+                type="password"
+                placeholder="La misma otra vez"
+                value={clave2}
+                onChange={(evento) => {
+                  setErrorPaso(null)
+                  setClave2(evento.target.value)
+                }}
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </label>
+          </>
+        ) : null}
+
+        {paso === 5 ? (
+          <>
+            <ul className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm">
+              <li>
+                <span className="text-zinc-500">Empresa </span>
+                <span className="font-semibold">{datos.nombre.trim()}</span>
+              </li>
+              <li>
+                <span className="text-zinc-500">Tú </span>
+                <span className="font-semibold">
+                  {datos.nombres.trim()} {datos.apellidos.trim()}
+                </span>
+              </li>
+              <li>
+                <span className="text-zinc-500">WhatsApp </span>
+                <span className="font-semibold tabular-nums">
+                  +{datos.codigo_pais} {datos.celular}
+                </span>
+              </li>
+            </ul>
+            <label className="campo-acceso">
+              <span>Escribe otra vez tu correo</span>
+              <input
+                name="correo_confirmado"
+                type="email"
+                placeholder={datos.correo}
+                value={datos.correo_confirmado}
+                onChange={cambiar}
+                autoComplete="off"
+                autoFocus
+                required
+              />
+            </label>
+          </>
         ) : null}
 
         {errorPaso ? <p className="text-sm text-rose-600">{errorPaso}</p> : null}
@@ -231,10 +306,16 @@ export function Registro() {
   )
 }
 
-function validarPaso(paso: number, datos: DatosRegistro): string | null {
-  if (paso === 1 && datos.nombre.trim().length < 2) return 'Escribe el nombre de tu negocio.'
+function validarPaso(paso: number, datos: DatosRegistro, clave2 = ''): string | null {
+  if (paso === 1) {
+    const nombre = datos.nombre.trim()
+    if (nombre.length < 3) return 'El nombre del negocio debe tener al menos 3 letras.'
+    if (!/\p{L}/u.test(nombre)) return 'El nombre del negocio tiene que tener letras.'
+    if (/^(test|prueba|asdf|qwerty|empresa|negocio|xxx+|aaa+)$/i.test(nombre)) return 'Pon el nombre real de tu negocio.'
+  }
   if (paso === 2) {
     if (datos.nombres.trim().length < 2) return 'Escribe tu nombre.'
+    if (datos.apellidos.trim().length < 2) return 'Escribe tu apellido.'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.correo.trim())) return 'Revisa el correo.'
   }
   if (paso === 3) {
@@ -244,22 +325,31 @@ function validarPaso(paso: number, datos: DatosRegistro): string | null {
       return `En ${pais.nombre} el número suele tener ${pais.largo} dígitos.`
     }
   }
-  if (paso === 4 && datos.password.length < 8) return 'La contraseña necesita al menos 8 caracteres.'
+  if (paso === 4) {
+    if (datos.password.length < 8) return 'La contraseña necesita al menos 8 caracteres.'
+    if (!/[A-Za-zÁÉÍÓÚáéíóúÑñ]/.test(datos.password) || !/\d/.test(datos.password)) {
+      return 'La contraseña debe tener letras y números.'
+    }
+    if (datos.password !== clave2) return 'Las contraseñas no coinciden.'
+  }
+  if (paso === 5 && datos.correo_confirmado.trim().toLowerCase() !== datos.correo.trim().toLowerCase()) {
+    return 'El correo no coincide. Escríbelo otra vez.'
+  }
   return null
 }
 
 function limpiar(datos: DatosRegistro): DatosRegistro {
   const correo = datos.correo.trim().toLowerCase()
-  const nombres = datos.nombres.trim()
-  const partes = nombres.split(/\s+/)
   return {
     ...datos,
     empresa: '',
     nombre: datos.nombre.trim(),
-    nombres: partes[0] ?? nombres,
-    apellidos: partes.slice(1).join(' ') || datos.apellidos.trim(),
+    nombres: datos.nombres.trim(),
+    apellidos: datos.apellidos.trim(),
     correo,
+    correo_confirmado: datos.correo_confirmado.trim().toLowerCase(),
     username: '',
+    web: '',
     codigo_pais: soloDigitos(datos.codigo_pais),
     celular: soloDigitos(datos.celular),
   }

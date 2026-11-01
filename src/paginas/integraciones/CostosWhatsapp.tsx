@@ -22,7 +22,7 @@ export function CostosWhatsapp() {
     <div className="space-y-6">
       <CabeceraPagina
         titulo="Costos de WhatsApp"
-        descripcion="Solo el reporte oficial de Meta. Belly no suma chats locales: si los borrás, el cupo no cambia."
+        descripcion="Esto lo cobra Meta a tu Facebook, no Belly. El plan del CRM es otra cuenta."
       />
 
       <InterruptorModoAhorro />
@@ -34,7 +34,7 @@ export function CostosWhatsapp() {
           ))}
         </div>
       ) : consulta.isError ? (
-        <div className="rounded-xl border bg-card p-6">
+        <div className="superficie p-6">
           <p className="text-sm text-destructive">{consulta.error.message}</p>
           <Link to="/integraciones/whatsapp" className={cn(buttonVariants({ variant: 'outline' }), 'mt-3')}>
             Ir a conectar WhatsApp
@@ -65,7 +65,7 @@ function Detalle({ data }: { data: Awaited<ReturnType<typeof leerCostosWhatsapp>
         </p>
       ) : null}
 
-      <section className="rounded-xl border bg-card p-5">
+      <section className="superficie p-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-sm text-muted-foreground">{data.numero || 'Tu número'} · {tituloMes}</p>
@@ -94,7 +94,7 @@ function Detalle({ data }: { data: Awaited<ReturnType<typeof leerCostosWhatsapp>
       </div>
 
       {data.dias.length ? (
-        <section className="rounded-xl border bg-card p-5">
+        <section className="superficie p-5">
           <h3 className="font-semibold">Este mes, día a día</h3>
           <div className="mt-4 flex h-36 items-end gap-1">
             {data.dias.map((dia) => {
@@ -118,7 +118,7 @@ function Detalle({ data }: { data: Awaited<ReturnType<typeof leerCostosWhatsapp>
       ) : null}
 
       {data.categorias.length ? (
-        <section className="overflow-hidden rounded-xl border bg-card">
+        <section className="overflow-hidden superficie">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-muted-foreground">
               <tr>
@@ -152,7 +152,7 @@ function Detalle({ data }: { data: Awaited<ReturnType<typeof leerCostosWhatsapp>
 
 function Cuadro({ titulo, valor, detalle }: { titulo: string; valor: string; detalle: string }) {
   return (
-    <article className="rounded-xl border bg-card p-4">
+    <article className="superficie p-4">
       <p className="text-sm text-muted-foreground">{titulo}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums">{valor}</p>
       <p className="text-xs text-muted-foreground">{detalle}</p>

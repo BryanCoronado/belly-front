@@ -74,10 +74,12 @@ export type DatosRegistro = {
   nombres: string
   apellidos: string
   correo: string
+  correo_confirmado: string
   username: string
   password: string
   codigo_pais: string
   celular: string
+  web: string
 }
 
 type Respuesta = {
@@ -123,6 +125,7 @@ export type PerfilCuenta = {
   foto: string | null
   usuario: string
   empresa: { nombre: string; correo: string; id_aviso_ia: number | null; modo_ahorro?: boolean }
+  operador?: boolean
   destinos_aviso?: DestinoAviso[]
 }
 
@@ -477,6 +480,7 @@ export type ExtraMensaje = {
   longitude?: number
   name?: string
   address?: string
+  mediaUrl?: string
 }
 
 export async function enviarMensaje(
@@ -497,6 +501,21 @@ export async function enviarMensaje(
         longitude: String(datos.longitude),
         name: datos.name ?? 'Ubicación',
         address: datos.address ?? '',
+        ...(datos.idMensajeResponde ? { id_mensaje_responde: datos.idMensajeResponde } : {}),
+      },
+      conToken: true,
+    })
+    return
+  }
+
+  if (datos.mediaUrl) {
+    await solicitar('/v1/mensaje/enviar', {
+      method: 'POST',
+      cuerpo: {
+        id_conversacion: idConversacion,
+        mensaje,
+        media_type: 'image',
+        media_url: datos.mediaUrl,
         ...(datos.idMensajeResponde ? { id_mensaje_responde: datos.idMensajeResponde } : {}),
       },
       conToken: true,
@@ -703,6 +722,126 @@ export async function guardarModoEmpresa(modo_ahorro: boolean): Promise<ModoEmpr
   return datos.data as ModoEmpresa
 }
 
+export type PlanBelly = {
+  id: number
+  clave: string
+  nombre: string
+  descripcion: string
+  precio_mensual: number
+  moneda: string
+  max_conversaciones: number
+  max_equipos: number
+  max_personas_equipo: number
+  max_personas: number
+  max_flujos: number
+  max_envios: number
+  max_numeros: number
+  incluye_agente_ia: boolean
+  incluye?: string[]
+  activo: boolean
+  orden: number
+}
+
+export type EmpresaOperador = {
+  id: number
+  nombre: string
+  plan: string
+  id_plan: number
+  plan_nombre: string
+  plan_precio: number
+  uso?: { conversaciones: number; equipos: number; personas: number; flujos: number; envios: number; numeros: number }
+  limites?: { conversaciones: number; equipos: number; personas: number; flujos: number }
+  estado: number
+  modo_ahorro: boolean
+  propia: boolean
+  creada: string | null
+  personas: number
+  whatsapp: boolean
+  admin_nombre: string
+  admin_correo: string
+}
+
+export async function listarEmpresasOperador(): Promise<EmpresaOperador[]> {
+  const datos = await solicitar('/v1/configuracion/empresas', { method: 'GET', conToken: true })
+  return Array.isArray(datos.data) ? (datos.data as EmpresaOperador[]) : []
+}
+
+export async function cambiarEstadoEmpresa(id: number, activa: boolean): Promise<void> {
+  await solicitar(`/v1/configuracion/empresas/${id}/estado`, {
+    method: 'PUT',
+    cuerpo: { activa },
+    conToken: true,
+  })
+}
+
+export async function listarPlanes(): Promise<PlanBelly[]> {
+  const datos = await solicitar('/v1/configuracion/planes', { method: 'GET', conToken: true })
+  return Array.isArray(datos.data) ? (datos.data as PlanBelly[]) : []
+}
+
+export async function guardarPlan(cuerpo: Partial<PlanBelly>, id?: number): Promise<PlanBelly> {
+  const datos = await solicitar(id ? `/v1/configuracion/planes/${id}` : '/v1/configuracion/planes', {
+    method: id ? 'PUT' : 'POST',
+    cuerpo,
+    conToken: true,
+  })
+  return datos.data as PlanBelly
+}
+
+export async function eliminarPlan(id: number): Promise<void> {
+  await solicitar(`/v1/configuracion/planes/${id}`, { method: 'DELETE', conToken: true })
+}
+
+export async function asignarPlanEmpresa(idEmpresa: number, id_plan: number): Promise<void> {
+  await solicitar(`/v1/configuracion/empresas/${idEmpresa}/plan`, {
+    method: 'PUT',
+    cuerpo: { id_plan },
+    conToken: true,
+  })
+}
+
+export type PagoBelly = {
+  id: number
+  id_empresa: number
+  empresa: string
+  id_plan: number | null
+  periodo: string
+  monto: number
+  moneda: string
+  estado: 'pendiente' | 'pagado' | 'vencido' | 'anulado'
+  metodo: string | null
+  referencia: string | null
+  nota: string | null
+  vencimiento: string | null
+  pagado_at: string | null
+  creado: string | null
+}
+
+export type CuentaEmpresa = {
+  plan: PlanBelly
+  pagos: PagoBelly[]
+}
+
+export async function listarPagosOperador(): Promise<PagoBelly[]> {
+  const datos = await solicitar('/v1/configuracion/pagos', { method: 'GET', conToken: true })
+  return Array.isArray(datos.data) ? (datos.data as PagoBelly[]) : []
+}
+
+export async function registrarPago(cuerpo: Partial<PagoBelly> & { id_empresa: number; monto: number }): Promise<PagoBelly> {
+  const datos = await solicitar('/v1/configuracion/pagos', { method: 'POST', cuerpo, conToken: true })
+  return datos.data as PagoBelly
+}
+
+export async function marcarPago(id: number, cuerpo: Partial<PagoBelly>): Promise<PagoBelly> {
+  const datos = await solicitar(`/v1/configuracion/pagos/${id}`, { method: 'PUT', cuerpo, conToken: true })
+  return datos.data as PagoBelly
+}
+
+export async function leerCuentaEmpresa(): Promise<CuentaEmpresa> {
+  const datos = await solicitar('/v1/empresa/pagos', { method: 'GET', conToken: true })
+  return datos.data as CuentaEmpresa
+}
+
 export async function leerCostosWhatsapp(): Promise<CostosWhatsapp> {
   const datos = await solicitar(`${RUTA_WHATSAPP}/costos`, { method: 'GET', conToken: true })
   return datos.data as CostosWhatsapp
@@ -758,6 +897,7 @@ export type TipoPaso =
   | 'ubicacion'
   | 'temperatura'
   | 'dividir'
+  | 'catalogo'
 
 export type DatosPaso = Record<string, unknown>
 
@@ -1192,6 +1332,7 @@ export type FamiliaProducto = {
   id: number
   nombre: string
   descripcion: string | null
+  imagen_url: string | null
   orden: number
   activo: boolean
   total_productos: number
@@ -1199,33 +1340,208 @@ export type FamiliaProducto = {
 
 export type DetalleProducto = { nombre: string; valor: string }
 
+export type DisponibilidadProducto = 'disponible' | 'agotado' | 'pedido'
+
 export type Producto = {
   id: number
   id_familia: number | null
   familia: string | null
   nombre: string
   descripcion: string | null
+  resumen: string | null
   codigo: string | null
+  marca: string | null
   precio: number | null
+  precio_oferta: number | null
   moneda: string
   unidad: string | null
   imagen_url: string | null
+  imagenes: string[]
   detalles: DetalleProducto[]
+  variantes: VarianteProducto[]
+  etiqueta: string | null
+  disponibilidad: DisponibilidadProducto
+  destacado: boolean
+  visible_catalogo: boolean
+  orden: number
   activo: boolean
 }
 
-export type DatosFamilia = { nombre: string; descripcion: string }
+export type DatosFamilia = { nombre: string; descripcion: string; imagen_url: string }
 
 export type DatosProducto = {
   nombre: string
   id_familia: number | null
   precio: string
+  precio_oferta: string
   moneda: string
   unidad: string
   codigo: string
+  marca: string
+  resumen: string
   descripcion: string
   imagen_url: string
+  imagenes: string[]
+  disponibilidad: DisponibilidadProducto
+  destacado: boolean
+  visible_catalogo: boolean
   detalles: DetalleProducto[]
+  variantes: VarianteProducto[]
+  etiqueta: string
+}
+
+export type BannerVitrina = {
+  imagen_url: string
+  estilo: 'dividido' | 'completo'
+  etiqueta: string
+  titulo: string
+  texto: string
+  boton: string
+  id_familia: number | null
+  fondo: string
+  burbuja: string
+}
+
+export type PromoVitrina = {
+  titulo: string
+  texto: string
+  imagen_url: string
+  fondo: string
+  id_familia: number | null
+}
+
+export type LugarBloque =
+  | 'cabecera'
+  | 'despues_carrusel'
+  | 'despues_promos'
+  | 'despues_categorias'
+  | 'despues_ofertas'
+  | 'despues_destacados'
+  | 'despues_productos'
+  | 'despues_beneficios'
+  | 'despues_nosotros'
+  | 'antes_footer'
+  | 'pie'
+  | 'ficha'
+
+export type TipoWidget =
+  | 'texto'
+  | 'imagen'
+  | 'boton'
+  | 'video'
+  | 'franja'
+  | 'columnas'
+  | 'espacio'
+  | 'html'
+
+export type DatosWidget = {
+  titulo: string
+  texto: string
+  imagen_url: string
+  boton: string
+  enlace: string
+  color: string
+  fondo: string
+  video: string
+  alto: number
+  columnas: { titulo: string; texto: string }[]
+}
+
+export type BloqueHtmlVitrina = {
+  id: string
+  nombre: string
+  tipo: TipoWidget
+  html: string
+  css: string
+  donde: LugarBloque
+  ancho: 'caja' | 'completo'
+  activo: boolean
+  datos: DatosWidget
+}
+
+export type SeoVitrina = {
+  descripcion: string
+  imagen_url: string
+}
+
+export type PaginaVitrina = {
+  banners: BannerVitrina[]
+  promos: PromoVitrina[]
+  oferta: { activa: boolean; titulo: string; termina: string }
+  secciones: { categorias: boolean; ofertas: boolean; destacados: boolean; nosotros: boolean }
+  aviso: string
+  sobre: string
+  horario: string
+  direccion: string
+  entrega: string
+  devoluciones: string
+  instagram: string
+  facebook: string
+  tiktok: string
+  carrito: boolean
+  bloques: BloqueHtmlVitrina[]
+  seo: SeoVitrina
+}
+
+export type VarianteProducto = { nombre: string; opciones: string[] }
+
+export type Vitrina = {
+  existe: boolean
+  slug: string
+  titulo: string
+  eslogan: string
+  color: string
+  logo_url: string | null
+  whatsapp: string | null
+  mostrar_precios: boolean
+  publicado: boolean
+  pagina: PaginaVitrina
+  enlace: string | null
+}
+
+export type DatosVitrina = {
+  slug: string
+  titulo: string
+  eslogan: string
+  color: string
+  logo_url: string
+  whatsapp: string
+  mostrar_precios: boolean
+  publicado: boolean
+  pagina: PaginaVitrina
+}
+
+export type ProductoPublico = {
+  id: number
+  id_familia: number | null
+  familia: string | null
+  nombre: string
+  resumen: string | null
+  descripcion: string | null
+  marca: string | null
+  precio: number | null
+  precio_oferta: number | null
+  moneda: string
+  unidad: string | null
+  imagen_url: string | null
+  imagenes: string[]
+  detalles: DetalleProducto[]
+  variantes: VarianteProducto[]
+  etiqueta: string | null
+  disponibilidad: DisponibilidadProducto
+  destacado: boolean
+}
+
+export type VitrinaPublica = {
+  titulo: string
+  eslogan: string | null
+  color: string
+  logo_url: string | null
+  whatsapp: string | null
+  mostrar_precios: boolean
+  pagina: PaginaVitrina
+  familias: { id: number; nombre: string; imagen_url: string | null; total: number }[]
+  productos: ProductoPublico[]
 }
 
 export async function leerFamilias(): Promise<FamiliaProducto[]> {
@@ -1274,6 +1590,32 @@ export async function subirImagenProducto(archivo: File): Promise<string> {
   formulario.append('imagen', archivo)
   const respuesta = await solicitar(`${RUTA_CATALOGO}/productos/imagen`, { method: 'POST', formulario, conToken: true })
   return (respuesta.data as { url: string }).url
+}
+
+export async function leerVitrina(): Promise<Vitrina> {
+  const datos = await solicitar(`${RUTA_CATALOGO}/vitrina`, { method: 'GET', conToken: true })
+  return datos.data as Vitrina
+}
+
+export async function guardarVitrina(datos: DatosVitrina): Promise<Vitrina> {
+  const respuesta = await solicitar(`${RUTA_CATALOGO}/vitrina`, { method: 'PUT', cuerpo: datos, conToken: true })
+  return respuesta.data as Vitrina
+}
+
+export async function leerCatalogoPublico(slug: string): Promise<VitrinaPublica> {
+  const datos = await solicitar(`/v1/publico/catalogo/${encodeURIComponent(slug)}`, { method: 'GET' })
+  return datos.data as VitrinaPublica
+}
+
+export async function leerLogoVitrina(): Promise<string | null> {
+  const token = leerSesion()?.token
+  const respuesta = await fetch(`${BASE}/v1/catalogo/vitrina/logo`, {
+    headers: { Accept: 'image/*', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  })
+  if (!respuesta.ok) return null
+  const blob = await respuesta.blob()
+  if (!blob.type.startsWith('image/')) return null
+  return URL.createObjectURL(blob)
 }
 
 const RUTA_CRM = '/v1/crm'

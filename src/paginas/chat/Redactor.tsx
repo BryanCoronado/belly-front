@@ -5,6 +5,7 @@ import {
   FileText,
   ImagePlus,
   Italic,
+  BookImage,
   LayoutTemplate,
   Loader2,
   MapPin,
@@ -36,6 +37,7 @@ import { type StickerTienda } from '@/api'
 import { avisoError } from '@/lib/avisos'
 import { useModoAhorro } from '@/lib/modo-ahorro'
 import { FormularioRespuesta } from '@/paginas/plantillas/FormularioRespuesta'
+import { ListaProductosCatalogo } from '@/paginas/catalogo/SelectorCatalogo'
 import { CapturaCamara } from './CapturaCamara'
 import { PanelExpresiones } from './PanelExpresiones'
 
@@ -78,6 +80,7 @@ export type EnvioRedactor = {
   latitude?: number
   longitude?: number
   name?: string
+  mediaUrl?: string
 }
 
 type Props = {
@@ -99,6 +102,7 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
   const [segundos, setSegundos] = useState(0)
   const [camara, setCamara] = useState<'foto' | 'video' | null>(null)
   const [crearRespuesta, setCrearRespuesta] = useState(false)
+  const [catalogoAbierto, setCatalogoAbierto] = useState(false)
   const consultas = useQueryClient()
   const { ahorro } = useModoAhorro()
   const campo = useRef<HTMLTextAreaElement>(null)
@@ -446,6 +450,9 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
             <DropdownMenuItem onClick={() => void enviarUbicacion()}>
               <MapPin /> Ubicación actual
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setCatalogoAbierto(true)}>
+              <BookImage /> Producto del catálogo
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -551,6 +558,21 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
         alCerrar={() => setCamara(null)}
         alCapturar={(archivo) => elegirArchivo(archivo)}
       />
+
+      <Dialog open={catalogoAbierto} onOpenChange={setCatalogoAbierto}>
+        <DialogContent className="p-0 sm:max-w-md">
+          <DialogHeader className="px-5 pt-5">
+            <DialogTitle>Enviar del catálogo</DialogTitle>
+            <DialogDescription>Va con foto, nombre, precio y descripción, listo para WhatsApp.</DialogDescription>
+          </DialogHeader>
+          <ListaProductosCatalogo
+            alElegir={(envio) => {
+              setCatalogoAbierto(false)
+              void enviar({ texto: envio.texto, mediaUrl: envio.imagen_url ?? undefined })
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={crearRespuesta} onOpenChange={(abrir) => !abrir && setCrearRespuesta(false)}>
         <DialogContent className="sm:max-w-lg">

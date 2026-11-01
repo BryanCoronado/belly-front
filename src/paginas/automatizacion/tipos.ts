@@ -10,6 +10,7 @@
   MessageCircleQuestion,
   MessageSquareText,
   MousePointerClick,
+  BookImage,
   Shuffle,
   Tag,
   Thermometer,
@@ -58,6 +59,14 @@ export const META: Record<TipoPaso, MetaPaso> = {
     color: '#0ea5e9',
     cabecera: 'bg-sky-500 text-white',
     suave: 'bg-sky-100 text-sky-700',
+  },
+  catalogo: {
+    titulo: 'Producto del catálogo',
+    descripcion: 'Envía un producto, una categoría o el enlace de la tienda',
+    icono: BookImage,
+    color: '#c2410c',
+    cabecera: 'bg-orange-600 text-white',
+    suave: 'bg-orange-100 text-orange-700',
   },
   botones: {
     titulo: 'Botones',
@@ -167,7 +176,7 @@ export const META: Record<TipoPaso, MetaPaso> = {
 
 /** Cómo se agrupan los pasos en la barra lateral del editor. */
 export const GRUPOS_PASOS: { titulo: string; pasos: TipoPaso[] }[] = [
-  { titulo: 'Enviar', pasos: ['mensaje', 'ubicacion'] },
+  { titulo: 'Enviar', pasos: ['mensaje', 'catalogo', 'ubicacion'] },
   { titulo: 'Preguntar', pasos: ['botones', 'lista', 'pregunta', 'formulario'] },
   { titulo: 'Lógica', pasos: ['condicion', 'horario', 'espera', 'variable', 'dividir'] },
   { titulo: 'Contacto', pasos: ['temperatura'] },
@@ -177,7 +186,7 @@ export const GRUPOS_PASOS: { titulo: string; pasos: TipoPaso[] }[] = [
 /** En Ahorro: primero lo barato, lo que gasta más abajo. */
 export const GRUPOS_PASOS_AHORRO: { titulo: string; pasos: TipoPaso[] }[] = [
   { titulo: 'Barato (1 mensaje)', pasos: ['formulario', 'botones', 'lista', 'asesor'] },
-  { titulo: 'También sirve', pasos: ['mensaje', 'fin', 'ubicacion'] },
+  { titulo: 'También sirve', pasos: ['mensaje', 'catalogo', 'fin', 'ubicacion'] },
   { titulo: 'Gasta más (1 por campo)', pasos: ['pregunta'] },
   { titulo: 'Lógica', pasos: ['condicion', 'horario', 'espera', 'variable', 'dividir'] },
   { titulo: 'Contacto', pasos: ['temperatura'] },
@@ -188,6 +197,7 @@ export const TOPE_AHORRO = 2
 
 export const PASOS_AGREGABLES: TipoPaso[] = [
   'mensaje',
+  'catalogo',
   'ubicacion',
   'botones',
   'lista',
@@ -276,6 +286,8 @@ export function datosIniciales(tipo: TipoPaso): DatosPaso {
       return { disparador: 'primer_mensaje', palabras: [], exacta: false, audiencia: 'nuevos', repetir: 'una_vez' }
     case 'mensaje':
       return { texto: '', media: 'ninguno', url: '', nombre_archivo: '', pausa: 0 }
+    case 'catalogo':
+      return { modo: 'producto', texto: '', media: 'ninguno', url: '', id_producto: 0, id_familia: 0, pausa: 0 }
     case 'espera':
       return { cantidad: 1, unidad: 'horas' }
     case 'ubicacion':
@@ -385,6 +397,7 @@ export function salidasDe(tipo: TipoPaso, datos: DatosPaso): Salida[] {
       ]
     case 'inicio':
     case 'mensaje':
+    case 'catalogo':
     case 'variable':
     case 'espera':
     case 'ubicacion':
@@ -453,6 +466,12 @@ export function resumenPaso(tipo: TipoPaso, datos: DatosPaso): string {
                 : ''
       return [etiqueta, texto(datos, 'texto')].filter(Boolean).join(' · ') || 'Escribe el mensaje…'
     }
+    case 'catalogo': {
+      const modo = texto(datos, 'modo')
+      if (modo === 'enlace') return texto(datos, 'texto') || 'Envía el enlace de la tienda'
+      if (modo === 'familia') return texto(datos, 'texto') || 'Elige una categoría…'
+      return texto(datos, 'texto') || 'Elige un producto…'
+    }
     case 'espera': {
       const unidad = UNIDADES_ESPERA.find((u) => u.valor === datos.unidad)?.etiqueta ?? 'segundos'
       return `Espera ${Number(datos.cantidad ?? 0)} ${unidad}`
@@ -490,7 +509,7 @@ export function resumenPaso(tipo: TipoPaso, datos: DatosPaso): string {
   }
 }
 
-export const PASOS_QUE_MANDAN: TipoPaso[] = ['mensaje', 'botones', 'lista', 'pregunta', 'formulario', 'ubicacion', 'asesor', 'fin']
+export const PASOS_QUE_MANDAN: TipoPaso[] = ['mensaje', 'catalogo', 'botones', 'lista', 'pregunta', 'formulario', 'ubicacion', 'asesor', 'fin']
 
 export function pasoCobraMensaje(tipo: TipoPaso): boolean {
   return PASOS_QUE_MANDAN.includes(tipo)

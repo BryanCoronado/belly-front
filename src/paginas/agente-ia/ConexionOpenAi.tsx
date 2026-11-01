@@ -51,7 +51,7 @@ export function ConexionOpenAi({ conexion }: { conexion: ConexionIa }) {
   const verificada = conexion.verificada_at ? new Date(conexion.verificada_at.replace(' ', 'T')).toLocaleDateString() : null
 
   return (
-    <section className="rounded-xl border bg-white p-4 md:p-5">
+    <section className="superficie p-4 md:p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-start">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
           <KeyRound className="size-5" />

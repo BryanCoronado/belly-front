@@ -155,7 +155,7 @@ const TONOS = {
 
 function Seccion({ icono: Icono, titulo, tono, children }: { icono: LucideIcon; titulo: string; tono: keyof typeof TONOS; children: ReactNode }) {
   return (
-    <section className="space-y-4 rounded-xl border bg-white p-4 shadow-xs">
+    <section className="superficie space-y-4 p-4">
       <h3 className="flex items-center gap-2.5 text-sm font-semibold">
         <span className={`flex size-8 items-center justify-center rounded-lg ${TONOS[tono]}`}>
           <Icono className="size-4" />

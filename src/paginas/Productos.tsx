@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ImagePlus, LoaderCircle, Package, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import {
   cambiarEstadoProducto,
   eliminarFamilia,
@@ -20,7 +21,7 @@ import { Campo, CampoSelect } from '@/components/Campo'
 import { ConfirmarAccion } from '@/components/ConfirmarAccion'
 import { TablaResponsiva } from '@/components/TablaResponsiva'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,17 +46,30 @@ const MONEDAS = [
   { valor: 'ARS', nombre: 'Pesos argentinos (ARS)' },
 ]
 
-const VACIA_FAMILIA: DatosFamilia = { nombre: '', descripcion: '' }
+const MAX_FOTOS = 8
+const MAX_VARIANTES = 4
+const ETIQUETAS = ['', 'Nuevo', 'Oferta', 'Top', 'Últimos', 'Hot']
+
+const VACIA_FAMILIA: DatosFamilia = { nombre: '', descripcion: '', imagen_url: '' }
 const VACIO_PRODUCTO: DatosProducto = {
   nombre: '',
   id_familia: null,
   precio: '',
+  precio_oferta: '',
   moneda: 'PEN',
   unidad: '',
   codigo: '',
+  marca: '',
+  resumen: '',
   descripcion: '',
   imagen_url: '',
+  imagenes: [],
+  disponibilidad: 'disponible',
+  destacado: false,
+  visible_catalogo: true,
   detalles: [],
+  variantes: [],
+  etiqueta: '',
 }
 
 function formatearPrecio(producto: Producto): string {
@@ -90,7 +104,7 @@ export function Productos() {
       if (filtro === SIN_FAMILIA && producto.id_familia) return false
       if (filtro !== TODOS && filtro !== SIN_FAMILIA && String(producto.id_familia) !== filtro) return false
       if (!texto) return true
-      return [producto.nombre, producto.codigo, producto.descripcion].some((campo) => campo?.toLowerCase().includes(texto))
+      return [producto.nombre, producto.codigo, producto.marca, producto.descripcion].some((campo) => campo?.toLowerCase().includes(texto))
     })
   }, [productos.data, filtro, busqueda])
 
@@ -124,13 +138,18 @@ export function Productos() {
     <div className="space-y-6">
       <CabeceraPagina
         titulo="Productos"
-        descripcion="Lo que vendes u ofreces, ordenado por familias. Sirve para cualquier tipo de negocio."
+        descripcion="Lo que vendes u ofreces. Estos productos alimentan tu catálogo virtual."
         acciones={
           admin ? (
-            <Button size="lg" className="h-10 w-full sm:w-auto" onClick={() => setProductoAbierto('nuevo')}>
-              <Plus />
-              Nuevo producto
-            </Button>
+            <>
+              <Link to="/catalogo" className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full sm:w-auto')}>
+                Mi Catálogo
+              </Link>
+              <Button size="lg" className="h-10 w-full sm:w-auto" onClick={() => setProductoAbierto('nuevo')}>
+                <Plus />
+                Nuevo producto
+              </Button>
+            </>
           ) : null
         }
       />
@@ -200,7 +219,9 @@ export function Productos() {
                     <MiniaturaProducto url={fila.imagen_url} />
                     <div className="min-w-0">
                       <p className="truncate font-medium">{fila.nombre}</p>
-                      {fila.codigo ? <p className="truncate text-xs text-muted-foreground">Código {fila.codigo}</p> : null}
+                      <p className="truncate text-xs text-muted-foreground">
+                        {fila.marca ? fila.marca : fila.codigo ? `Código ${fila.codigo}` : fila.destacado ? 'Destacado' : null}
+                      </p>
                     </div>
                   </div>
                 ),
@@ -213,7 +234,12 @@ export function Productos() {
                 titulo: 'Precio',
                 celda: (fila) => (
                   <span>
-                    {formatearPrecio(fila)}
+                    {fila.precio_oferta !== null && fila.precio !== null ? (
+                      <span className="mr-1.5 text-xs text-muted-foreground line-through">{formatearPrecio(fila)}</span>
+                    ) : null}
+                    {fila.precio_oferta !== null
+                      ? formatearPrecio({ ...fila, precio: fila.precio_oferta })
+                      : formatearPrecio(fila)}
                     {fila.unidad && fila.precio !== null ? <span className="text-xs text-muted-foreground"> / {fila.unidad}</span> : null}
                   </span>
                 ),
@@ -255,7 +281,7 @@ export function Productos() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{productoAbierto && productoAbierto !== 'nuevo' ? 'Editar producto' : 'Nuevo producto'}</DialogTitle>
-            <DialogDescription>Solo el nombre es obligatorio. Agrega lo que tu negocio necesite mostrar.</DialogDescription>
+            <DialogDescription>Completa lo que el cliente debe ver en tu catálogo: foto, precio, marca y detalles.</DialogDescription>
           </DialogHeader>
           {productoAbierto ? (
             <FormularioProducto
@@ -352,8 +378,14 @@ function InterruptorProducto({ producto, editable, alCambiar }: { producto: Prod
 
 function FormularioFamilia({ familia, alCerrar, alGuardar }: { familia: FamiliaProducto | null; alCerrar: () => void; alGuardar: () => void }) {
   const [datos, setDatos] = useState<DatosFamilia>(
-    familia ? { nombre: familia.nombre, descripcion: familia.descripcion ?? '' } : VACIA_FAMILIA,
+    familia ? { nombre: familia.nombre, descripcion: familia.descripcion ?? '', imagen_url: familia.imagen_url ?? '' } : VACIA_FAMILIA,
   )
+  const selector = useRef<HTMLInputElement>(null)
+  const subir = useMutation({
+    mutationFn: subirImagenProducto,
+    onSuccess: (url) => setDatos((actual) => ({ ...actual, imagen_url: url })),
+    onError: (error) => avisoError(error, 'No se pudo subir la imagen'),
+  })
 
   const guardar = useMutation({
     mutationFn: () => guardarFamilia(datos, familia?.id),
@@ -377,6 +409,36 @@ function FormularioFamilia({ familia, alCerrar, alGuardar }: { familia: FamiliaP
 
   return (
     <form className="grid gap-4" onSubmit={enviar}>
+      <div className="flex items-center gap-4">
+        <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted">
+          {datos.imagen_url ? <img src={datos.imagen_url} alt="" className="size-full object-cover" /> : <ImagePlus className="size-5 text-muted-foreground" />}
+        </div>
+        <div className="space-y-1.5">
+          <input
+            ref={selector}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(evento) => {
+              const archivo = evento.target.files?.[0]
+              evento.target.value = ''
+              if (archivo) subir.mutate(archivo)
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={subir.isPending} onClick={() => selector.current?.click()}>
+              {subir.isPending ? <LoaderCircle className="animate-spin" /> : <ImagePlus />}
+              {datos.imagen_url ? 'Cambiar imagen' : 'Subir imagen'}
+            </Button>
+            {datos.imagen_url ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setDatos((actual) => ({ ...actual, imagen_url: '' }))}>
+                Quitar
+              </Button>
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground">Sale en el círculo de categorías del catálogo.</p>
+        </div>
+      </div>
       <Campo etiqueta="Nombre" name="nombre" value={datos.nombre} onChange={cambiar} maxLength={80} autoComplete="off" required />
       <Campo etiqueta="Descripción" name="descripcion" value={datos.descripcion} onChange={cambiar} maxLength={255} autoComplete="off" opcional />
       <PieFormulario cargando={guardar.isPending} etiqueta={familia ? 'Guardar cambios' : 'Crear familia'} alCerrar={alCerrar} />
@@ -403,19 +465,48 @@ function FormularioProducto({
           nombre: producto.nombre,
           id_familia: producto.id_familia,
           precio: producto.precio === null ? '' : String(producto.precio),
+          precio_oferta: producto.precio_oferta === null ? '' : String(producto.precio_oferta),
           moneda: producto.moneda || 'PEN',
           unidad: producto.unidad ?? '',
           codigo: producto.codigo ?? '',
+          marca: producto.marca ?? '',
+          resumen: producto.resumen ?? '',
           descripcion: producto.descripcion ?? '',
           imagen_url: producto.imagen_url ?? '',
+          imagenes: producto.imagenes ?? [],
+          disponibilidad: producto.disponibilidad ?? 'disponible',
+          destacado: producto.destacado,
+          visible_catalogo: producto.visible_catalogo,
           detalles: producto.detalles ?? [],
+          variantes: (producto.variantes ?? []).map((variante) => ({ ...variante })),
+          etiqueta: producto.etiqueta ?? '',
         }
       : { ...VACIO_PRODUCTO, id_familia: familiaInicial },
   )
   const selector = useRef<HTMLInputElement>(null)
+  const selectorGaleria = useRef<HTMLInputElement>(null)
+  const [textoOpciones, setTextoOpciones] = useState<string[]>(() =>
+    (producto?.variantes ?? []).map((variante) => variante.opciones.join(', ')),
+  )
 
   const guardar = useMutation({
-    mutationFn: () => guardarProducto({ ...datos, detalles: datos.detalles.filter((detalle) => detalle.nombre.trim() !== '') }, producto?.id),
+    mutationFn: () =>
+      guardarProducto(
+        {
+          ...datos,
+          detalles: datos.detalles.filter((detalle) => detalle.nombre.trim() !== ''),
+          variantes: datos.variantes
+            .map((variante, indice) => ({
+              nombre: variante.nombre.trim(),
+              opciones: (textoOpciones[indice] ?? '')
+                .split(',')
+                .map((opcion) => opcion.trim())
+                .filter(Boolean),
+            }))
+            .filter((variante) => variante.nombre && variante.opciones.length > 0),
+        },
+        producto?.id,
+      ),
     onSuccess: () => {
       avisoExito(producto ? 'Producto actualizado' : 'Producto creado')
       alCerrar()
@@ -428,6 +519,13 @@ function FormularioProducto({
     mutationFn: subirImagenProducto,
     onSuccess: (url) => setDatos((actual) => ({ ...actual, imagen_url: url })),
     onError: (error) => avisoError(error, 'No se pudo subir la imagen'),
+  })
+
+  const subirFoto = useMutation({
+    mutationFn: subirImagenProducto,
+    onSuccess: (url) =>
+      setDatos((actual) => (actual.imagenes.length < MAX_FOTOS ? { ...actual, imagenes: [...actual.imagenes, url] } : actual)),
+    onError: (error) => avisoError(error, 'No se pudo subir la foto'),
   })
 
   function cambiar(evento: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -472,7 +570,51 @@ function FormularioProducto({
               </Button>
             ) : null}
           </div>
-          <p className="text-xs text-muted-foreground">JPG, PNG o WEBP de hasta 5 MB.</p>
+          <p className="text-xs text-muted-foreground">Foto principal. JPG, PNG o WEBP de hasta 5 MB.</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div>
+          <p className="text-sm font-medium">Más fotos</p>
+          <p className="text-xs text-muted-foreground">Se ven en la galería del producto. Hasta {MAX_FOTOS}.</p>
+        </div>
+        <input
+          ref={selectorGaleria}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(evento) => {
+            const archivo = evento.target.files?.[0]
+            evento.target.value = ''
+            if (archivo) subirFoto.mutate(archivo)
+          }}
+        />
+        <div className="flex flex-wrap gap-2">
+          {datos.imagenes.map((url, indice) => (
+            <div key={url} className="group relative size-16 overflow-hidden rounded-lg border bg-muted">
+              <img src={url} alt="" className="size-full object-cover" />
+              <button
+                type="button"
+                aria-label="Quitar foto"
+                onClick={() => setDatos((actual) => ({ ...actual, imagenes: actual.imagenes.filter((_, posicion) => posicion !== indice) }))}
+                className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+          ))}
+          {datos.imagenes.length < MAX_FOTOS ? (
+            <button
+              type="button"
+              disabled={subirFoto.isPending}
+              onClick={() => selectorGaleria.current?.click()}
+              className="flex size-16 items-center justify-center rounded-lg border border-dashed text-muted-foreground hover:bg-muted"
+              aria-label="Agregar foto"
+            >
+              {subirFoto.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -489,6 +631,7 @@ function FormularioProducto({
           ))}
         </CampoSelect>
         <Campo etiqueta="Código" name="codigo" value={datos.codigo} onChange={cambiar} maxLength={60} autoComplete="off" opcional />
+        <Campo etiqueta="Marca" name="marca" value={datos.marca} onChange={cambiar} maxLength={80} autoComplete="off" opcional />
         <Campo
           etiqueta="Precio"
           name="precio"
@@ -497,6 +640,16 @@ function FormularioProducto({
           inputMode="decimal"
           autoComplete="off"
           ayuda="Déjalo vacío si el precio es “a consultar”."
+          opcional
+        />
+        <Campo
+          etiqueta="Precio de oferta"
+          name="precio_oferta"
+          value={datos.precio_oferta}
+          onChange={cambiar}
+          inputMode="decimal"
+          autoComplete="off"
+          ayuda="Si lo pones, el precio normal se tacha."
           opcional
         />
         <CampoSelect etiqueta="Moneda" name="moneda" value={datos.moneda} onChange={cambiar}>
@@ -516,6 +669,32 @@ function FormularioProducto({
           ayuda="Ejemplo: unidad, kg, hora, mes."
           opcional
         />
+        <CampoSelect etiqueta="Disponibilidad" name="disponibilidad" value={datos.disponibilidad} onChange={cambiar}>
+          <option value="disponible">Disponible</option>
+          <option value="agotado">Agotado</option>
+          <option value="pedido">A pedido</option>
+        </CampoSelect>
+        <CampoSelect etiqueta="Etiqueta en la tarjeta" name="etiqueta" value={datos.etiqueta} onChange={cambiar}>
+          {ETIQUETAS.map((etiqueta) => (
+            <option key={etiqueta} value={etiqueta}>
+              {etiqueta || 'Ninguna'}
+            </option>
+          ))}
+        </CampoSelect>
+        <div className="grid gap-2 sm:col-span-2">
+          <Label htmlFor="resumen-producto">
+            Resumen <span className="font-normal text-muted-foreground">(opcional)</span>
+          </Label>
+          <input
+            id="resumen-producto"
+            name="resumen"
+            value={datos.resumen}
+            onChange={cambiar}
+            maxLength={180}
+            autoComplete="off"
+            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </div>
         <div className="grid gap-2 sm:col-span-2">
           <Label htmlFor="descripcion-producto">
             Descripción <span className="font-normal text-muted-foreground">(opcional)</span>
@@ -529,6 +708,78 @@ function FormularioProducto({
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
         </div>
+        <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-3">
+          <span className="text-sm">Mostrar en el catálogo público</span>
+          <Switch
+            checked={datos.visible_catalogo}
+            onCheckedChange={(valor) => setDatos((actual) => ({ ...actual, visible_catalogo: valor }))}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-3">
+          <span className="text-sm">Destacar en la vitrina</span>
+          <Switch checked={datos.destacado} onCheckedChange={(valor) => setDatos((actual) => ({ ...actual, destacado: valor }))} />
+        </label>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm font-medium">Opciones para elegir</p>
+          <p className="text-xs text-muted-foreground">El cliente elige una antes de pedir. Ejemplo: Talla → S, M, L.</p>
+        </div>
+        {datos.variantes.map((variante, indice) => (
+          <div key={indice} className="flex items-center gap-2">
+            <Input
+              className="h-10 sm:w-40"
+              placeholder="Nombre (ej. Talla)"
+              value={variante.nombre}
+              maxLength={40}
+              onChange={(evento) =>
+                setDatos((actual) => ({
+                  ...actual,
+                  variantes: actual.variantes.map((item, posicion) => (posicion === indice ? { ...item, nombre: evento.target.value } : item)),
+                }))
+              }
+            />
+            <Input
+              className="h-10"
+              placeholder="Opciones separadas por coma (ej. S, M, L)"
+              value={textoOpciones[indice] ?? ''}
+              onChange={(evento) =>
+                setTextoOpciones((actual) => {
+                  const copia = [...actual]
+                  copia[indice] = evento.target.value
+                  return copia
+                })
+              }
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Quitar opción"
+              onClick={() => {
+                setDatos((actual) => ({ ...actual, variantes: actual.variantes.filter((_, posicion) => posicion !== indice) }))
+                setTextoOpciones((actual) => actual.filter((_, posicion) => posicion !== indice))
+              }}
+            >
+              <X />
+            </Button>
+          </div>
+        ))}
+        {datos.variantes.length < MAX_VARIANTES ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setDatos((actual) => ({ ...actual, variantes: [...actual.variantes, { nombre: '', opciones: [] }] }))
+              setTextoOpciones((actual) => [...actual, ''])
+            }}
+          >
+            <Plus />
+            Agregar opción
+          </Button>
+        ) : null}
       </div>
 
       <div className="space-y-3">

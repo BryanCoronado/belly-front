@@ -88,7 +88,7 @@ export function Envios() {
 
 function Regla({ icono: Icono, titulo, texto }: { icono: typeof Send; titulo: string; texto: string }) {
   return (
-    <div className="flex gap-3 rounded-xl border bg-card p-4">
+    <div className="flex gap-3 superficie p-4">
       <Icono className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
       <div className="space-y-1">
         <p className="text-sm font-medium">{titulo}</p>

@@ -79,6 +79,7 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         latitude: envio.latitude,
         longitude: envio.longitude,
         name: envio.name,
+        mediaUrl: envio.mediaUrl,
       }),
     onMutate: async (envioDatos) => {
       await consultas.cancelQueries({ queryKey: claveMensajes })
@@ -94,9 +95,11 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         media_url:
           envioDatos.tipo === 'location' && envioDatos.latitude != null
             ? `https://www.google.com/maps/search/?api=1&query=${envioDatos.latitude},${envioDatos.longitude}`
-            : archivo && (mediaType === 'image' || mediaType === 'sticker' || mediaType === 'video')
-              ? URL.createObjectURL(archivo)
-              : null,
+            : envioDatos.mediaUrl
+              ? envioDatos.mediaUrl
+              : archivo && (mediaType === 'image' || mediaType === 'sticker' || mediaType === 'video')
+                ? URL.createObjectURL(archivo)
+                : null,
         cod_error: null,
         created_at: new Date().toISOString(),
         pendiente: true,
@@ -329,6 +332,7 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
 function tipoMediaEnvio(envio: EnvioRedactor): MensajeChat['media_type'] {
   if (envio.tipo === 'location') return 'location'
   if (envio.tipo === 'sticker') return 'sticker'
+  if (envio.mediaUrl) return 'image'
   if (envio.tipo === 'audio' || envio.archivo?.type.startsWith('audio/')) return 'audio'
   if (envio.archivo?.type.startsWith('image/')) return 'image'
   if (envio.archivo?.type.startsWith('video/')) return 'video'

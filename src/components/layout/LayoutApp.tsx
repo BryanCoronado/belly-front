@@ -13,7 +13,8 @@ import { BotonGuia } from '@/guia/BotonGuia'
 import { useTiempoReal } from '@/hooks/use-tiempo-real'
 import { useModoAhorro } from '@/lib/modo-ahorro'
 import { cn } from '@/lib/utils'
-import { esAdministrador, leerSesion } from '@/sesion'
+import { registrarModuloReciente } from '@/lib/modulosRecientes'
+import { esAdministrador, esOperador, leerSesion } from '@/sesion'
 import { BarraLateral } from './BarraLateral'
 import { tituloDeRuta } from './navegacion'
 
@@ -34,8 +35,17 @@ export function LayoutApp() {
     return () => window.removeEventListener('belly-sesion', alCambiar)
   }, [])
 
+  useEffect(() => {
+    const id = sesion?.usuario.id
+    if (!id) return
+    registrarModuloReciente(id, pathname, tituloDeRuta(pathname))
+  }, [pathname, sesion?.usuario.id])
+
   if (!sesion) {
     return <Navigate to="/" replace />
+  }
+  if (esOperador(sesion.usuario)) {
+    return <Navigate to="/operador" replace />
   }
 
   return (
@@ -111,7 +121,7 @@ export function LayoutApp() {
         <div
           className={cn(
             'w-full min-w-0 flex-1',
-            pantallaCompleta ? 'flex min-h-0 flex-col overflow-hidden' : 'p-4 md:p-6 xl:p-8',
+            pantallaCompleta ? 'flex min-h-0 flex-col overflow-hidden' : 'p-3 sm:p-4 md:p-6 xl:p-8',
           )}
         >
           <TransicionPagina
