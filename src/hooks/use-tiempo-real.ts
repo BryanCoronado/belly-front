@@ -7,7 +7,7 @@ import { useAvisos } from '@/hooks/use-avisos'
 import { avisoConversacion } from '@/lib/avisos'
 import { chatSilenciado, leerPrefsAviso, marcarAvisosLeidos, registrarAviso } from '@/lib/preferencias-aviso'
 import { pedirPermisoAvisos, tocarAviso } from '@/lib/sonido-aviso'
-import { esAdministrador, leerSesion } from '@/sesion'
+import { esAdministrador, expulsarPorEmpresaPausada, leerSesion } from '@/sesion'
 
 type Aviso = {
   id_conversacion?: number
@@ -87,6 +87,11 @@ export function useTiempoReal() {
       void avisarSiCorresponde(aviso)
     })
     socket.on('contadores', refrescarListas)
+    socket.on('sesion', (datos: { motivo?: string }) => {
+      if (datos?.motivo === 'pausada') {
+        expulsarPorEmpresaPausada()
+      }
+    })
     socket.io.on('reconnect', () => {
       void consultas.invalidateQueries({ queryKey: ['mensajes'] })
       refrescarListas()

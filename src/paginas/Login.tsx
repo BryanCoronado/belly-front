@@ -6,21 +6,26 @@ import { entrar } from '@/api'
 import { LayoutAcceso } from '@/components/layout/LayoutAcceso'
 import { Button } from '@/components/ui/button'
 import { avisoError, avisoExito } from '@/lib/avisos'
-import { consumirSesionVencida, guardarSesion, leerSesion, nombreVisible, rutaTrasEntrar } from '@/sesion'
+import { consumirMotivoCierre, esOperador, guardarSesion, leerSesion, nombreVisible, rutaTrasEntrar } from '@/sesion'
 
 const CREDENCIALES_VACIAS = { identificador: '', password: '' }
 
 export function Login() {
   const navegar = useNavigate()
   const [credenciales, setCredenciales] = useState(CREDENCIALES_VACIAS)
-  const [vencida] = useState(() => {
+  const [motivoCierre] = useState(() => {
     leerSesion()
-    return consumirSesionVencida()
+    return consumirMotivoCierre()
   })
 
   const acceso = useMutation({
     mutationFn: () => entrar(credenciales.identificador.trim(), credenciales.password),
     onSuccess: (sesion) => {
+      if (esOperador(sesion.usuario)) {
+        avisoError(new Error('El dueño entra por /acceso, no por aquí.'), 'Cuenta de dueño')
+        navegar('/acceso', { replace: true })
+        return
+      }
       guardarSesion(sesion)
       avisoExito('Sesión iniciada', `Bienvenido, ${nombreVisible(sesion.usuario)}.`)
       navegar(rutaTrasEntrar(sesion.usuario), { replace: true })
@@ -53,7 +58,11 @@ export function Login() {
       }
     >
       <form className="grid gap-4" onSubmit={enviar}>
-        {vencida ? (
+        {motivoCierre === 'pausada' ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Tu empresa está pausada. Escribe a Belly para reactivarla.
+          </p>
+        ) : motivoCierre === 'vencida' ? (
           <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Tu sesión venció. Entra de nuevo para continuar.
           </p>

@@ -1,4 +1,4 @@
-import { expulsarPorTokenVencido, leerSesion, type Sesion } from '@/sesion'
+import { expulsarPorEmpresaPausada, expulsarPorTokenVencido, leerSesion, type Sesion } from '@/sesion'
 
 const BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -817,8 +817,23 @@ export type PagoBelly = {
   creado: string | null
 }
 
+export type UsoPlan = {
+  conversaciones: number
+  equipos: number
+  personas: number
+  flujos: number
+  envios: number
+  numeros: number
+}
+
+export type CupoEmpresa = {
+  plan: PlanBelly
+  uso: UsoPlan
+}
+
 export type CuentaEmpresa = {
   plan: PlanBelly
+  uso?: UsoPlan
   pagos: PagoBelly[]
 }
 
@@ -840,6 +855,11 @@ export async function marcarPago(id: number, cuerpo: Partial<PagoBelly>): Promis
 export async function leerCuentaEmpresa(): Promise<CuentaEmpresa> {
   const datos = await solicitar('/v1/empresa/pagos', { method: 'GET', conToken: true })
   return datos.data as CuentaEmpresa
+}
+
+export async function leerCupoEmpresa(): Promise<CupoEmpresa> {
+  const datos = await solicitar('/v1/empresa/cupo', { method: 'GET', conToken: true })
+  return datos.data as CupoEmpresa
 }
 
 export async function leerCostosWhatsapp(): Promise<CostosWhatsapp> {
@@ -1965,7 +1985,12 @@ async function solicitar(ruta: string, { method, cuerpo, formulario, conToken = 
 
   const datos = (await respuesta.json().catch(() => null)) as Respuesta | null
   if (conToken && respuesta.status === 401) {
-    expulsarPorTokenVencido()
+    const texto = mensajeError(datos).toLowerCase()
+    if (texto.includes('pausad')) {
+      expulsarPorEmpresaPausada()
+    } else {
+      expulsarPorTokenVencido()
+    }
   }
   if (!respuesta.ok || datos?.success === false) {
     throw new Error(mensajeError(datos) || 'No se pudo completar la solicitud.')

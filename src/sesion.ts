@@ -19,6 +19,7 @@ export type Sesion = {
 
 const CLAVE = 'belly.sesion'
 const CLAVE_VENCIDA = 'belly.sesion.vencida'
+const CLAVE_MOTIVO = 'belly.sesion.motivo'
 let expulsando = false
 
 export function leerSesion(): Sesion | null {
@@ -61,22 +62,40 @@ export function cerrarSesion() {
 
 /** El API rechazó el token (vencido o inválido): borra la sesión y manda al login. */
 export function expulsarPorTokenVencido() {
+  echarDeLaSesion('vencida')
+}
+
+export function expulsarPorEmpresaPausada() {
+  echarDeLaSesion('pausada')
+}
+
+function echarDeLaSesion(motivo: 'vencida' | 'pausada') {
   const ruta = window.location.pathname
   if (expulsando || ruta === '/' || ruta === '/registro' || ruta === '/acceso' || ruta.startsWith('/c/')) {
     return
   }
   expulsando = true
+  sessionStorage.setItem(CLAVE_MOTIVO, motivo)
   marcarSesionVencida()
   cerrarSesion()
   window.location.replace(ruta.startsWith('/operador') ? '/acceso' : '/')
 }
 
 export function consumirSesionVencida(): boolean {
+  return consumirMotivoCierre() === 'vencida'
+}
+
+export function consumirMotivoCierre(): 'pausada' | 'vencida' | null {
+  const motivo = sessionStorage.getItem(CLAVE_MOTIVO)
+  sessionStorage.removeItem(CLAVE_MOTIVO)
   const vencida = sessionStorage.getItem(CLAVE_VENCIDA) === '1'
   if (vencida) {
     sessionStorage.removeItem(CLAVE_VENCIDA)
   }
-  return vencida
+  if (motivo === 'pausada') {
+    return 'pausada'
+  }
+  return vencida ? 'vencida' : null
 }
 
 function marcarSesionVencida() {

@@ -8,6 +8,7 @@ import { TransicionPagina } from '@/components/TransicionPagina'
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AvisoMeta } from '@/components/layout/AvisoMeta'
+import { LimitesPlan } from '@/components/layout/LimitesPlan'
 import { BandejaAvisos } from '@/components/layout/BandejaAvisos'
 import { BotonGuia } from '@/guia/BotonGuia'
 import { useTiempoReal } from '@/hooks/use-tiempo-real'
@@ -118,6 +119,7 @@ export function LayoutApp() {
             </motion.div>
           ) : null}
         </AnimatePresence>
+        <LimitesPlan />
         <div
           className={cn(
             'w-full min-w-0 flex-1',

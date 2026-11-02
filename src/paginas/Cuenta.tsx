@@ -25,6 +25,7 @@ function PanelCuenta() {
     retry: false,
   })
   const plan = consulta.data?.plan
+  const uso = consulta.data?.uso
   const pagos = consulta.data?.pagos ?? []
 
   return (
@@ -47,6 +48,14 @@ function PanelCuenta() {
               <li key={item}>· {item}</li>
             ))}
           </ul>
+          {plan && uso ? (
+            <ul className="mt-3 grid gap-1 text-sm">
+              <li>{uso.conversaciones} / {tope(plan.max_conversaciones)} chats este mes</li>
+              <li>{uso.personas} / {tope(plan.max_personas)} personas</li>
+              <li>{uso.equipos} / {tope(plan.max_equipos)} equipos</li>
+              <li>{uso.flujos} / {tope(plan.max_flujos)} flujos</li>
+            </ul>
+          ) : null}
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             Esto se paga a Belly. No incluye los mensajes de WhatsApp: esos los cobra Meta.
           </p>
@@ -96,6 +105,10 @@ function PanelCuenta() {
       </section>
     </div>
   )
+}
+
+function tope(valor: number) {
+  return valor > 0 ? String(valor) : '∞'
 }
 
 function etiqueta(estado: string) {

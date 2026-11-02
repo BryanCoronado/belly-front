@@ -1,4 +1,4 @@
-import { useState, type ComponentType, type HTMLAttributes, type ReactNode } from 'react'
+import { useState, type HTMLAttributes, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowRight,
@@ -27,7 +27,6 @@ import {
   type PendienteDashboard,
 } from '@/api'
 import { Bienvenida } from '@/components/Bienvenida'
-import { IconoTelegram } from '@/components/IconoTelegram'
 import { IconoWhatsapp } from '@/components/IconoWhatsapp'
 import { PrimerosPasos } from '@/components/PrimerosPasos'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -60,6 +59,16 @@ export function Inicio() {
   const { conectado, cargando } = useWhatsappConectado()
   const [dias, setDias] = useState<DiasDashboard>(14)
   const dashboard = useQuery({ queryKey: ['dashboard', dias], queryFn: () => leerDashboard(dias) })
+  const vitrina = useQuery({
+    queryKey: ['catalogo-vitrina'],
+    queryFn: leerVitrina,
+    enabled: admin,
+    staleTime: 60_000,
+    retry: false,
+  })
+  const whatsappListo = !cargando && conectado
+  const catalogoListo = admin && vitrina.data?.publicado === true
+  const hayIntegraciones = whatsappListo || catalogoListo
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -76,8 +85,8 @@ export function Inicio() {
         <AvisoPendientes cantidad={dashboard.data.cuadros.por_responder} admin={admin} />
       ) : null}
 
-      <div className="grid items-stretch gap-4 sm:gap-6 xl:grid-cols-3">
-        <Integraciones conectado={conectado} cargando={cargando} admin={admin} />
+      <div className={cn('grid items-stretch gap-4 sm:gap-6', hayIntegraciones ? 'xl:grid-cols-3' : 'xl:grid-cols-2')}>
+        {hayIntegraciones ? <Integraciones whatsapp={whatsappListo} catalogo={catalogoListo} /> : null}
         <MiWeb admin={admin} />
         <ModulosRecientes />
       </div>
@@ -454,63 +463,47 @@ function CargandoDashboard({ admin }: { admin: boolean }) {
   )
 }
 
-function Integraciones({ conectado, cargando, admin }: { conectado: boolean; cargando: boolean; admin: boolean }) {
-  const vitrina = useQuery({
-    queryKey: ['catalogo-vitrina'],
-    queryFn: leerVitrina,
-    enabled: admin,
-    staleTime: 60_000,
-    retry: false,
-  })
-  const publicado = vitrina.data?.publicado === true
-
+function Integraciones({ whatsapp, catalogo }: { whatsapp: boolean; catalogo: boolean }) {
   return (
     <section className="superficie overflow-hidden" data-tour="integraciones">
       <header className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 sm:px-5 sm:pt-5">
         <div>
           <h2 className="font-heading text-lg font-bold tracking-[-0.03em]">Integraciones</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Qué está conectado</p>
+          <p className="mt-1 text-sm text-muted-foreground">Lo que ya tienes listo</p>
         </div>
         <Link to="/integraciones" className="text-sm font-medium text-muted-foreground hover:text-foreground">
           Ver todas
         </Link>
       </header>
       <ul className="divide-y border-t">
-        <li>
-          <Link to={RUTA_WHATSAPP} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-primary/6">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-card ring-1 ring-border">
-              <IconoWhatsapp className="size-5" />
-            </span>
-            <span className="min-w-0 flex-1 text-sm font-medium">WhatsApp Business</span>
-            {cargando ? (
-              <Skeleton className="h-5 w-20" />
-            ) : conectado ? (
+        {whatsapp ? (
+          <li>
+            <Link to={RUTA_WHATSAPP} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-primary/6">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-card ring-1 ring-border">
+                <IconoWhatsapp className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1 text-sm font-medium">WhatsApp Business</span>
               <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
                 <Check />
                 Conectado
               </Badge>
-            ) : (
-              <Badge className="border-amber-200 bg-amber-50 text-amber-800">Pendiente</Badge>
-            )}
-          </Link>
-        </li>
-        <li>
-          <Link to="/catalogo" className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-primary/6">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#0B1026]/8 text-[#0B1026]">
-              <BookImage className="size-4" />
-            </span>
-            <span className="min-w-0 flex-1 text-sm font-medium">Mi Catálogo</span>
-            {!admin || vitrina.isLoading ? null : publicado ? (
+            </Link>
+          </li>
+        ) : null}
+        {catalogo ? (
+          <li>
+            <Link to="/catalogo" className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-primary/6">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#0B1026]/8 text-[#0B1026]">
+                <BookImage className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1 text-sm font-medium">Mi Catálogo</span>
               <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
                 <Check />
                 Publicado
               </Badge>
-            ) : (
-              <Badge className="border-amber-200 bg-amber-50 text-amber-800">Sin publicar</Badge>
-            )}
-          </Link>
-        </li>
-        <FilaProxima icono={IconoTelegram} titulo="Telegram" />
+            </Link>
+          </li>
+        ) : null}
       </ul>
     </section>
   )
@@ -597,14 +590,3 @@ function ModulosRecientes() {
   )
 }
 
-function FilaProxima({ icono: Icono, titulo }: { icono: LucideIcon | ComponentType<{ className?: string }>; titulo: string }) {
-  return (
-    <li className="flex items-center gap-3 px-5 py-3.5 opacity-60">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Icono className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1 text-sm font-medium">{titulo}</span>
-      <span className="text-xs text-muted-foreground">Próximamente</span>
-    </li>
-  )
-}

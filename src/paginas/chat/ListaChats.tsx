@@ -3,6 +3,7 @@ import { CheckCheck, ListFilter, MessagesSquare, Search, X } from 'lucide-react'
 import { useDeferredValue, useState, type ReactNode } from 'react'
 import { leerChats, leerContadoresChat, type BandejaChat, type ConversacionChat, type FiltrosChat } from '@/api'
 import { AvisoMeta } from '@/components/layout/AvisoMeta'
+import { LimitesPlan } from '@/components/layout/LimitesPlan'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -54,6 +55,7 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
           <p className="px-1 text-[19px] font-medium">Chats</p>
           <AvisoMeta compacto className="ml-auto md:hidden" />
         </div>
+        <LimitesPlan compacto />
         <div className="flex gap-1.5">
           <div className="relative min-w-0 flex-1" data-tour="buscar-chat">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--wa-muted)]" />
