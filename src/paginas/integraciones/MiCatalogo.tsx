@@ -145,9 +145,9 @@ export function MiCatalogo() {
   }
 
   const guardar = useMutation({
-    mutationFn: () => {
+    mutationFn: (publicar: boolean) => {
       if (!datos) throw new Error('Completa el catálogo.')
-      return guardarVitrina(datos)
+      return guardarVitrina({ ...datos, publicado: publicar })
     },
     onSuccess: (vitrina) => {
       setEditado(desdeVitrina(vitrina))
@@ -155,7 +155,7 @@ export function MiCatalogo() {
       setLogoArchivo(null)
       void cliente.invalidateQueries({ queryKey: CLAVE })
       const sinTitulo = (datos?.pagina.promos ?? []).some((promo) => !promo.titulo.trim())
-      avisoExito(vitrina.publicado ? 'Catálogo publicado' : 'Catálogo guardado', sinTitulo ? 'Las promos sin título no se guardan.' : undefined)
+      avisoExito(vitrina.publicado ? 'Catálogo publicado' : 'Catálogo en borrador', sinTitulo ? 'Las promos sin título no se guardan.' : undefined)
     },
     onError: (error) => avisoError(error, 'No se pudo guardar el catálogo'),
   })
@@ -291,7 +291,7 @@ export function MiCatalogo() {
 
   function enviar(evento: FormEvent) {
     evento.preventDefault()
-    guardar.mutate()
+    guardar.mutate(true)
   }
 
   async function copiar(url: string) {
@@ -325,7 +325,7 @@ export function MiCatalogo() {
         titulo="Mi Catálogo"
         descripcion="Arma tu tienda online: banners, promos, ofertas con cuenta regresiva, carrito y QR. Los productos salen de tu catálogo."
         acciones={
-          vitrina?.publicado && url ? (
+          (datos?.publicado || vitrina?.publicado) && url ? (
             <a href={url} target="_blank" rel="noreferrer" className={cn(buttonVariants({ variant: 'outline' }), 'h-10')}>
               Ver tienda
               <ExternalLink />
@@ -513,8 +513,8 @@ export function MiCatalogo() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Interruptor etiqueta="Mostrar precios" valor={datos.mostrar_precios} alCambiar={(valor) => setDatos((actual) => (actual ? { ...actual, mostrar_precios: valor } : actual))} />
                     <Interruptor etiqueta="Carrito de pedidos" valor={datos.pagina.carrito} alCambiar={(valor) => ponerPagina('carrito', valor)} />
-                    <div className="sm:col-span-2">
-                      <Interruptor etiqueta="Publicar tienda" valor={datos.publicado} alCambiar={(valor) => setDatos((actual) => (actual ? { ...actual, publicado: valor } : actual))} />
+                    <div className="sm:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
+                      Al guardar, la tienda queda pública en tu enlace. Si quieres ocultarla, usa «Pasar a borrador».
                     </div>
                   </div>
 
@@ -760,8 +760,13 @@ export function MiCatalogo() {
               <div className="flex flex-wrap items-center gap-3 border-t pt-5">
                 <Button type="submit" className="h-10" disabled={guardar.isPending}>
                   {guardar.isPending ? <LoaderCircle className="animate-spin" /> : null}
-                  Guardar
+                  Guardar y publicar
                 </Button>
+                {datos.publicado || vitrina?.publicado ? (
+                  <Button type="button" variant="outline" className="h-10" disabled={guardar.isPending} onClick={() => guardar.mutate(false)}>
+                    Pasar a borrador
+                  </Button>
+                ) : null}
                 <Link to="/productos" className="text-sm text-muted-foreground hover:text-foreground">
                   Ir a productos
                 </Link>
@@ -772,7 +777,7 @@ export function MiCatalogo() {
           {pestana === 'html' ? null : <aside className="superficie space-y-5 p-5 sm:p-6 lg:sticky lg:top-4">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold">Enlace y QR</p>
-              {vitrina?.publicado ? <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">Publicado</Badge> : <Badge variant="secondary">Borrador</Badge>}
+              {datos.publicado || vitrina?.publicado ? <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">Publicado</Badge> : <Badge variant="secondary">Borrador</Badge>}
             </div>
 
             {url ? (
@@ -801,7 +806,7 @@ export function MiCatalogo() {
                   ) : (
                     <p className="text-xs text-muted-foreground">Sube un logo para que aparezca en el QR.</p>
                   )}
-                  {vitrina?.publicado ? (
+                  {datos.publicado || vitrina?.publicado ? (
                     <a href={url} target="_blank" rel="noreferrer" className={cn(buttonVariants({ variant: 'outline' }), 'justify-center')}>
                       <QrCode />
                       Abrir tienda
