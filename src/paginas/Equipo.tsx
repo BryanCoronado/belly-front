@@ -79,7 +79,10 @@ export function Equipo() {
 
   return (
     <div className="space-y-6">
-      <CabeceraPagina titulo="Equipo" descripcion="Las personas de tu empresa, cómo se agrupan y qué puede hacer cada una." />
+      <CabeceraPagina
+        titulo="Equipo"
+        descripcion="Cuentas, roles y permisos. Si el rol es Asesor, esa persona también aparece en Asesores para el reparto."
+      />
 
       <div className="-mx-1 overflow-x-auto px-1">
         <div className="flex w-max gap-1 rounded-lg bg-muted p-1" data-tour="pestanas-equipo">

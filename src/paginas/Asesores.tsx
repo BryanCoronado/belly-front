@@ -29,7 +29,7 @@ function iniciales(nombre: string): string {
 }
 
 const PESTANAS = [
-  { id: 'equipo', titulo: 'Mi equipo' },
+  { id: 'equipo', titulo: 'Quién atiende' },
   { id: 'grupos', titulo: 'Grupos' },
   { id: 'reparto', titulo: 'Reparto de chats' },
 ] as const
@@ -50,7 +50,10 @@ export function Asesores() {
 
   return (
     <div className="space-y-6">
-      <CabeceraPagina titulo="Asesores" descripcion="Las personas que atienden tus chats, sus grupos y cómo les llegan los clientes." />
+      <CabeceraPagina
+        titulo="Asesores"
+        descripcion="Quién recibe los chats y cómo se reparte. Las cuentas y permisos se gestionan en Equipo."
+      />
 
       {admin ? (
         <div className="-mx-1 overflow-x-auto px-1">
@@ -96,7 +99,9 @@ function PanelAsesores({ admin }: { admin: boolean }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           {consulta.data
-            ? `${activos} de ${consulta.data.length} asesores están activos. Solo ellos reciben chats nuevos y pueden recibir transferencias.`
+            ? consulta.data.length === 0
+              ? 'Aquí salen los usuarios con rol Asesor (creados aquí o en Equipo). El administrador no recibe chats por reparto.'
+              : `${activos} de ${consulta.data.length} activos. Solo ellos reciben chats nuevos y transferencias.`
             : 'Cargando asesores…'}
         </p>
         {admin ? (
@@ -147,7 +152,9 @@ function PanelAsesores({ admin }: { admin: boolean }) {
         vacio={{
           icono: UserRound,
           titulo: 'Aún no hay asesores',
-          texto: admin ? 'Crea el primero con el botón “Nuevo asesor”.' : 'Pide a un administrador que cree a tu equipo.',
+          texto: admin
+            ? 'Crea uno aquí o en Equipo con rol Asesor. Tú como administrador no entras en esta lista.'
+            : 'Pide a un administrador que te dé rol Asesor.',
         }}
       />
 

@@ -312,7 +312,9 @@ function FormularioGrupo({
         {asesores.length ? (
           <SelectorEquipo asesores={asesores} valor={datos.miembros} conOrden alCambiar={(miembros) => setDatos({ ...datos, miembros })} />
         ) : (
-          <p className="text-sm text-muted-foreground">Primero crea asesores en «Mi equipo».</p>
+          <p className="text-sm text-muted-foreground">
+            Primero crea un usuario con rol Asesor en Equipo o en «Quién atiende».
+          </p>
         )}
         {datos.miembros.length === 0 ? (
           <p className="text-xs text-muted-foreground">Sin asesores, el reparto seguirá por «Si nadie está disponible».</p>
