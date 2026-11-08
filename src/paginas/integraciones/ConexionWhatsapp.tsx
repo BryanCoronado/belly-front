@@ -23,6 +23,7 @@ import {
   desconectarWhatsapp,
   guardarAppMeta,
   leerEstadoWhatsapp,
+  leerReparto,
   regenerarTokenWebhook,
   type DatosNumeroWhatsapp,
   type EstadoWhatsapp,
@@ -47,7 +48,6 @@ import { CLAVE_WHATSAPP_CONECTADO } from '@/hooks/use-whatsapp'
 import { avisoError, avisoExito } from '@/lib/avisos'
 import { cn } from '@/lib/utils'
 import { esAdministrador, leerSesion } from '@/sesion'
-import { repartoGuardadoEnServidor } from '@/paginas/asesores/borradorReparto'
 
 const CLAVE_ESTADO = ['whatsapp-estado']
 
@@ -75,6 +75,7 @@ export function ConexionWhatsapp() {
     enabled: admin,
     refetchInterval: (consulta) => (consulta.state.data && !consulta.state.data.pasos.webhook ? 5000 : false),
   })
+  const reparto = useQuery({ queryKey: ['reparto'], queryFn: leerReparto, staleTime: 60_000, enabled: admin })
 
   function actualizar(nuevo: EstadoWhatsapp) {
     consultas.setQueryData(CLAVE_ESTADO, nuevo)
@@ -126,7 +127,7 @@ export function ConexionWhatsapp() {
         </div>
       ) : (
         <>
-          {completo && !repartoGuardadoEnServidor() ? (
+          {completo && reparto.data?.configurado !== true ? (
             <div className="flex flex-col gap-3 rounded-lg border bg-white px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span className="min-w-0">
                 <span className="font-medium">Siguiente:</span>{' '}

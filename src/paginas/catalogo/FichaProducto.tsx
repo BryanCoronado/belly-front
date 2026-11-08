@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import type { ProductoPublico } from '@/api'
 import { IconoRed } from '@/paginas/catalogo/redes'
 import { descuento, formatearMoneda, precioLinea } from '@/paginas/catalogo/carrito'
+import { enlaceWhatsapp } from '@/paginas/catalogo/origenWeb'
 import { BloquesEn } from '@/paginas/catalogo/BloqueHtml'
 import { Revelar, TarjetaProducto, TituloSeccion } from '@/paginas/catalogo/piezas'
 import { precioActual, precioTachado, useTienda } from '@/paginas/catalogo/tienda'
@@ -46,7 +47,7 @@ export function FichaProducto({ producto }: { producto: ProductoPublico }) {
   ]
     .filter(Boolean)
     .join('\n')
-  const directo = catalogo.whatsapp ? `https://wa.me/${catalogo.whatsapp}?text=${encodeURIComponent(mensajeDirecto)}` : null
+  const directo = catalogo.whatsapp ? enlaceWhatsapp(catalogo.whatsapp, mensajeDirecto) : null
 
   function alAgregar() {
     if (faltaOpcion) return

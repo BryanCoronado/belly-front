@@ -9,6 +9,7 @@ import { CarritoLateral } from '@/paginas/catalogo/CarritoLateral'
 import { claveLinea, guardarCarrito, leerCarrito, precioLinea, unidadesCarrito, type LineaCarrito } from '@/paginas/catalogo/carrito'
 import { FichaProducto } from '@/paginas/catalogo/FichaProducto'
 import { PortadaTienda } from '@/paginas/catalogo/PortadaTienda'
+import { enlaceWhatsapp } from '@/paginas/catalogo/origenWeb'
 import { IconoRed } from '@/paginas/catalogo/redes'
 import { aplicarSeoTienda, restaurarSeoBelly, tarjetaTienda } from '@/paginas/catalogo/seoTienda'
 import { ProveedorTienda, enlaceRed, type Red, type Tienda } from '@/paginas/catalogo/tienda'
@@ -213,7 +214,7 @@ export function CatalogoPublico({ previa }: { previa?: PreviaTienda }) {
             <div className="ml-auto flex items-center gap-2 md:ml-0">
               {catalogo.whatsapp ? (
                 <a
-                  href={`https://wa.me/${catalogo.whatsapp}`}
+                  href={enlaceWhatsapp(catalogo.whatsapp)}
                   target="_blank"
                   rel="noreferrer"
                   className="hidden items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-[#0B1026]/70 hover:bg-[#F7F6F2] lg:flex"
@@ -347,7 +348,7 @@ export function CatalogoPublico({ previa }: { previa?: PreviaTienda }) {
               <ul className="space-y-3 text-sm text-white/60">
                 {catalogo.whatsapp ? (
                   <li>
-                    <a href={`https://wa.me/${catalogo.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 transition hover:text-white">
+                    <a href={enlaceWhatsapp(catalogo.whatsapp)} target="_blank" rel="noreferrer" className="flex items-center gap-2 transition hover:text-white">
                       <IconoRed red="whatsapp" className="size-4" />+{catalogo.whatsapp}
                     </a>
                   </li>

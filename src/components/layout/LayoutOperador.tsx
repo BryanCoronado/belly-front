@@ -32,10 +32,10 @@ export function LayoutOperador() {
   }
 
   return (
-    <SidebarProvider className="overflow-x-hidden">
+    <SidebarProvider className="h-svh max-h-svh overflow-hidden">
       <BarraOperador usuario={sesion.usuario} />
-      <SidebarInset className="overflow-x-hidden">
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-3 text-foreground md:h-16 md:px-6">
+      <SidebarInset className="min-h-0 min-w-0 overflow-hidden">
+        <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-3 text-foreground md:h-16 md:px-6">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="data-[orientation=vertical]:h-5" />
           <span className="truncate text-base font-medium">{TITULOS[pathname] ?? 'Panel'}</span>
@@ -43,7 +43,7 @@ export function LayoutOperador() {
             <BotonTema />
           </div>
         </header>
-        <div className="w-full min-w-0 flex-1 p-3 sm:p-4 md:p-6 xl:p-8">
+        <div className="w-full min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-6 xl:p-8">
           <TransicionPagina id={pathname} className="w-full min-w-0">
             <Outlet />
           </TransicionPagina>

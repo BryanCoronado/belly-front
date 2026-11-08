@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Check, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { leerEstadoIa, listarFlujos } from '@/api'
+import { leerEstadoIa, leerReparto, listarFlujos } from '@/api'
 import { useWhatsappConectado } from '@/hooks/use-whatsapp'
 import { cn } from '@/lib/utils'
 import { CLAVE_IA } from '@/paginas/agente-ia/claves'
-import { repartoGuardadoEnServidor } from '@/paginas/asesores/borradorReparto'
 
 type Paso = { titulo: string; detalle: string; ruta: string; hecho: boolean; opcional?: boolean }
 
@@ -14,10 +13,11 @@ export function PrimerosPasos({ className }: { className?: string }) {
   const { conectado } = useWhatsappConectado()
   const flujos = useQuery({ queryKey: ['flujos-resumen'], queryFn: listarFlujos, staleTime: 60_000 })
   const ia = useQuery({ queryKey: CLAVE_IA, queryFn: leerEstadoIa, staleTime: 60_000 })
+  const reparto = useQuery({ queryKey: ['reparto'], queryFn: leerReparto, staleTime: 60_000 })
 
   const pasos: Paso[] = [
     { titulo: 'Conectar WhatsApp', detalle: 'Tu número de empresa', ruta: '/integraciones/whatsapp', hecho: conectado },
-    { titulo: 'Reparto de chats', detalle: 'Quién recibe cada chat nuevo', ruta: '/asesores?tab=reparto', hecho: repartoGuardadoEnServidor() },
+    { titulo: 'Reparto de chats', detalle: 'Quién recibe cada chat nuevo', ruta: '/asesores?tab=reparto', hecho: reparto.data?.configurado === true },
     {
       titulo: 'Respuestas automáticas',
       detalle: 'Bienvenida y menús',

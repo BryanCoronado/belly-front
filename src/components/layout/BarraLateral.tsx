@@ -27,7 +27,6 @@ import { ocultaEnAhorro, useModoAhorro } from '@/lib/modo-ahorro'
 import { esAdministrador, type UsuarioSesion } from '@/sesion'
 import { MenuUsuario } from './MenuUsuario'
 import {
-  CUENTA,
   EQUIPO,
   INTEGRACIONES,
   NAVEGACION,
@@ -47,7 +46,7 @@ export function BarraLateral({ usuario }: { usuario: UsuarioSesion }) {
   const grupos = paraAhorro(
     integracionesPrimero(
       conIntegraciones(
-        conSupervision(conEquipo(conCuenta(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION, admin), admin), admin),
+        conSupervision(conEquipo(sinCuenta(menu.data?.length ? gruposDesdeMenu(menu.data) : NAVEGACION), admin), admin),
         admin,
       ),
     ),
@@ -206,19 +205,14 @@ function ItemMenu({ enlace, ruta, pendiente = false }: { enlace: EnlaceNavegacio
   )
 }
 
-function conCuenta(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {
-  if (!admin || grupos.some((grupo) => grupo.enlaces.some((enlace) => enlace.ruta === CUENTA.ruta))) {
-    return grupos
-  }
-  const indice = grupos.findIndex(
-    (grupo) =>
-      grupo.titulo.toLowerCase() === 'general' ||
-      grupo.enlaces.some((enlace) => enlace.ruta === '/inicio' || enlace.ruta === '/dashboard'),
-  )
-  if (indice < 0) {
-    return [{ titulo: 'Cuenta', enlaces: [CUENTA] }, ...grupos]
-  }
-  return grupos.map((grupo, i) => (i === indice ? { ...grupo, enlaces: [...grupo.enlaces, CUENTA] } : grupo))
+/** Plan / membresía vive en el menú del usuario, no en el CRM. */
+function sinCuenta(grupos: GrupoNavegacion[]): GrupoNavegacion[] {
+  return grupos
+    .map((grupo) => ({
+      ...grupo,
+      enlaces: grupo.enlaces.filter((enlace) => enlace.ruta !== '/cuenta'),
+    }))
+    .filter((grupo) => grupo.enlaces.length > 0)
 }
 
 function conEquipo(grupos: GrupoNavegacion[], admin: boolean): GrupoNavegacion[] {

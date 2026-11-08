@@ -1,4 +1,4 @@
-import { ChevronsUpDown, LogOut, UserRound } from 'lucide-react'
+import { ChevronsUpDown, LogOut, UserRound, Wallet } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -18,6 +18,7 @@ export function MenuUsuario({ usuario }: { usuario: UsuarioSesion }) {
   const navegar = useNavigate()
   const { isMobile } = useSidebar()
   const nombre = nombreVisible(usuario)
+  const admin = esAdministrador(usuario)
 
   function salir() {
     cerrarSesion()
@@ -45,11 +46,17 @@ export function MenuUsuario({ usuario }: { usuario: UsuarioSesion }) {
               <DropdownMenuLabel className="font-normal">
                 <p className="text-sm font-medium text-foreground">{nombre}</p>
                 <p className="text-xs">
-                  {esAdministrador(usuario) ? 'Administrador' : 'Usuario'} · {usuario.empresa_nombre || usuario.empresa}
+                  {admin ? 'Administrador' : 'Usuario'} · {usuario.empresa_nombre || usuario.empresa}
                 </p>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            {admin ? (
+              <DropdownMenuItem onClick={() => navegar('/cuenta')}>
+                <Wallet />
+                Membresía
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuItem onClick={() => navegar('/perfil')}>
               <UserRound />
               Mi perfil

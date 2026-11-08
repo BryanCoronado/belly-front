@@ -1,10 +1,15 @@
-import { useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { AnimatePresence, motion } from 'motion/react'
 import {
   BetweenHorizontalStart,
   Code2,
   Columns3,
+  Eye,
+  EyeOff,
   Image as IconoImagen,
+  Layers,
+  LayoutGrid,
   MousePointerClick,
   PanelTop,
   Trash2,
@@ -28,7 +33,19 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { avisoError } from '@/lib/avisos'
 import { cn } from '@/lib/utils'
-import { armarBloque, bloqueNuevo, DESTINOS_BOTON, MAX_BLOQUES, normalizarBloque, WIDGETS } from '@/paginas/catalogo/bloques'
+import {
+  ANCHOS_BLOQUE,
+  armarBloque,
+  bloqueNuevo,
+  DESTINOS_BOTON,
+  idBloque,
+  LUGARES_BLOQUE,
+  MAX_BLOQUES,
+  normalizarBloque,
+  normalizarTamano,
+  TAMANOS_BLOQUE,
+  WIDGETS,
+} from '@/paginas/catalogo/bloques'
 import { CatalogoPublico } from '@/paginas/catalogo/CatalogoPublico'
 import { ProveedorEdicion, type Arrastre } from '@/paginas/catalogo/edicion'
 
@@ -44,6 +61,13 @@ const ICONO: Record<TipoWidget, typeof Type> = {
 }
 
 type Pagina = 'portada' | 'ficha'
+type Panel = 'piezas' | 'capas'
+
+function escribiendo(destino: EventTarget | null): boolean {
+  const nodo = destino as HTMLElement | null
+  if (!nodo) return false
+  return nodo.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(nodo.tagName)
+}
 
 export function EditorHtmlCatalogo({
   datos,
@@ -59,7 +83,10 @@ export function EditorHtmlCatalogo({
   const [pendiente, setPendiente] = useState<TipoWidget | null>(null)
   const [arrastrando, setArrastrando] = useState(false)
   const [pagina, setPagina] = useState<Pagina>('portada')
+  const [panel, setPanel] = useState<Panel>('piezas')
+  const lienzo = useRef<HTMLDivElement>(null)
   const actual = lista.find((bloque) => bloque.id === elegido) ?? null
+  const lleno = lista.length >= MAX_BLOQUES
 
   const publico = useQuery({
     queryKey: ['catalogo-publico', slugGuardado],
@@ -108,109 +135,262 @@ export function EditorHtmlCatalogo({
     guardar(lista.map((bloque) => (bloque.id === id ? { ...bloque, ...cambio, datos: { ...bloque.datos, ...datosWidget } } : bloque)))
   }
 
+  function mover(id: string, paso: -1 | 1) {
+    const bloque = lista.find((item) => item.id === id)
+    if (!bloque) return
+    const hermanos = lista.map((item, indice) => ({ item, indice })).filter(({ item }) => item.donde === bloque.donde)
+    const posicion = hermanos.findIndex(({ item }) => item.id === id)
+    const vecino = hermanos[posicion + paso]
+    if (!vecino) return
+    const siguiente = [...lista]
+    siguiente[hermanos[posicion].indice] = vecino.item
+    siguiente[vecino.indice] = bloque
+    guardar(siguiente)
+  }
+
+  function duplicar(id: string) {
+    const indice = lista.findIndex((item) => item.id === id)
+    if (indice < 0 || lleno) return
+    const copia = { ...lista[indice], id: idBloque(), nombre: `${lista[indice].nombre} copia`.slice(0, 40) }
+    const siguiente = [...lista]
+    siguiente.splice(indice + 1, 0, copia)
+    guardar(siguiente)
+    setElegido(copia.id)
+  }
+
+  function borrar(id: string) {
+    guardar(lista.filter((item) => item.id !== id))
+    setElegido((previo) => (previo === id ? null : previo))
+  }
+
+  function enfocar(id: string) {
+    setElegido(id)
+    const nodo = lienzo.current?.querySelector(`[data-bloque-id="${id}"]`)
+    nodo?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  const atajos = useRef({ elegido, borrar, duplicar })
+  useEffect(() => {
+    atajos.current = { elegido, borrar, duplicar }
+  })
+
+  useEffect(() => {
+    function alTeclear(evento: KeyboardEvent) {
+      if (escribiendo(evento.target)) return
+      const { elegido: id, borrar: quitar, duplicar: copiar } = atajos.current
+      if (evento.key === 'Escape') {
+        setElegido(null)
+        setPendiente(null)
+        return
+      }
+      if (!id) return
+      if (evento.key === 'Delete' || evento.key === 'Backspace') {
+        evento.preventDefault()
+        quitar(id)
+      } else if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === 'd') {
+        evento.preventDefault()
+        copiar(id)
+      }
+    }
+    window.addEventListener('keydown', alTeclear)
+    return () => window.removeEventListener('keydown', alTeclear)
+  }, [])
+
   function bloquearNavegacion(evento: MouseEvent<HTMLDivElement>) {
     evento.preventDefault()
     const destino = evento.target as HTMLElement
-    if (!destino.closest('[data-editor]')) evento.stopPropagation()
+    if (!destino.closest('[data-editor]')) {
+      evento.stopPropagation()
+      setElegido(null)
+    }
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Arrastra una pieza a tu tienda, o tócala y luego toca dónde ponerla. Haz clic en un bloque para editarlo.
-        </p>
-        <div className="flex rounded-lg border p-0.5 text-xs font-medium">
+    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <aside className="flex max-h-64 shrink-0 flex-col border-b bg-background lg:max-h-none lg:w-64 lg:border-r lg:border-b-0">
+        <div className="flex gap-1 border-b p-2">
           {(
             [
-              ['portada', 'Portada'],
-              ['ficha', 'Ficha de producto'],
+              ['piezas', 'Piezas', LayoutGrid],
+              ['capas', 'Capas', Layers],
             ] as const
-          ).map(([id, nombre]) => (
+          ).map(([id, nombre, Icono]) => (
             <button
               key={id}
               type="button"
-              disabled={id === 'ficha' && !primerProducto}
-              onClick={() => setPagina(id)}
-              className={cn('rounded-md px-3 py-1.5 disabled:opacity-40', pagina === id ? 'bg-foreground text-background' : 'text-muted-foreground')}
+              onClick={() => setPanel(id)}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors',
+                panel === id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
+              )}
             >
+              <Icono className="size-3.5" />
               {nombre}
+              {id === 'capas' ? <span className="text-[10px] text-muted-foreground">{lista.length}</span> : null}
             </button>
           ))}
         </div>
-      </div>
 
-      {pendiente ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm text-white">
-          <span>Toca un recuadro azul en la tienda para poner: {WIDGETS.find((item) => item.tipo === pendiente)?.nombre}.</span>
-          <button type="button" className="flex items-center gap-1 underline" onClick={() => setPendiente(null)}>
-            <X className="size-4" />
-            Cancelar
-          </button>
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          {panel === 'piezas' ? (
+            <>
+              <div className="grid grid-cols-4 gap-1 sm:grid-cols-8 lg:grid-cols-2">
+                {WIDGETS.map((widget) => {
+                  const Icono = ICONO[widget.tipo]
+                  return (
+                    <button
+                      key={widget.tipo}
+                      type="button"
+                      draggable={!lleno}
+                      disabled={lleno}
+                      onDragStart={(evento) => {
+                        evento.dataTransfer.setData('text/plain', `widget:${widget.tipo}`)
+                        evento.dataTransfer.effectAllowed = 'copy'
+                        setArrastrando(true)
+                      }}
+                      onDragEnd={() => setArrastrando(false)}
+                      onClick={() => setPendiente((previo) => (previo === widget.tipo ? null : widget.tipo))}
+                      className={cn(
+                        'flex cursor-grab flex-col items-center justify-center gap-1.5 rounded-lg border border-transparent bg-transparent px-1 py-2.5 text-[11px] font-medium text-muted-foreground hover:border-border hover:bg-muted/60 hover:text-foreground active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40',
+                        pendiente === widget.tipo && 'border-foreground/20 bg-muted text-foreground',
+                      )}
+                    >
+                      <Icono className="size-4" />
+                      {widget.nombre}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="mt-3 text-center text-[11px] text-muted-foreground">
+                {lleno ? `Límite de ${MAX_BLOQUES} bloques` : 'Arrastra al lienzo o toca y elige lugar'}
+              </p>
+            </>
+          ) : lista.length === 0 ? (
+            <p className="py-8 text-center text-xs text-muted-foreground">Aún no hay bloques</p>
+          ) : (
+            <div className="space-y-3">
+              {LUGARES_BLOQUE.filter((lugar) => lista.some((bloque) => bloque.donde === lugar.id)).map((lugar) => (
+                <div key={lugar.id}>
+                  <p className="mb-1 px-1 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{lugar.nombre}</p>
+                  <div className="space-y-0.5">
+                    {lista
+                      .filter((bloque) => bloque.donde === lugar.id)
+                      .map((bloque) => {
+                        const Icono = ICONO[bloque.tipo]
+                        return (
+                          <div
+                            key={bloque.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => enfocar(bloque.id)}
+                            onKeyDown={(evento) => {
+                              if (evento.key === 'Enter') enfocar(bloque.id)
+                            }}
+                            className={cn(
+                              'group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs',
+                              elegido === bloque.id ? 'bg-muted text-foreground' : 'hover:bg-muted/70',
+                              !bloque.activo && elegido !== bloque.id && 'text-muted-foreground',
+                            )}
+                          >
+                            <Icono className="size-3.5 shrink-0 opacity-70" />
+                            <span className="min-w-0 flex-1 truncate">{bloque.nombre}</span>
+                            <button
+                              type="button"
+                              title={bloque.activo ? 'Ocultar' : 'Mostrar'}
+                              onClick={(evento) => {
+                                evento.stopPropagation()
+                                cambiar(bloque.id, { activo: !bloque.activo })
+                              }}
+                              className={cn('opacity-0 group-hover:opacity-100', !bloque.activo && 'opacity-100')}
+                            >
+                              {bloque.activo ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                            </button>
+                          </div>
+                        )
+                      })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      ) : null}
+      </aside>
 
-      <div className="grid gap-3 xl:grid-cols-[8.5rem_minmax(0,1fr)_19rem]">
-        <aside className="rounded-xl border bg-muted/30 p-2 xl:sticky xl:top-4 xl:self-start">
-          <p className="px-2 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Piezas</p>
-          <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8 xl:grid-cols-1">
-            {WIDGETS.map((widget) => {
-              const Icono = ICONO[widget.tipo]
-              return (
-                <button
-                  key={widget.tipo}
-                  type="button"
-                  draggable
-                  onDragStart={(evento) => {
-                    evento.dataTransfer.setData('text/plain', `widget:${widget.tipo}`)
-                    evento.dataTransfer.effectAllowed = 'copy'
-                    setArrastrando(true)
-                  }}
-                  onDragEnd={() => setArrastrando(false)}
-                  onClick={() => setPendiente((actualPendiente) => (actualPendiente === widget.tipo ? null : widget.tipo))}
-                  className={cn(
-                    'flex cursor-grab flex-col items-center gap-1 rounded-lg border bg-background px-2 py-2.5 text-xs font-medium hover:border-[#2563EB]/50 active:cursor-grabbing xl:flex-row xl:justify-start',
-                    pendiente === widget.tipo && 'border-[#2563EB] bg-[#2563EB] text-white',
-                  )}
-                >
-                  <Icono className="size-4" />
-                  {widget.nombre}
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-muted/30">
+        <div className="flex h-10 shrink-0 items-center justify-center gap-3 border-b px-3">
+          <div className="flex gap-1 text-xs font-medium">
+            {(
+              [
+                ['portada', 'Portada'],
+                ['ficha', 'Ficha'],
+              ] as const
+            ).map(([id, nombre]) => (
+              <button
+                key={id}
+                type="button"
+                disabled={id === 'ficha' && !primerProducto}
+                onClick={() => setPagina(id)}
+                className={cn(
+                  'rounded-md px-3 py-1 transition-colors disabled:opacity-40',
+                  pagina === id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {nombre}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {pendiente ? (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="shrink-0 overflow-hidden"
+            >
+              <div className="flex items-center justify-center gap-3 border-b bg-muted px-4 py-2 text-xs text-foreground">
+                <span>Toca dónde poner {WIDGETS.find((item) => item.tipo === pendiente)?.nombre?.toLowerCase()}</span>
+                <button type="button" className="underline-offset-2 hover:underline" onClick={() => setPendiente(null)}>
+                  Cancelar
                 </button>
-              )
-            })}
-          </div>
-        </aside>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
-        <div className="overflow-hidden rounded-xl border shadow-sm">
-          <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2">
-            <span className="size-2.5 rounded-full bg-[#FF5F57]" />
-            <span className="size-2.5 rounded-full bg-[#FEBC2E]" />
-            <span className="size-2.5 rounded-full bg-[#28C840]" />
-            <span className="ml-2 truncate rounded-md bg-background px-3 py-1 text-xs text-muted-foreground">
-              {window.location.host}/c/{datos.slug || 'tu-tienda'}
-            </span>
-          </div>
-          <div className="relative h-[calc(100vh-12rem)] min-h-[560px] overflow-y-auto [transform:translateZ(0)]" onClickCapture={bloquearNavegacion}
-            onKeyDownCapture={(evento) => {
-              if (evento.key === 'Enter') evento.preventDefault()
-            }}
-          >
-            <ProveedorEdicion
-              value={{
-                elegido,
-                esperando: pendiente !== null,
-                arrastrando,
-                alElegir: setElegido,
-                alArrastrar: setArrastrando,
-                alSoltar: soltar,
+        <div className="min-h-[480px] flex-1 overflow-hidden">
+          <div className="flex h-full flex-col overflow-hidden border-x bg-background">
+            <div
+              ref={lienzo}
+              className="relative min-h-0 flex-1 overflow-y-auto"
+              onClickCapture={bloquearNavegacion}
+              onKeyDownCapture={(evento) => {
+                if (evento.key === 'Enter') evento.preventDefault()
               }}
             >
-              <CatalogoPublico key={pagina} previa={{ slug: datos.slug || slugGuardado || 'vista', catalogo, idProducto }} />
-            </ProveedorEdicion>
+              <ProveedorEdicion
+                value={{
+                  elegido,
+                  esperando: pendiente !== null,
+                  arrastrando,
+                  alElegir: setElegido,
+                  alArrastrar: setArrastrando,
+                  alSoltar: soltar,
+                  alCambiarBloque: (id, cambio, datosWidget) => cambiar(id, cambio, datosWidget),
+                  alMoverBloque: mover,
+                  alDuplicarBloque: duplicar,
+                  alBorrarBloque: borrar,
+                }}
+              >
+                <CatalogoPublico key={pagina} previa={{ slug: datos.slug || slugGuardado || 'vista', catalogo, idProducto }} />
+              </ProveedorEdicion>
+            </div>
           </div>
         </div>
+      </main>
 
-        <aside className="rounded-xl border bg-background p-4 xl:sticky xl:top-4 xl:self-start">
+        <aside className="shrink-0 overflow-y-auto border-t bg-background p-4 lg:w-80 lg:border-t-0 lg:border-l">
           {actual ? (
             <Inspector
               key={actual.id}
@@ -218,20 +398,30 @@ export function EditorHtmlCatalogo({
               familias={catalogo.familias}
               alCambiar={(cambio, datosWidget) => cambiar(actual.id, cambio, datosWidget)}
               alCerrar={() => setElegido(null)}
-              alBorrar={() => {
-                guardar(lista.filter((bloque) => bloque.id !== actual.id))
-                setElegido(null)
-              }}
+              alBorrar={() => borrar(actual.id)}
             />
           ) : (
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Nada elegido</p>
-              <p>Haz clic en un bloque de la tienda para cambiar su texto, foto, color o enlace.</p>
-              <p>Los cambios se ven al instante. Pulsa Guardar para publicarlos.</p>
+            <div className="space-y-4 py-2 text-sm text-muted-foreground">
+              <p className="text-foreground">Nada seleccionado</p>
+              <p className="text-xs leading-relaxed">Haz clic en un bloque de la tienda o en Capas para editarlo.</p>
+              <div className="space-y-1.5 border-t pt-3 text-xs">
+                {(
+                  [
+                    ['Deshacer', 'Ctrl Z'],
+                    ['Duplicar', 'Ctrl D'],
+                    ['Borrar', 'Supr'],
+                    ['Guardar', 'Ctrl S'],
+                  ] as const
+                ).map(([accion, tecla]) => (
+                  <div key={accion} className="flex items-center justify-between gap-2">
+                    {accion}
+                    <kbd className="rounded border px-1.5 py-0.5 font-mono text-[10px]">{tecla}</kbd>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </aside>
-      </div>
     </div>
   )
 }
@@ -337,10 +527,53 @@ function Inspector({
         Visible en la tienda
         <Switch checked={bloque.activo} onCheckedChange={(activo) => alCambiar({ activo })} />
       </label>
-      <label className="flex items-center justify-between gap-2 text-sm">
-        Ancho de pantalla
-        <Switch checked={bloque.ancho === 'completo'} onCheckedChange={(completo) => alCambiar({ ancho: completo ? 'completo' : 'caja' })} />
-      </label>
+
+      <div className="grid gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <Label>Ancho{d.ancho_pct > 0 ? ` · ${d.ancho_pct}%` : ''}</Label>
+          {d.ancho_pct > 0 ? (
+            <button type="button" className="text-xs text-muted-foreground hover:text-foreground" onClick={() => alCambiar({}, { ancho_pct: 0 })}>
+              Reset
+            </button>
+          ) : null}
+        </div>
+        <div className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1">
+          {ANCHOS_BLOQUE.map((opcion) => (
+            <button
+              key={opcion.id}
+              type="button"
+              onClick={() => alCambiar({ ancho: opcion.id }, { ancho_pct: 0 })}
+              className={cn(
+                'rounded-md px-1 py-1.5 text-[11px] font-medium',
+                d.ancho_pct <= 0 && bloque.ancho === opcion.id ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {opcion.nombre}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {bloque.tipo !== 'espacio' && bloque.tipo !== 'html' ? (
+        <div className="grid gap-1.5">
+          <Label>Tamaño</Label>
+          <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+            {TAMANOS_BLOQUE.map((opcion) => (
+              <button
+                key={opcion.id}
+                type="button"
+                onClick={() => alCambiar({}, { tamano: opcion.id })}
+                className={cn(
+                  'rounded-md px-2 py-1.5 text-xs font-medium',
+                  normalizarTamano(d.tamano) === opcion.id ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {opcion.nombre}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {bloque.tipo === 'texto' ? <Campo etiqueta="Título" valor={d.titulo} alCambiar={(titulo) => alCambiar({}, { titulo })} /> : null}
       {bloque.tipo === 'texto' || bloque.tipo === 'franja' ? (
@@ -359,6 +592,22 @@ function Inspector({
           <Button type="button" variant="outline" size="sm" disabled={subir.isPending} onClick={() => selector.current?.click()}>
             {subir.isPending ? 'Subiendo…' : d.imagen_url ? 'Cambiar imagen' : 'Subir imagen'}
           </Button>
+          <div className="grid gap-1.5">
+            <Label>Alto: {d.alto > 40 ? `${d.alto}px` : 'según tamaño'}</Label>
+            <input
+              type="range"
+              min={40}
+              max={640}
+              step={10}
+              value={d.alto > 40 ? d.alto : 40}
+              onChange={(evento) => alCambiar({}, { alto: Number(evento.target.value) })}
+            />
+            {d.alto > 40 ? (
+              <button type="button" className="text-left text-xs text-muted-foreground hover:text-foreground" onClick={() => alCambiar({}, { alto: 40 })}>
+                Usar tamaño automático
+              </button>
+            ) : null}
+          </div>
           <input
             ref={selector}
             type="file"

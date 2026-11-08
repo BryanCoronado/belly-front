@@ -1,4 +1,27 @@
-import type { BloqueHtmlVitrina, DatosWidget, LugarBloque, TipoWidget } from '@/api'
+import type { AnchoBloque, BloqueHtmlVitrina, DatosWidget, LugarBloque, TamanoBloque, TipoWidget } from '@/api'
+
+export const ANCHOS_BLOQUE: { id: AnchoBloque; nombre: string }[] = [
+  { id: 'estrecho', nombre: 'Chico' },
+  { id: 'caja', nombre: 'Medio' },
+  { id: 'amplio', nombre: 'Ancho' },
+  { id: 'completo', nombre: 'Pantalla' },
+]
+
+export const TAMANOS_BLOQUE: { id: TamanoBloque; nombre: string }[] = [
+  { id: 's', nombre: 'Pequeño' },
+  { id: 'm', nombre: 'Normal' },
+  { id: 'l', nombre: 'Grande' },
+]
+
+export function normalizarAncho(valor: unknown): AnchoBloque {
+  if (valor === 'estrecho' || valor === 'amplio' || valor === 'completo' || valor === 'caja') return valor
+  return 'caja'
+}
+
+export function normalizarTamano(valor: unknown): TamanoBloque {
+  if (valor === 's' || valor === 'l' || valor === 'm') return valor
+  return 'm'
+}
 
 export const MAX_BLOQUES = 16
 
@@ -73,6 +96,8 @@ export function datosVacios(): DatosWidget {
     fondo: '#FFFFFF',
     video: '',
     alto: 40,
+    ancho_pct: 0,
+    tamano: 'm',
     columnas: [
       { titulo: '1.', texto: 'Elige tus productos' },
       { titulo: '2.', texto: 'Arma el pedido' },
@@ -116,14 +141,21 @@ export function bloqueNuevo(tipo: TipoWidget, donde: LugarBloque = 'despues_carr
 
 export function normalizarBloque(bloque: Partial<BloqueHtmlVitrina>): BloqueHtmlVitrina {
   const tipo = bloque.tipo ?? (bloque.html ? 'html' : 'texto')
+  const pct = Number(bloque.datos?.ancho_pct ?? 0)
+  const datos = {
+    ...datosVacios(),
+    ...bloque.datos,
+    tamano: normalizarTamano(bloque.datos?.tamano),
+    ancho_pct: Number.isFinite(pct) ? Math.max(0, Math.min(100, Math.round(pct))) : 0,
+  }
   const actual: BloqueHtmlVitrina = {
     ...bloqueNuevo(tipo, bloque.donde ?? 'despues_carrusel'),
     ...bloque,
     id: bloque.id || idBloque(),
     tipo,
-    datos: { ...datosVacios(), ...bloque.datos },
+    datos,
     activo: bloque.activo !== false,
-    ancho: bloque.ancho === 'completo' ? 'completo' : 'caja',
+    ancho: normalizarAncho(bloque.ancho),
   }
   return armarBloque(actual)
 }
@@ -158,7 +190,9 @@ export function resolverEnlace(enlace: string, whatsapp: string | null): Destino
     if (id > 0) return { tipo: 'familia', id, href: '#productos' }
   }
   if (minuscula === 'whatsapp') {
-    return whatsapp ? { tipo: 'externo', href: `https://wa.me/${whatsapp}` } : { tipo: 'ancla', id: 'productos', href: '#productos' }
+    return whatsapp
+      ? { tipo: 'externo', href: `https://wa.me/${whatsapp.replace(/\D+/g, '')}?text=${encodeURIComponent('[Belly·Web]')}` }
+      : { tipo: 'ancla', id: 'productos', href: '#productos' }
   }
   if (valor.startsWith('#')) {
     const id = valor.slice(1).trim().toLowerCase().replace(/\s+/g, '-') || 'productos'
@@ -199,39 +233,47 @@ function escapar(valor: string): string {
     .replace(/"/g, '&quot;')
 }
 
+function escalaTamano(tamano: TamanoBloque) {
+  if (tamano === 's') return { pad: '14px 16px', titulo: '20px', texto: '13px', boton: '10px 16px', radio: '16px', foto: '160px' }
+  if (tamano === 'l') return { pad: '40px 32px', titulo: '36px', texto: '16px', boton: '16px 28px', radio: '28px', foto: '420px' }
+  return { pad: '28px 24px', titulo: '28px', texto: '14px', boton: '12px 22px', radio: '24px', foto: '280px' }
+}
+
 export function compilarWidget(bloque: BloqueHtmlVitrina): { html: string; css: string } {
-  const d = { ...datosVacios(), ...bloque.datos }
+  const d = { ...datosVacios(), ...bloque.datos, tamano: normalizarTamano(bloque.datos?.tamano) }
   const color = d.color || '#0B1026'
   const fondo = d.fondo || '#FFFFFF'
+  const e = escalaTamano(d.tamano)
   if (bloque.tipo === 'franja') {
     return {
       html: `<div class="franja">${escapar(d.texto || 'Aviso')}</div>`,
-      css: `.franja{background:${fondo};color:${color};text-align:center;padding:12px 16px;font-weight:600;font-size:14px}`,
+      css: `.franja{background:${fondo};color:${color};text-align:center;padding:${e.pad};font-weight:600;font-size:${e.texto}}`,
     }
   }
   if (bloque.tipo === 'texto') {
     return {
       html: `<section class="texto">${d.titulo ? `<h2>${escapar(d.titulo)}</h2>` : ''}${d.texto ? `<p>${escapar(d.texto)}</p>` : ''}</section>`,
-      css: `.texto{background:${fondo};border-radius:24px;padding:28px 24px;text-align:center;color:${color}}.texto h2{margin:0 0 8px;font-size:28px}.texto p{margin:0;color:${color};opacity:.7;white-space:pre-line}`,
+      css: `.texto{background:${fondo};border-radius:${e.radio};padding:${e.pad};text-align:center;color:${color}}.texto h2{margin:0 0 8px;font-size:${e.titulo}}.texto p{margin:0;color:${color};opacity:.7;white-space:pre-line;font-size:${e.texto}}`,
     }
   }
   if (bloque.tipo === 'imagen') {
+    const alto = d.alto > 40 ? Math.max(80, Math.min(640, d.alto)) : Number.parseInt(e.foto, 10)
     return {
       html: d.imagen_url ? `<img class="foto" src="${escapar(d.imagen_url)}" alt="">` : '<div class="foto vacia">Imagen</div>',
-      css: `.foto{display:block;width:100%;border-radius:24px;object-fit:cover}.vacia{background:#eee;min-height:180px;display:grid;place-items:center;color:#888}`,
+      css: `.foto{display:block;width:100%;max-height:${alto}px;border-radius:${e.radio};object-fit:cover}.vacia{background:#eee;min-height:${Math.min(alto, 180)}px;display:grid;place-items:center;color:#888}`,
     }
   }
   if (bloque.tipo === 'boton') {
     return {
       html: `<div class="wrap"><a class="boton" href="${escapar(d.enlace || '#productos')}">${escapar(d.boton || 'Ver más')}</a></div>`,
-      css: `.wrap{display:flex;justify-content:center;padding:8px}.boton{background:${color};color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600}`,
+      css: `.wrap{display:flex;justify-content:center;padding:8px}.boton{background:${color};color:#fff;padding:${e.boton};border-radius:999px;text-decoration:none;font-weight:600;font-size:${e.texto}}`,
     }
   }
   if (bloque.tipo === 'video') {
     const src = embedYoutube(d.video)
     return {
       html: src ? `<div class="video"><iframe src="${escapar(src)}" title="Video" allowfullscreen></iframe></div>` : '<div class="video vacia">Video</div>',
-      css: `.video{position:relative;padding-top:56.25%;border-radius:24px;overflow:hidden;background:#111}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.vacia{padding-top:0;min-height:180px;display:grid;place-items:center;color:#aaa}`,
+      css: `.video{position:relative;padding-top:56.25%;border-radius:${e.radio};overflow:hidden;background:#111}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.vacia{padding-top:0;min-height:180px;display:grid;place-items:center;color:#aaa}`,
     }
   }
   if (bloque.tipo === 'columnas') {
@@ -240,7 +282,7 @@ export function compilarWidget(bloque: BloqueHtmlVitrina): { html: string; css: 
       .join('')
     return {
       html: `<div class="grid">${celdas}</div>`,
-      css: `.grid{display:grid;gap:12px;grid-template-columns:repeat(${Math.min(4, Math.max(1, d.columnas.length || 3))},minmax(0,1fr))}@media(max-width:640px){.grid{grid-template-columns:1fr}}article{background:${fondo};border-radius:20px;padding:20px;color:${color}}article p{margin:8px 0 0;opacity:.7}`,
+      css: `.grid{display:grid;gap:12px;grid-template-columns:repeat(${Math.min(4, Math.max(1, d.columnas.length || 3))},minmax(0,1fr))}@media(max-width:640px){.grid{grid-template-columns:1fr}}article{background:${fondo};border-radius:${e.radio};padding:${e.pad};color:${color};font-size:${e.texto}}article p{margin:8px 0 0;opacity:.7}`,
     }
   }
   if (bloque.tipo === 'espacio') {

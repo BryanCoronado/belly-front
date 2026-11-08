@@ -24,11 +24,12 @@ import {
   type DashboardCrm,
   type DiasDashboard,
   type MiembroEquipoDashboard,
+  type OrigenDashboard,
   type PendienteDashboard,
 } from '@/api'
 import { Bienvenida } from '@/components/Bienvenida'
 import { IconoWhatsapp } from '@/components/IconoWhatsapp'
-import { PrimerosPasos } from '@/components/PrimerosPasos'
+import { LineaInicio } from '@/components/LineaInicio'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -58,7 +59,11 @@ export function Inicio() {
   const admin = esAdministrador(usuario)
   const { conectado, cargando } = useWhatsappConectado()
   const [dias, setDias] = useState<DiasDashboard>(14)
-  const dashboard = useQuery({ queryKey: ['dashboard', dias], queryFn: () => leerDashboard(dias) })
+  const dashboard = useQuery({
+    queryKey: ['dashboard', dias],
+    queryFn: () => leerDashboard(dias),
+    enabled: !cargando && conectado,
+  })
   const vitrina = useQuery({
     queryKey: ['catalogo-vitrina'],
     queryFn: leerVitrina,
@@ -75,45 +80,59 @@ export function Inicio() {
       <Bienvenida abierta={mostrarBienvenida} onCerrar={() => setMostrarBienvenida(false)} />
       <Saludo
         nombre={usuario ? nombreVisible(usuario) : ''}
-        empresa={usuario?.empresa_nombre || usuario?.empresa || ''}
-        conectado={conectado}
+        conectado={whatsappListo}
         dias={dias}
         alCambiarDias={setDias}
+        mostrarPeriodo={whatsappListo}
       />
 
-      {dashboard.data && dashboard.data.cuadros.por_responder > 0 ? (
-        <AvisoPendientes cantidad={dashboard.data.cuadros.por_responder} admin={admin} />
-      ) : null}
+      {!cargando && !whatsappListo ? (
+        <div className={cn('grid items-stretch gap-4 sm:gap-6', 'xl:grid-cols-3')}>
+          <div className="xl:col-span-2">
+            <LineaInicio />
+          </div>
+          <div className="grid gap-4 sm:gap-6">
+            <MiWeb admin={admin} />
+            <ModulosRecientes />
+          </div>
+        </div>
+      ) : (
+        <>
+          {dashboard.data && dashboard.data.cuadros.por_responder > 0 ? (
+            <AvisoPendientes cantidad={dashboard.data.cuadros.por_responder} admin={admin} />
+          ) : null}
 
-      <div className={cn('grid items-stretch gap-4 sm:gap-6', hayIntegraciones ? 'xl:grid-cols-3' : 'xl:grid-cols-2')}>
-        {hayIntegraciones ? <Integraciones whatsapp={whatsappListo} catalogo={catalogoListo} /> : null}
-        <MiWeb admin={admin} />
-        <ModulosRecientes />
-      </div>
+          <div className={cn('grid items-stretch gap-4 sm:gap-6', hayIntegraciones ? 'xl:grid-cols-3' : 'xl:grid-cols-2')}>
+            {hayIntegraciones ? <Integraciones whatsapp={whatsappListo} catalogo={catalogoListo} /> : null}
+            <MiWeb admin={admin} />
+            <ModulosRecientes />
+          </div>
 
-      {dashboard.isPending ? (
-        <CargandoDashboard admin={admin} />
-      ) : dashboard.isError ? (
-        <p className="superficie p-6 text-sm text-destructive">{dashboard.error.message}</p>
-      ) : dashboard.data ? (
-        <Contenido data={dashboard.data} admin={admin} cargando={cargando} />
-      ) : null}
+          {dashboard.isPending ? (
+            <CargandoDashboard admin={admin} />
+          ) : dashboard.isError ? (
+            <p className="superficie p-6 text-sm text-destructive">{dashboard.error.message}</p>
+          ) : dashboard.data ? (
+            <Contenido data={dashboard.data} admin={admin} />
+          ) : null}
+        </>
+      )}
     </div>
   )
 }
 
 function Saludo({
   nombre,
-  empresa,
   conectado,
   dias,
   alCambiarDias,
+  mostrarPeriodo,
 }: {
   nombre: string
-  empresa: string
   conectado: boolean
   dias: DiasDashboard
   alCambiarDias: (dias: DiasDashboard) => void
+  mostrarPeriodo: boolean
 }) {
   const fecha = new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -122,35 +141,37 @@ function Saludo({
       <div className="min-w-0">
         <p className="text-sm text-muted-foreground">Hola, {nombre}</p>
         <h1 className="mt-1 truncate font-heading text-[1.55rem] leading-none font-bold tracking-[-0.04em] sm:text-[2.15rem]">
-          {empresa || 'Tu empresa'}
+          Dashboard
         </h1>
         <p className="mt-1.5 text-[13px] text-muted-foreground capitalize">{fecha}</p>
       </div>
-      <div className="flex w-full items-center gap-2 sm:w-auto">
-        <div className="flex min-w-0 flex-1 rounded-lg bg-muted p-1 sm:flex-none">
-          {PERIODOS.map((periodo) => (
-            <button
-              key={periodo.id}
-              type="button"
-              onClick={() => alCambiarDias(periodo.id)}
-              className={cn(
-                'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:flex-none sm:px-2.5 sm:py-1',
-                dias === periodo.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <span className="sm:hidden">{periodo.corto}</span>
-              <span className="hidden sm:inline">{periodo.texto}</span>
-            </button>
-          ))}
+      {mostrarPeriodo ? (
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="flex min-w-0 flex-1 rounded-lg bg-muted p-1 sm:flex-none">
+            {PERIODOS.map((periodo) => (
+              <button
+                key={periodo.id}
+                type="button"
+                onClick={() => alCambiarDias(periodo.id)}
+                className={cn(
+                  'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:flex-none sm:px-2.5 sm:py-1',
+                  dias === periodo.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <span className="sm:hidden">{periodo.corto}</span>
+                <span className="hidden sm:inline">{periodo.texto}</span>
+              </button>
+            ))}
+          </div>
+          {conectado ? (
+            <Link to="/chats" className={cn(buttonVariants({ size: 'lg' }), 'h-9 shrink-0 px-3 sm:h-10 sm:px-4')}>
+              <span className="sm:hidden">Chat</span>
+              <span className="hidden sm:inline">Ir al chat</span>
+              <ArrowRight />
+            </Link>
+          ) : null}
         </div>
-        {conectado ? (
-          <Link to="/chats" className={cn(buttonVariants({ size: 'lg' }), 'h-9 shrink-0 px-3 sm:h-10 sm:px-4')}>
-            <span className="sm:hidden">Chat</span>
-            <span className="hidden sm:inline">Ir al chat</span>
-            <ArrowRight />
-          </Link>
-        ) : null}
-      </div>
+      ) : null}
     </div>
   )
 }
@@ -180,11 +201,9 @@ function AvisoPendientes({ cantidad, admin }: { cantidad: number; admin: boolean
 function Contenido({
   data,
   admin,
-  cargando,
 }: {
   data: DashboardCrm
   admin: boolean
-  cargando: boolean
 }) {
   return (
     <>
@@ -195,23 +214,29 @@ function Contenido({
       </Tarjeta>
 
       <div className="grid items-start gap-4 sm:gap-6 xl:grid-cols-2">
+        <Tarjeta titulo="De dónde llegan" ayuda={`Clientes nuevos · ${data.dias} días`}>
+          <OrigenesClientes items={data.origenes ?? []} />
+        </Tarjeta>
         <Tarjeta titulo="Embudo" ayuda={admin ? 'Clientes de la empresa por etapa' : 'Tus clientes por etapa'}>
           <EmbudoVisual items={data.embudo} vacio="Aún no hay clientes en el embudo." />
         </Tarjeta>
+      </div>
+
+      <div className="grid items-start gap-4 sm:gap-6 xl:grid-cols-2">
         <Tarjeta titulo="Tipos de cliente" ayuda="Cómo está repartida la cartera">
           <Dona items={data.tipos} vacio="Todavía no hay tipos asignados." etiquetaCentro="clientes" />
         </Tarjeta>
-      </div>
-
-      {admin ? (
-        <div className="grid items-start gap-4 sm:gap-6 xl:grid-cols-2">
-          <Tarjeta titulo="Por qué se cierran" ayuda={`Motivos de los últimos ${data.dias} días`}>
-            <Dona items={data.motivos} vacio="Nadie cerró un chat en este periodo." etiquetaCentro="cierres" />
-          </Tarjeta>
+        {admin ? (
           <Tarjeta titulo="Resultado del embudo" ayuda={`Ganados frente a perdidos en ${data.dias} días`}>
             <AnilloResultado ganados={data.cuadros.ganados} perdidos={data.cuadros.perdidos} />
           </Tarjeta>
-        </div>
+        ) : null}
+      </div>
+
+      {admin ? (
+        <Tarjeta titulo="Por qué se cierran" ayuda={`Motivos de los últimos ${data.dias} días`}>
+          <Dona items={data.motivos} vacio="Nadie cerró un chat en este periodo." etiquetaCentro="cierres" />
+        </Tarjeta>
       ) : null}
 
       <div className={cn('grid items-start gap-4 sm:gap-6', admin ? 'xl:grid-cols-2' : '')}>
@@ -220,9 +245,38 @@ function Contenido({
         </Tarjeta>
         {admin ? <TablaEquipo equipo={data.equipo} dias={data.dias} /> : null}
       </div>
-
-      {admin && !cargando ? <PrimerosPasos /> : null}
     </>
+  )
+}
+
+function OrigenesClientes({ items }: { items: OrigenDashboard[] }) {
+  const visibles = items.filter((item) => item.id === 'whatsapp' || item.id === 'catalogo' || item.total > 0)
+  const total = visibles.reduce((suma, item) => suma + item.total, 0)
+  if (total === 0) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">Aún no hay clientes nuevos en este periodo.</p>
+  }
+
+  return (
+    <div className="space-y-4 py-1">
+      <div className="flex h-3 overflow-hidden rounded-full bg-muted">
+        {visibles.map((item) =>
+          item.total > 0 ? (
+            <span key={item.id} className="h-full first:rounded-l-full last:rounded-r-full" style={{ width: `${(item.total / total) * 100}%`, background: item.color }} title={item.nombre} />
+          ) : null,
+        )}
+      </div>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {visibles.map((item) => (
+          <li key={item.id} className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5">
+            <span className="flex items-center gap-2 text-sm">
+              <span className="size-2.5 rounded-full" style={{ background: item.color }} />
+              {item.nombre}
+            </span>
+            <span className="text-sm font-semibold tabular-nums">{item.total}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

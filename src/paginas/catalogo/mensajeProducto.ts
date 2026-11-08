@@ -14,8 +14,8 @@ export function enlacePublico(ruta: string | null | undefined): string {
 }
 
 export function useCatalogoEmpresa() {
-  const productos = useQuery({ queryKey: ['productos'], queryFn: leerProductos, staleTime: 30_000 })
-  const familias = useQuery({ queryKey: ['familias-producto'], queryFn: leerFamilias, staleTime: 30_000 })
+  const productos = useQuery({ queryKey: ['catalogo-productos'], queryFn: leerProductos, staleTime: 30_000 })
+  const familias = useQuery({ queryKey: ['catalogo-familias'], queryFn: leerFamilias, staleTime: 30_000 })
   const vitrina = useQuery({ queryKey: ['catalogo-vitrina'], queryFn: leerVitrina, staleTime: 60_000, retry: false })
 
   return {
@@ -50,7 +50,7 @@ export function armarEnvioEnlace(titulo: string, enlace: string): EnvioCatalogo 
 export type ProductoMensaje = Pick<
   Producto | ProductoPublico,
   'nombre' | 'resumen' | 'descripcion' | 'marca' | 'precio' | 'precio_oferta' | 'moneda' | 'unidad' | 'imagen_url'
-> & { disponibilidad?: string; familia?: string | null }
+> & { disponibilidad?: string; familia?: string | null; tipo?: 'producto' | 'servicio' }
 
 export function precioVisible(producto: ProductoMensaje, mostrar = true): string {
   if (!mostrar) return 'Consultar'
@@ -71,8 +71,10 @@ export function captionProducto(
   const mostrar = extras?.mostrarPrecios !== false
   const precio = precioVisible(producto, mostrar)
   const unidad = producto.unidad ? ` / ${producto.unidad}` : ''
+  const esServicio = producto.tipo === 'servicio'
   const lineas = [
     `*${producto.nombre}*`,
+    esServicio ? '_Servicio_' : '',
     producto.marca ? `Marca: ${producto.marca}` : '',
     `${precio}${unidad}`,
     producto.disponibilidad === 'agotado' ? '_Agotado por ahora_' : producto.disponibilidad === 'pedido' ? '_Se pide a pedido_' : '',
@@ -89,7 +91,10 @@ export function captionFamilia(
   extras?: { enlace?: string; mostrarPrecios?: boolean },
 ): string {
   const mostrar = extras?.mostrarPrecios !== false
-  const filas = productos.slice(0, 8).map((producto, indice) => `*${indice + 1}.* ${producto.nombre} — ${precioVisible(producto, mostrar)}`)
+  const filas = productos.slice(0, 8).map((producto, indice) => {
+    const unidad = producto.unidad ? ` / ${producto.unidad}` : ''
+    return `*${indice + 1}.* ${producto.nombre} — ${precioVisible(producto, mostrar)}${unidad}`
+  })
   return [`*${nombre}*`, '', ...filas, extras?.enlace ? `\nVer todo: ${extras.enlace}` : ''].filter(Boolean).join('\n')
 }
 

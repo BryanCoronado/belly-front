@@ -39,7 +39,7 @@ export function LimitesPlan({ className, compacto = false }: { className?: strin
       {!compacto && plan.max_envios > 0 ? <Item usado={uso.envios} tope={plan.max_envios} texto="envíos" /> : null}
       {admin && !compacto ? (
         <Link to="/cuenta" className="ml-auto font-medium text-foreground underline-offset-2 hover:underline">
-          Ver plan
+          Membresía
         </Link>
       ) : null}
     </div>
@@ -47,10 +47,15 @@ export function LimitesPlan({ className, compacto = false }: { className?: strin
 }
 
 function Item({ usado, tope, texto }: { usado: number; tope: number; texto: string }) {
-  const lleno = tope > 0 && usado >= tope
+  const pasado = tope > 0 && usado > tope
+  const completo = tope > 0 && usado === tope
   const cerca = tope > 0 && usado / tope >= 0.8
   return (
-    <span className={cn(lleno ? 'font-medium text-rose-700' : cerca ? 'text-amber-800' : undefined)}>
+    <span
+      className={cn(
+        pasado ? 'font-medium text-rose-700' : completo || cerca ? 'text-amber-800' : undefined,
+      )}
+    >
       {usado} / {tope > 0 ? tope : '∞'} {texto}
     </span>
   )

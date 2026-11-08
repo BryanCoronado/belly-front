@@ -10,6 +10,7 @@ import {
   guardarGrupo,
   guardarRol,
   leerCatalogo,
+  leerCupoEmpresa,
   leerGrupo,
   leerGrupos,
   leerLista,
@@ -116,9 +117,26 @@ function BarraPanel({ texto, accion }: { texto: string; accion?: ReactNode }) {
   )
 }
 
-function BotonNuevo({ children, onClick }: { children: string; onClick: () => void }) {
+function BotonNuevo({
+  children,
+  onClick,
+  disabled,
+  title,
+}: {
+  children: string
+  onClick: () => void
+  disabled?: boolean
+  title?: string
+}) {
   return (
-    <Button size="lg" className="h-10 w-full sm:w-auto" data-tour="nuevo" onClick={onClick}>
+    <Button
+      size="lg"
+      className="h-10 w-full sm:w-auto"
+      data-tour="nuevo"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+    >
       <Plus />
       {children}
     </Button>
@@ -151,19 +169,42 @@ function PanelUsuarios({ admin }: { admin: boolean }) {
   const equipo = useQuery({ queryKey: [RUTA_USUARIOS], queryFn: () => leerLista(RUTA_USUARIOS) })
   const roles = useQuery({ queryKey: ['roles'], queryFn: leerRoles })
   const grupos = useQuery({ queryKey: CLAVE_GRUPOS, queryFn: leerGrupos })
+  const cupo = useQuery({ queryKey: ['empresa-cupo'], queryFn: leerCupoEmpresa, enabled: admin })
+  const topePersonas = cupo.data?.plan.max_personas ?? 0
+  const usoPersonas = cupo.data?.uso.personas ?? equipo.data?.filas.length ?? 0
+  const sinCupoPersonas = topePersonas > 0 && usoPersonas >= topePersonas
   const refrescar = () => {
     consultas.invalidateQueries({ queryKey: [RUTA_USUARIOS] })
     consultas.invalidateQueries({ queryKey: CLAVE_GRUPOS })
+    consultas.invalidateQueries({ queryKey: ['empresa-cupo'] })
+    consultas.invalidateQueries({ queryKey: ['cuenta-empresa'] })
   }
 
   return (
     <>
       <BarraPanel
-        texto="Cada usuario entra con su usuario y contraseña."
+        texto={
+          sinCupoPersonas
+            ? `Tu plan admite ${topePersonas} persona${topePersonas === 1 ? '' : 's'}. Sube de plan o quita a alguien para agregar otra.`
+            : 'Cada usuario entra con su usuario y contraseña.'
+        }
         accion={
           admin ? (
             <BotonNuevo
+              disabled={sinCupoPersonas}
+              title={
+                sinCupoPersonas
+                  ? `Tu plan admite máximo ${topePersonas} persona${topePersonas === 1 ? '' : 's'}`
+                  : undefined
+              }
               onClick={() => {
+                if (sinCupoPersonas) {
+                  avisoError(
+                    new Error(`Límite del plan: máximo ${topePersonas} persona${topePersonas === 1 ? '' : 's'}.`),
+                    'No puedes agregar más usuarios',
+                  )
+                  return
+                }
                 setEditando(null)
                 setAbierto(true)
               }}
@@ -482,19 +523,42 @@ function PanelGrupos({ admin }: { admin: boolean }) {
   const [abierto, setAbierto] = useState(false)
   const [editando, setEditando] = useState<number | null>(null)
   const grupos = useQuery({ queryKey: CLAVE_GRUPOS, queryFn: leerGrupos })
+  const cupo = useQuery({ queryKey: ['empresa-cupo'], queryFn: leerCupoEmpresa, enabled: admin })
+  const topeEquipos = cupo.data?.plan.max_equipos ?? 0
+  const usoEquipos = cupo.data?.uso.equipos ?? grupos.data?.length ?? 0
+  const sinCupoGrupos = topeEquipos > 0 && usoEquipos >= topeEquipos
   const refrescar = () => {
     consultas.invalidateQueries({ queryKey: CLAVE_GRUPOS })
     consultas.invalidateQueries({ queryKey: [RUTA_USUARIOS] })
+    consultas.invalidateQueries({ queryKey: ['empresa-cupo'] })
+    consultas.invalidateQueries({ queryKey: ['cuenta-empresa'] })
   }
 
   return (
     <>
       <BarraPanel
-        texto="Un grupo junta a las personas que trabajan juntas, por ejemplo Ventas o Soporte. Sirve para organizar; los permisos los da el rol."
+        texto={
+          sinCupoGrupos
+            ? `Tu plan admite ${topeEquipos} grupo${topeEquipos === 1 ? '' : 's'}. Sube de plan o elimina uno para crear otro.`
+            : 'Un grupo junta a las personas que trabajan juntas, por ejemplo Ventas o Soporte. Sirve para organizar; los permisos los da el rol.'
+        }
         accion={
           admin ? (
             <BotonNuevo
+              disabled={sinCupoGrupos}
+              title={
+                sinCupoGrupos
+                  ? `Tu plan admite máximo ${topeEquipos} grupo${topeEquipos === 1 ? '' : 's'}`
+                  : undefined
+              }
               onClick={() => {
+                if (sinCupoGrupos) {
+                  avisoError(
+                    new Error(`Límite del plan: máximo ${topeEquipos} grupo${topeEquipos === 1 ? '' : 's'}.`),
+                    'No puedes crear más grupos',
+                  )
+                  return
+                }
                 setEditando(null)
                 setAbierto(true)
               }}

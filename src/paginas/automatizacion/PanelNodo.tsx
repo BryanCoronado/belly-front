@@ -221,8 +221,8 @@ function FormCatalogo({ datos, poner }: { datos: DatosPaso; poner: (parcial: Dat
   return (
     <>
       <Nota>
-        El bot envía la foto y un mensaje armado (nombre, precio, descripción). Si más adelante cambias el producto, vuelve a
-        elegirlo aquí para actualizar el paso.
+        El bot envía la foto, el precio y la unidad actuales del catálogo (producto o servicio). No hace falta reelegirlo si
+        luego cambias el ítem.
       </Nota>
       {texto(datos, 'texto') ? (
         <div className="space-y-2 rounded-xl border p-3">

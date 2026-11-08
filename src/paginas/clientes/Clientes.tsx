@@ -20,7 +20,12 @@ import { BarraFiltros, Chip, Punto } from './piezas'
 
 const POR_PAGINA = 25
 
-const ORIGEN: Record<ClienteCrm['origen'], string> = { whatsapp: 'WhatsApp', manual: 'Registrado a mano', importado: 'Importado' }
+const ORIGEN: Record<ClienteCrm['origen'], string> = {
+  whatsapp: 'WhatsApp',
+  catalogo: 'Web / Catálogo',
+  manual: 'Registrado a mano',
+  importado: 'Importado',
+}
 
 const VISTAS = [
   { id: 'lista', titulo: 'Lista', icono: List },
@@ -166,7 +171,7 @@ function ListaClientes({
                   <p className="truncate font-medium hover:underline">{fila.nombre || 'Sin nombre'}</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {fila.telefono ? `+${fila.telefono}` : 'Sin teléfono'}
-                    {fila.origen !== 'whatsapp' ? ` · ${ORIGEN[fila.origen]}` : ''}
+                    {fila.origen && fila.origen !== 'whatsapp' ? ` · ${ORIGEN[fila.origen] ?? fila.origen}` : ''}
                   </p>
                 </button>
               </div>

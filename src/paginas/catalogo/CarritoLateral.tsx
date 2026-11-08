@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Minus, Package, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { IconoRed } from '@/paginas/catalogo/redes'
 import { formatearMoneda, mensajePedido, totalCarrito, unidadesCarrito, type LineaCarrito } from '@/paginas/catalogo/carrito'
+import { enlaceWhatsapp } from '@/paginas/catalogo/origenWeb'
 import { useTienda } from '@/paginas/catalogo/tienda'
 
 export function CarritoLateral({
@@ -24,7 +25,7 @@ export function CarritoLateral({
   const total = totalCarrito(lineas)
   const moneda = lineas[0]?.moneda || 'PEN'
   const pedido = catalogo.whatsapp
-    ? `https://wa.me/${catalogo.whatsapp}?text=${encodeURIComponent(mensajePedido(catalogo.titulo, lineas, catalogo.mostrar_precios, { nombre, nota }))}`
+    ? enlaceWhatsapp(catalogo.whatsapp, mensajePedido(catalogo.titulo, lineas, catalogo.mostrar_precios, { nombre, nota }))
     : null
 
   return (

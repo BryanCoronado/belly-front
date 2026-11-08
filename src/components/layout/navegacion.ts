@@ -98,7 +98,7 @@ const RUTAS_FRONT: Record<string, string> = {
 }
 
 export const CUENTA: EnlaceNavegacion = {
-  titulo: 'Plan y pagos',
+  titulo: 'Membresía',
   ruta: '/cuenta',
   icono: Wallet,
   tono: TONO_RUTA['/cuenta'],
@@ -155,7 +155,7 @@ export const NAVEGACION: GrupoNavegacion[] = [
   {
     titulo: 'Catálogo',
     enlaces: [
-      { titulo: 'Productos', ruta: '/productos', icono: Boxes, tono: TONO_RUTA['/productos'] },
+      { titulo: 'Productos y servicios', ruta: '/productos', icono: Boxes, tono: TONO_RUTA['/productos'] },
       { titulo: 'Mi Catálogo', ruta: '/catalogo', icono: BookImage, tono: TONO_RUTA['/catalogo'] },
     ],
   },
@@ -196,12 +196,16 @@ export function gruposDesdeMenu(grupos: GrupoMenu[]): GrupoNavegacion[] {
 }
 
 export function tituloDeRuta(ruta: string): string {
+  if (ruta === '/catalogo/lab' || ruta.startsWith('/catalogo/lab')) return 'Constructor'
   return moduloDeRuta(ruta)?.titulo ?? (ruta === '/perfil' ? 'Mi perfil' : '')
 }
 
 export function moduloDeRuta(ruta: string): EnlaceNavegacion | null {
   if (ruta === '/perfil') {
     return { titulo: 'Mi perfil', ruta: '/perfil', icono: CircleUserRound, tono: 'bg-violet-100 text-violet-700' }
+  }
+  if (ruta === '/catalogo/lab' || ruta.startsWith('/catalogo/lab')) {
+    return { titulo: 'Constructor', ruta: '/catalogo/lab', icono: BookImage, tono: TONO_RUTA['/catalogo'] }
   }
   const plano = aplanar([...NAVEGACION.flatMap((grupo) => grupo.enlaces), CUENTA, EQUIPO, SUPERVISION, INTEGRACIONES, COSTOS_WHATSAPP])
   return (

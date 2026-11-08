@@ -19,8 +19,8 @@ import { esAdministrador, esOperador, leerSesion } from '@/sesion'
 import { BarraLateral } from './BarraLateral'
 import { tituloDeRuta } from './navegacion'
 
-const PANTALLA_COMPLETA = new Set(['/chats', '/supervision'])
-/** Chat y editor de flujos ocupan todo el alto: sin márgenes alrededor. */
+const PANTALLA_COMPLETA = new Set(['/chats', '/supervision', '/catalogo/lab'])
+/** Chat, constructor de catálogo y editor de flujos ocupan todo el alto: sin márgenes alrededor. */
 const esPantallaCompleta = (ruta: string) => PANTALLA_COMPLETA.has(ruta) || /^\/automatizacion\/\d+/.test(ruta)
 
 export function LayoutApp() {
@@ -28,6 +28,7 @@ export function LayoutApp() {
   const { pathname } = useLocation()
   const { ahorro } = useModoAhorro()
   const pantallaCompleta = esPantallaCompleta(pathname)
+  const inmersivo = pathname === '/catalogo/lab'
   useTiempoReal()
 
   useEffect(() => {
@@ -50,14 +51,15 @@ export function LayoutApp() {
   }
 
   return (
-    <SidebarProvider className={cn('overflow-x-hidden', pantallaCompleta && 'h-svh max-h-svh overflow-hidden')}>
+    <SidebarProvider className="h-svh max-h-svh overflow-hidden">
       <TransformacionModo />
-      <BarraLateral usuario={sesion.usuario} />
-      <SidebarInset className={cn('overflow-x-hidden', pantallaCompleta && 'min-h-0 overflow-hidden')}>
+      {inmersivo ? null : <BarraLateral usuario={sesion.usuario} />}
+      <SidebarInset className="min-h-0 min-w-0 overflow-hidden">
         <header
           className={cn(
-            'sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-3 text-foreground md:h-16 md:px-6',
+            'z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-3 text-foreground md:h-16 md:px-6',
             pantallaCompleta && 'hidden md:flex',
+            inmersivo && 'hidden md:hidden',
           )}
         >
           <SidebarTrigger className="-ml-1" />
@@ -95,7 +97,7 @@ export function LayoutApp() {
           </div>
         </header>
         <AnimatePresence>
-          {ahorro ? (
+          {ahorro && !inmersivo ? (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -119,11 +121,15 @@ export function LayoutApp() {
             </motion.div>
           ) : null}
         </AnimatePresence>
-        <LimitesPlan />
+        {inmersivo ? null : (
+          <div className={cn('shrink-0', pantallaCompleta && 'hidden md:block')}>
+            <LimitesPlan />
+          </div>
+        )}
         <div
           className={cn(
-            'w-full min-w-0 flex-1',
-            pantallaCompleta ? 'flex min-h-0 flex-col overflow-hidden' : 'p-3 sm:p-4 md:p-6 xl:p-8',
+            'w-full min-w-0 min-h-0 flex-1',
+            pantallaCompleta ? 'flex flex-col overflow-hidden' : 'overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-6 xl:p-8',
           )}
         >
           <TransicionPagina

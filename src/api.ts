@@ -1,6 +1,19 @@
+import { urlMedia } from '@/lib/media'
 import { expulsarPorEmpresaPausada, expulsarPorTokenVencido, leerSesion, type Sesion } from '@/sesion'
 
 const BASE = import.meta.env.VITE_API_URL || '/api'
+
+function conMediaProducto<T extends { imagen_url?: string | null; imagenes?: string[] }>(item: T): T {
+  return {
+    ...item,
+    imagen_url: item.imagen_url ? urlMedia(item.imagen_url) : item.imagen_url,
+    imagenes: Array.isArray(item.imagenes) ? item.imagenes.map((url) => urlMedia(url)) : item.imagenes,
+  }
+}
+
+function conMediaFamilia<T extends { imagen_url?: string | null }>(item: T): T {
+  return { ...item, imagen_url: item.imagen_url ? urlMedia(item.imagen_url) : item.imagen_url }
+}
 
 export type Fila = Record<string, unknown>
 
@@ -74,12 +87,25 @@ export type DatosRegistro = {
   nombres: string
   apellidos: string
   correo: string
-  correo_confirmado: string
   username: string
   password: string
   codigo_pais: string
   celular: string
+  documento: string
   web: string
+}
+
+export type DocumentoConsulta = {
+  tipo: 'dni' | 'ruc' | string
+  numero: string
+  nombre: string
+  nombres: string
+  apellidos: string
+  estado: string
+  condicion: string
+  direccion: string
+  representante_nombre: string
+  representante_cargo: string
 }
 
 type Respuesta = {
@@ -108,6 +134,14 @@ export async function entrar(identificador: string, password: string): Promise<S
 
 export async function registrar(datos: DatosRegistro): Promise<void> {
   await solicitar('/v1/auth/registro', { method: 'POST', cuerpo: datos })
+}
+
+export async function consultarDocumento(documento: string): Promise<DocumentoConsulta> {
+  const datos = await solicitar('/v1/auth/consultar-documento', {
+    method: 'POST',
+    cuerpo: { documento },
+  })
+  return datos.data as DocumentoConsulta
 }
 
 export type DestinoAviso = {
@@ -1192,6 +1226,8 @@ export type ResumenAgente = { id: number; nombre: string; activo: boolean; listo
 
 export type RepartoCompleto = {
   definicion: DefinicionReparto
+  /** True solo si la empresa ya guardó el lienzo (no la plantilla por defecto). */
+  configurado: boolean
   revision: RevisionReparto
   grupos: GrupoAtencion[]
   asesores: { id: number; nombre: string; activo: boolean }[]
@@ -1361,12 +1397,14 @@ export type FamiliaProducto = {
 export type DetalleProducto = { nombre: string; valor: string }
 
 export type DisponibilidadProducto = 'disponible' | 'agotado' | 'pedido'
+export type TipoItemCatalogo = 'producto' | 'servicio'
 
 export type Producto = {
   id: number
   id_familia: number | null
   familia: string | null
   nombre: string
+  tipo: TipoItemCatalogo
   descripcion: string | null
   resumen: string | null
   codigo: string | null
@@ -1391,6 +1429,7 @@ export type DatosFamilia = { nombre: string; descripcion: string; imagen_url: st
 
 export type DatosProducto = {
   nombre: string
+  tipo: TipoItemCatalogo
   id_familia: number | null
   precio: string
   precio_oferta: string
@@ -1412,7 +1451,7 @@ export type DatosProducto = {
 
 export type BannerVitrina = {
   imagen_url: string
-  estilo: 'dividido' | 'completo'
+  estilo: 'completo'
   etiqueta: string
   titulo: string
   texto: string
@@ -1454,6 +1493,9 @@ export type TipoWidget =
   | 'espacio'
   | 'html'
 
+export type TamanoBloque = 's' | 'm' | 'l'
+export type AnchoBloque = 'estrecho' | 'caja' | 'amplio' | 'completo'
+
 export type DatosWidget = {
   titulo: string
   texto: string
@@ -1464,6 +1506,9 @@ export type DatosWidget = {
   fondo: string
   video: string
   alto: number
+  /** Ancho libre 20–100. 0 = usa el preset (Chico/Medio/…). */
+  ancho_pct: number
+  tamano: TamanoBloque
   columnas: { titulo: string; texto: string }[]
 }
 
@@ -1474,7 +1519,7 @@ export type BloqueHtmlVitrina = {
   html: string
   css: string
   donde: LugarBloque
-  ancho: 'caja' | 'completo'
+  ancho: AnchoBloque
   activo: boolean
   datos: DatosWidget
 }
@@ -1513,6 +1558,8 @@ export type Vitrina = {
   color: string
   logo_url: string | null
   whatsapp: string | null
+  /** True si el número es el de Meta conectado. */
+  whatsapp_meta?: boolean
   mostrar_precios: boolean
   publicado: boolean
   pagina: PaginaVitrina
@@ -1536,6 +1583,7 @@ export type ProductoPublico = {
   id_familia: number | null
   familia: string | null
   nombre: string
+  tipo: TipoItemCatalogo
   resumen: string | null
   descripcion: string | null
   marca: string | null
@@ -1566,7 +1614,7 @@ export type VitrinaPublica = {
 
 export async function leerFamilias(): Promise<FamiliaProducto[]> {
   const datos = await solicitar(`${RUTA_CATALOGO}/familias`, { method: 'GET', conToken: true })
-  return (datos.data as FamiliaProducto[] | undefined) ?? []
+  return ((datos.data as FamiliaProducto[] | undefined) ?? []).map(conMediaFamilia)
 }
 
 export async function guardarFamilia(datos: DatosFamilia, id?: number): Promise<FamiliaProducto> {
@@ -1575,7 +1623,7 @@ export async function guardarFamilia(datos: DatosFamilia, id?: number): Promise<
     cuerpo: datos,
     conToken: true,
   })
-  return respuesta.data as FamiliaProducto
+  return conMediaFamilia(respuesta.data as FamiliaProducto)
 }
 
 export async function eliminarFamilia(id: number): Promise<void> {
@@ -1584,7 +1632,7 @@ export async function eliminarFamilia(id: number): Promise<void> {
 
 export async function leerProductos(): Promise<Producto[]> {
   const datos = await solicitar(`${RUTA_CATALOGO}/productos`, { method: 'GET', conToken: true })
-  return (datos.data as Producto[] | undefined) ?? []
+  return ((datos.data as Producto[] | undefined) ?? []).map(conMediaProducto)
 }
 
 export async function guardarProducto(datos: DatosProducto, id?: number): Promise<Producto> {
@@ -1593,12 +1641,12 @@ export async function guardarProducto(datos: DatosProducto, id?: number): Promis
     cuerpo: datos,
     conToken: true,
   })
-  return respuesta.data as Producto
+  return conMediaProducto(respuesta.data as Producto)
 }
 
 export async function cambiarEstadoProducto(id: number, activo: boolean): Promise<Producto> {
   const respuesta = await solicitar(`${RUTA_CATALOGO}/productos/${id}/estado`, { method: 'PUT', cuerpo: { activo }, conToken: true })
-  return respuesta.data as Producto
+  return conMediaProducto(respuesta.data as Producto)
 }
 
 export async function eliminarProducto(id: number): Promise<void> {
@@ -1609,22 +1657,88 @@ export async function subirImagenProducto(archivo: File): Promise<string> {
   const formulario = new FormData()
   formulario.append('imagen', archivo)
   const respuesta = await solicitar(`${RUTA_CATALOGO}/productos/imagen`, { method: 'POST', formulario, conToken: true })
-  return (respuesta.data as { url: string }).url
+  return urlMedia((respuesta.data as { url: string }).url)
+}
+
+function conMediaVitrina(vitrina: Vitrina): Vitrina {
+  const pagina = vitrina.pagina
+  return {
+    ...vitrina,
+    logo_url: vitrina.logo_url ? urlMedia(vitrina.logo_url) : vitrina.logo_url,
+    pagina: pagina
+      ? {
+          ...pagina,
+          banners: (pagina.banners ?? []).map((banner) => ({ ...banner, imagen_url: urlMedia(banner.imagen_url) })),
+          promos: (pagina.promos ?? []).map((promo) => ({ ...promo, imagen_url: urlMedia(promo.imagen_url) })),
+          seo: pagina.seo ? { ...pagina.seo, imagen_url: urlMedia(pagina.seo.imagen_url) } : pagina.seo,
+          bloques: (pagina.bloques ?? []).map((bloque) => ({
+            ...bloque,
+            datos: bloque.datos ? { ...bloque.datos, imagen_url: urlMedia(bloque.datos.imagen_url) } : bloque.datos,
+          })),
+        }
+      : pagina,
+  }
 }
 
 export async function leerVitrina(): Promise<Vitrina> {
   const datos = await solicitar(`${RUTA_CATALOGO}/vitrina`, { method: 'GET', conToken: true })
-  return datos.data as Vitrina
+  return conMediaVitrina(datos.data as Vitrina)
 }
 
 export async function guardarVitrina(datos: DatosVitrina): Promise<Vitrina> {
   const respuesta = await solicitar(`${RUTA_CATALOGO}/vitrina`, { method: 'PUT', cuerpo: datos, conToken: true })
-  return respuesta.data as Vitrina
+  return conMediaVitrina(respuesta.data as Vitrina)
 }
 
 export async function leerCatalogoPublico(slug: string): Promise<VitrinaPublica> {
   const datos = await solicitar(`/v1/publico/catalogo/${encodeURIComponent(slug)}`, { method: 'GET' })
-  return datos.data as VitrinaPublica
+  const catalogo = datos.data as VitrinaPublica
+  return {
+    ...catalogo,
+    logo_url: catalogo.logo_url ? urlMedia(catalogo.logo_url) : catalogo.logo_url,
+    familias: (catalogo.familias ?? []).map(conMediaFamilia),
+    productos: (catalogo.productos ?? []).map(conMediaProducto),
+    pagina: catalogo.pagina
+      ? {
+          ...catalogo.pagina,
+          banners: (catalogo.pagina.banners ?? []).map((banner) => ({ ...banner, imagen_url: urlMedia(banner.imagen_url) })),
+          promos: (catalogo.pagina.promos ?? []).map((promo) => ({ ...promo, imagen_url: urlMedia(promo.imagen_url) })),
+          bloques: (catalogo.pagina.bloques ?? []).map((bloque) => ({
+            ...bloque,
+            datos: bloque.datos ? { ...bloque.datos, imagen_url: urlMedia(bloque.datos.imagen_url) } : bloque.datos,
+          })),
+        }
+      : catalogo.pagina,
+  }
+}
+
+export type PedidoCatalogo = {
+  id: number
+  id_cliente: number | null
+  id_conversacion: number | null
+  tienda: string | null
+  cliente_nombre: string | null
+  nota: string | null
+  items: { cantidad: number; nombre: string; variante?: string | null; subtotal?: number | null }[]
+  total: number | null
+  moneda: string
+  estado: 'nuevo' | 'atendido' | 'cerrado' | string
+  texto: string | null
+  created_at: string | null
+}
+
+export async function leerPedidosCatalogo(): Promise<PedidoCatalogo[]> {
+  const datos = await solicitar(`${RUTA_CATALOGO}/pedidos`, { method: 'GET', conToken: true })
+  return (datos.data as PedidoCatalogo[] | undefined) ?? []
+}
+
+export async function cambiarEstadoPedidoCatalogo(id: number, estado: string): Promise<PedidoCatalogo> {
+  const respuesta = await solicitar(`${RUTA_CATALOGO}/pedidos/${id}/estado`, {
+    method: 'PUT',
+    cuerpo: { estado },
+    conToken: true,
+  })
+  return respuesta.data as PedidoCatalogo
 }
 
 export async function leerLogoVitrina(): Promise<string | null> {
@@ -1674,7 +1788,7 @@ export type ClienteCrm = {
   creado: string
 }
 
-export type OrigenCliente = 'whatsapp' | 'manual' | 'importado'
+export type OrigenCliente = 'whatsapp' | 'catalogo' | 'manual' | 'importado'
 
 export type FichaCliente = ClienteCrm & {
   conversaciones: { id: number; id_estado: number; created_at: string; updated_at: string | null; asesor_nombre: string | null }[]
@@ -1762,11 +1876,14 @@ export type MiembroEquipoDashboard = {
   clientes: number
 }
 
+export type OrigenDashboard = { id: string; nombre: string; color: string; total: number }
+
 export type DashboardCrm = {
   rol: 'admin' | 'asesor'
   dias: number
   cuadros: CuadrosDashboard
   actividad: PuntoActividad[]
+  origenes: OrigenDashboard[]
   embudo: ParteDashboard[]
   tipos: ParteDashboard[]
   motivos: ParteDashboard[]

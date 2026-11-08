@@ -16,6 +16,7 @@ import { CostosWhatsapp } from '@/paginas/integraciones/CostosWhatsapp'
 import { Integraciones } from '@/paginas/integraciones/Integraciones'
 import { MiCatalogo } from '@/paginas/integraciones/MiCatalogo'
 import { CatalogoPublico } from '@/paginas/catalogo/CatalogoPublico'
+import { ConstructorCatalogo } from '@/paginas/catalogo/ConstructorCatalogo'
 import { ListaNegra } from '@/paginas/Modulos'
 import { Plantillas } from '@/paginas/plantillas/PlantillasRapidas'
 import { EditorFlujo } from '@/paginas/automatizacion/EditorFlujo'
@@ -80,6 +81,8 @@ export default function App() {
           <Route path="/integraciones/whatsapp" element={<ConexionWhatsapp />} />
           <Route path="/integraciones/costos" element={<CostosWhatsapp />} />
           <Route path="/catalogo" element={<MiCatalogo />} />
+          <Route path="/catalogo/lab" element={<ConstructorCatalogo />} />
+          <Route path="/catalogo/constructor" element={<Navigate to="/catalogo/lab" replace />} />
           <Route path="/integraciones/catalogo" element={<Navigate to="/catalogo" replace />} />
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/clientes/importar" element={<ImportarClientes />} />

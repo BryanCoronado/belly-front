@@ -1,4 +1,5 @@
 import type { ProductoPublico } from '@/api'
+import { conOrigenWeb } from '@/paginas/catalogo/origenWeb'
 
 export type LineaCarrito = {
   clave: string
@@ -87,7 +88,7 @@ export function mensajePedido(
   if (mostrarPrecios && total !== null) partes.push('', `*Total: ${formatearMoneda(total, moneda)}*`)
   if (cliente.nombre.trim()) partes.push('', `Nombre: ${cliente.nombre.trim()}`)
   if (cliente.nota.trim()) partes.push(`Nota: ${cliente.nota.trim()}`)
-  return partes.join('\n')
+  return conOrigenWeb(partes.join('\n'))
 }
 
 export function formatearMoneda(valor: number, moneda: string): string {

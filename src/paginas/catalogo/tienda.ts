@@ -44,5 +44,6 @@ export function enlaceRed(red: Red, valor: string): string {
   if (red === 'instagram') return `https://instagram.com/${limpio}`
   if (red === 'facebook') return `https://facebook.com/${limpio}`
   if (red === 'tiktok') return `https://tiktok.com/@${limpio}`
-  return `https://wa.me/${limpio}`
+  const digitos = limpio.replace(/\D+/g, '')
+  return `https://wa.me/${digitos}?text=${encodeURIComponent('[Belly·Web]')}`
 }

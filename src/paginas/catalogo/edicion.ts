@@ -1,5 +1,5 @@
 import { createContext, useContext, type DragEvent } from 'react'
-import type { LugarBloque, TipoWidget } from '@/api'
+import type { BloqueHtmlVitrina, DatosWidget, LugarBloque, TipoWidget } from '@/api'
 import { WIDGETS } from '@/paginas/catalogo/bloques'
 
 export type Arrastre = { widget: TipoWidget } | { bloque: string }
@@ -11,6 +11,10 @@ export type EdicionTienda = {
   alElegir: (id: string) => void
   alArrastrar: (activo: boolean) => void
   alSoltar: (donde: LugarBloque, antes: string | undefined, arrastre: Arrastre | null) => void
+  alCambiarBloque: (id: string, cambio: Partial<BloqueHtmlVitrina>, datos?: Partial<DatosWidget>) => void
+  alMoverBloque: (id: string, paso: -1 | 1) => void
+  alDuplicarBloque: (id: string) => void
+  alBorrarBloque: (id: string) => void
 }
 
 const ContextoEdicion = createContext<EdicionTienda | null>(null)
