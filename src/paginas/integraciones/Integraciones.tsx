@@ -1,9 +1,9 @@
 import { useMemo, useState, type ComponentType } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { BookImage, CircleCheck, Search, Wallet } from 'lucide-react'
+import { BookImage, CircleCheck, Search, Smartphone, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { siWhatsapp } from 'simple-icons'
-import { leerCostosWhatsapp, leerEstadoWhatsapp, leerVitrina } from '@/api'
+import { leerAppAsesor, leerCostosWhatsapp, leerEstadoWhatsapp, leerVitrina } from '@/api'
 import { CabeceraPagina } from '@/components/CabeceraPagina'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -61,10 +61,17 @@ export function Integraciones() {
     enabled: admin,
     staleTime: 60_000,
   })
+  const appAsesor = useQuery({
+    queryKey: ['empresa', 'app-asesor'],
+    queryFn: leerAppAsesor,
+    enabled: admin,
+    staleTime: 60_000,
+  })
 
   const numero = estado.data?.numeros[0]
   const etiquetaNumero = numero?.telefono || costos.data?.numero || numero?.nombre || ''
   const catalogoPublicado = vitrina.data?.publicado === true
+  const appActiva = appAsesor.data?.activa !== false
 
   const canales = useMemo<Canal[]>(() => {
     const items: Canal[] = [
@@ -79,6 +86,18 @@ export function Integraciones() {
         etiquetaAccion: conectado ? 'Configurar' : 'Conectar',
         meta: etiquetaNumero || undefined,
         Icono: IconoMarcaWhatsapp,
+      },
+      {
+        id: 'app-asesor',
+        nombre: 'App Belly Asesor',
+        texto: 'App móvil para que tus asesores atiendan chats, cambien etapa y respondan desde el celular.',
+        categoria: 'mensajeria',
+        estado: appActiva ? 'conectado' : 'disponible',
+        busqueda: 'app asesor movil celular expo push notificaciones',
+        ruta: '/integraciones/app-asesor',
+        etiquetaAccion: 'Configurar',
+        meta: appActiva ? 'Acceso activo' : 'Acceso desactivado',
+        Icono: IconoAppAsesor,
       },
       {
         id: 'catalogo',
@@ -108,7 +127,7 @@ export function Integraciones() {
     }
 
     return items
-  }, [catalogoPublicado, conectado, etiquetaNumero])
+  }, [appActiva, catalogoPublicado, conectado, etiquetaNumero])
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase()
@@ -247,4 +266,8 @@ function IconoCatalogo({ className }: { className?: string }) {
 
 function IconoCostos({ className }: { className?: string }) {
   return <Wallet className={cn('size-5 text-lime-700', className)} strokeWidth={1.75} />
+}
+
+function IconoAppAsesor({ className }: { className?: string }) {
+  return <Smartphone className={cn('size-5 text-emerald-700', className)} strokeWidth={1.75} />
 }

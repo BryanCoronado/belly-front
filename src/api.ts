@@ -756,6 +756,24 @@ export async function guardarModoEmpresa(modo_ahorro: boolean): Promise<ModoEmpr
   return datos.data as ModoEmpresa
 }
 
+export type AppAsesorEstado = {
+  activa: boolean
+  version?: string
+  apk_disponible?: boolean
+  apk_url?: string | null
+  share_url?: string | null
+}
+
+export async function leerAppAsesor(): Promise<AppAsesorEstado> {
+  const datos = await solicitar('/v1/empresa/app-asesor', { method: 'GET', conToken: true })
+  return datos.data as AppAsesorEstado
+}
+
+export async function guardarAppAsesor(activa: boolean): Promise<AppAsesorEstado> {
+  const datos = await solicitar('/v1/empresa/app-asesor', { method: 'PUT', cuerpo: { activa }, conToken: true })
+  return datos.data as AppAsesorEstado
+}
+
 export type PlanBelly = {
   id: number
   clave: string

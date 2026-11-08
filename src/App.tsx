@@ -13,6 +13,7 @@ import { Chats } from '@/paginas/chat/Chats'
 import { Supervision } from '@/paginas/chat/Supervision'
 import { ConexionWhatsapp } from '@/paginas/integraciones/ConexionWhatsapp'
 import { CostosWhatsapp } from '@/paginas/integraciones/CostosWhatsapp'
+import { AppAsesor } from '@/paginas/integraciones/AppAsesor'
 import { Integraciones } from '@/paginas/integraciones/Integraciones'
 import { MiCatalogo } from '@/paginas/integraciones/MiCatalogo'
 import { CatalogoPublico } from '@/paginas/catalogo/CatalogoPublico'
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="/whatsapp" element={<Navigate to="/integraciones/whatsapp" replace />} />
           <Route path="/integraciones" element={<Integraciones />} />
           <Route path="/integraciones/whatsapp" element={<ConexionWhatsapp />} />
+          <Route path="/integraciones/app-asesor" element={<AppAsesor />} />
           <Route path="/integraciones/costos" element={<CostosWhatsapp />} />
           <Route path="/catalogo" element={<MiCatalogo />} />
           <Route path="/catalogo/lab" element={<ConstructorCatalogo />} />
