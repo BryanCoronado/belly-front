@@ -149,12 +149,14 @@ function PanelCuenta() {
   )
 }
 
+const EASE = [0.22, 1, 0.36, 1] as const
+
 const tarjeta = {
   oculto: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.35, ease: EASE },
   },
 }
 
@@ -186,7 +188,7 @@ function CupoCard({
       )}
       initial={reducir ? false : { opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay, duration: 0.4, ease: EASE }}
     >
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -209,7 +211,7 @@ function CupoCard({
           )}
           initial={reducir ? { width: `${pct}%` } : { width: 0 }}
           animate={{ width: `${tope > 0 ? pct : 6}%` }}
-          transition={{ delay: delay + 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: delay + 0.15, duration: 0.7, ease: EASE }}
         />
       </div>
 
