@@ -1,6 +1,6 @@
 import { useMemo, useState, type ComponentType } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { BookImage, CircleCheck, Search, Smartphone, Wallet } from 'lucide-react'
+import { BookImage, CircleCheck, Download, Search, Share2, Smartphone, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { siWhatsapp } from 'simple-icons'
 import { leerAppAsesor, leerCostosWhatsapp, leerEstadoWhatsapp, leerVitrina } from '@/api'
@@ -27,6 +27,7 @@ type Canal = {
   ruta: string
   etiquetaAccion: string
   meta?: string
+  apkUrl?: string | null
   Icono: ComponentType<{ className?: string }>
 }
 
@@ -93,11 +94,18 @@ export function Integraciones() {
         texto: 'App móvil para que tus asesores atiendan chats, cambien etapa y respondan desde el celular.',
         categoria: 'mensajeria',
         estado: appActiva ? 'conectado' : 'disponible',
-        busqueda: 'app asesor movil celular expo push notificaciones',
+        busqueda: 'app asesor movil celular expo push notificaciones apk descargar',
         ruta: '/integraciones/app-asesor',
         etiquetaAccion: 'Configurar',
-        meta: appActiva ? 'Acceso activo' : 'Acceso desactivado',
+        meta: appAsesor.data?.apk_disponible
+          ? appActiva
+            ? 'APK lista · acceso activo'
+            : 'APK lista · acceso off'
+          : appActiva
+            ? 'Sube el APK para compartir'
+            : 'Acceso desactivado',
         Icono: IconoAppAsesor,
+        apkUrl: appAsesor.data?.apk_disponible ? appAsesor.data.apk_url ?? appAsesor.data.share_url ?? null : null,
       },
       {
         id: 'catalogo',
@@ -127,7 +135,7 @@ export function Integraciones() {
     }
 
     return items
-  }, [appActiva, catalogoPublicado, conectado, etiquetaNumero])
+  }, [appActiva, appAsesor.data, catalogoPublicado, conectado, etiquetaNumero])
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase()
@@ -204,6 +212,20 @@ export function Integraciones() {
 function TarjetaCanal({ canal }: { canal: Canal }) {
   const { Icono } = canal
 
+  const compartirApk = async () => {
+    if (!canal.apkUrl) return
+    const texto = `Instala Belly Asesor:\n${canal.apkUrl}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Belly Asesor', text: texto, url: canal.apkUrl })
+        return
+      }
+      await navigator.clipboard.writeText(canal.apkUrl)
+    } catch {
+      /* canceló */
+    }
+  }
+
   return (
     <article className="superficie group relative flex min-h-[11.5rem] flex-col gap-4 overflow-hidden p-5 sm:p-6">
       <div className="flex items-start justify-between gap-3">
@@ -220,7 +242,19 @@ function TarjetaCanal({ canal }: { canal: Canal }) {
         </span>
       </div>
 
-      <div className="mt-auto flex items-center justify-end pt-1">
+      <div className="mt-auto flex flex-wrap items-center justify-end gap-2 pt-1">
+        {canal.apkUrl ? (
+          <>
+            <a href={canal.apkUrl} className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'gap-1.5')}>
+              <Download className="size-3.5" />
+              Descargar
+            </a>
+            <button type="button" onClick={() => void compartirApk()} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5 bg-background')}>
+              <Share2 className="size-3.5" />
+              Compartir
+            </button>
+          </>
+        ) : null}
         <Link to={canal.ruta} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'bg-background')}>
           {canal.etiquetaAccion}
         </Link>

@@ -762,6 +762,7 @@ export type AppAsesorEstado = {
   apk_disponible?: boolean
   apk_url?: string | null
   share_url?: string | null
+  apk_tamano?: number | null
 }
 
 export async function leerAppAsesor(): Promise<AppAsesorEstado> {
@@ -771,6 +772,14 @@ export async function leerAppAsesor(): Promise<AppAsesorEstado> {
 
 export async function guardarAppAsesor(activa: boolean): Promise<AppAsesorEstado> {
   const datos = await solicitar('/v1/empresa/app-asesor', { method: 'PUT', cuerpo: { activa }, conToken: true })
+  return datos.data as AppAsesorEstado
+}
+
+export async function subirApkAsesor(archivo: File, version?: string): Promise<AppAsesorEstado> {
+  const formulario = new FormData()
+  formulario.append('apk', archivo)
+  if (version?.trim()) formulario.append('version', version.trim())
+  const datos = await solicitar('/v1/empresa/app-asesor/apk', { method: 'POST', formulario, conToken: true })
   return datos.data as AppAsesorEstado
 }
 
