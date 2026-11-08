@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Bell, BellOff, CircleCheckBig, MessageCircleMore } from 'lucide-react'
+import { ArrowDown, ArrowLeft, Bell, BellOff, CircleCheckBig, MessageCircleMore, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { abrirChat, enviarMensaje, leerConversacion, leerMensajes, type MensajeChat } from '@/api'
 import { FichaCliente } from '../clientes/FichaCliente'
@@ -10,8 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { avisoError, avisoInfo } from '@/lib/avisos'
 import { alternarSilencio, chatSilenciado } from '@/lib/preferencias-aviso'
 import { useAvisos } from '@/hooks/use-avisos'
+import { usePantallaAncha } from '@/hooks/use-pantalla-ancha'
 import { cn } from '@/lib/utils'
 import { BurbujaMensaje, type CitaMensaje } from './BurbujaMensaje'
+import { PanelCliente } from './PanelCliente'
 import { DialogoFinalizar, DialogoPlantilla } from './Dialogos'
 import { claveDia, etiquetaDia, iniciales, leerFecha, nombreContacto, ventanaAbierta } from './formato'
 import { aFormatoWhatsapp } from './textoWhatsapp'
@@ -20,6 +22,7 @@ import { ResumenBot } from './ResumenBot'
 
 const ESTADO_FINALIZADA = 2
 const DISTANCIA_PEGADO_ABAJO = 120
+const CLAVE_INFO = 'belly.chat.info'
 
 type Props = {
   idConversacion: number
@@ -117,9 +120,25 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
   const chat = conversacion.data
   const finalizada = chat?.id_estado === ESTADO_FINALIZADA
   const nombre = chat ? nombreContacto(chat) : ''
+  const ultimoMensajeCliente = [...(mensajes.data ?? [])].reverse().find((mensaje) => mensaje.contesta === 'cliente')?.created_at ?? null
+  const ventana = mensajes.data ? ventanaAbierta(mensajes.data) : null
+
+  const [infoAbierta, setInfoAbierta] = useState(() => localStorage.getItem(CLAVE_INFO) !== '0')
+  const pantallaAncha = usePantallaAncha()
+  const [infoMovil, setInfoMovil] = useState(false)
+  const verInfo = pantallaAncha ? infoAbierta : infoMovil
+  const alternarInfo = (abrir = !verInfo) => {
+    if (pantallaAncha) {
+      localStorage.setItem(CLAVE_INFO, abrir ? '1' : '0')
+      setInfoAbierta(abrir)
+    } else {
+      setInfoMovil(abrir)
+    }
+  }
 
   return (
-    <section className={cn('flex h-full min-h-0 flex-col', className)}>
+    <div className={cn('flex h-full min-h-0 min-w-0', className)}>
+    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
       <header
         className="flex min-w-0 shrink-0 items-center gap-1.5 border-b border-[var(--wa-borde)] bg-[var(--wa-panel)] px-2 py-2 sm:gap-3 sm:px-3 sm:py-2.5"
         data-tour="cabecera-chat"
@@ -138,20 +157,39 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
             <button
               type="button"
               className="-ml-1 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-0.5 text-left hover:bg-black/5"
-              onClick={() => chat.id_cliente && setPerfilAbierto(true)}
-              title="Ver perfil del cliente"
+              onClick={() => chat.id_cliente && alternarInfo()}
+              title="Ver datos del cliente"
             >
               <Avatar className="size-10">
                 <AvatarFallback className="bg-[#dfe5e7] text-sm font-medium text-[#54656f] dark:bg-[#2a3942] dark:text-[#aebac1]">{iniciales(nombre)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-medium">{nombre}</p>
-                <p className="truncate text-[13px] text-[var(--wa-muted)]">
-                  {chat.telefono ? `+${String(chat.telefono).replace(/^\+/, '')}` : chat.nombre_app || 'WhatsApp'}
+                <p className="flex min-w-0 items-center gap-1.5 text-[13px] text-[var(--wa-muted)]">
+                  <span className="truncate">
+                    {chat.etapa_nombre ?? (chat.telefono ? `+${String(chat.telefono).replace(/^\+/, '')}` : chat.nombre_app || 'WhatsApp')}
+                  </span>
+                  {chat.etapa_nombre && chat.etapa_color ? (
+                    <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: chat.etapa_color }} />
+                  ) : null}
                 </p>
               </div>
             </button>
             <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
+            {ventana !== null && !finalizada ? (
+              <span
+                className={cn(
+                  'hidden items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium lg:inline-flex',
+                  ventana
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                    : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+                )}
+                title={ventana ? 'El cliente escribió hace menos de 24 h: puedes responder libre' : 'Pasaron 24 h: solo puedes enviar plantillas'}
+              >
+                <span className={cn('size-1.5 rounded-full', ventana ? 'bg-emerald-500' : 'bg-slate-400')} />
+                {ventana ? 'Ventana abierta' : 'Solo plantillas'}
+              </span>
+            ) : null}
             {acciones}
             <Button
               variant="ghost"
@@ -166,6 +204,19 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
             >
               {silenciado ? <BellOff /> : <Bell />}
             </Button>
+            {chat.id_cliente ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn('text-[var(--wa-muted)] hover:bg-black/5', verInfo && 'bg-black/5 text-[var(--wa-texto)]')}
+                aria-label={verInfo ? 'Ocultar datos del cliente' : 'Ver datos del cliente'}
+                aria-pressed={verInfo}
+                title="Datos del cliente"
+                onClick={() => alternarInfo()}
+              >
+                {verInfo ? <PanelRightClose /> : <PanelRightOpen />}
+              </Button>
+            ) : null}
             {finalizada ? (
               <span className="hidden rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[var(--wa-muted)] sm:inline">
                 Finalizada
@@ -252,6 +303,17 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         </>
       ) : null}
     </section>
+    {chat?.id_cliente ? (
+      <PanelCliente
+        idCliente={Number(chat.id_cliente)}
+        ajustes={ajustes.data}
+        ultimoMensajeCliente={ultimoMensajeCliente}
+        abierto={verInfo}
+        alCerrar={() => alternarInfo(false)}
+        alEditarFicha={() => setPerfilAbierto(true)}
+      />
+    ) : null}
+    </div>
   )
 }
 
@@ -266,20 +328,35 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
   const contenedor = useRef<HTMLDivElement>(null)
   const pegadoAbajo = useRef(true)
   const total = mensajes?.length ?? 0
+  const [lejos, setLejos] = useState(false)
+  const [nuevos, setNuevos] = useState(0)
+  const totalPrevio = useRef(total)
 
   useLayoutEffect(() => {
     const elemento = contenedor.current
     if (elemento && pegadoAbajo.current) {
       elemento.scrollTop = elemento.scrollHeight
+    } else if (total > totalPrevio.current) {
+      setNuevos((n) => n + total - totalPrevio.current)
     }
+    totalPrevio.current = total
   }, [total])
 
+  const irAbajo = () => {
+    const elemento = contenedor.current
+    elemento?.scrollTo({ top: elemento.scrollHeight, behavior: 'smooth' })
+  }
+
   return (
+    <div className="relative flex min-h-0 flex-1 flex-col">
     <div
       ref={contenedor}
       onScroll={(evento) => {
         const elemento = evento.currentTarget
-        pegadoAbajo.current = elemento.scrollHeight - elemento.scrollTop - elemento.clientHeight < DISTANCIA_PEGADO_ABAJO
+        const cerca = elemento.scrollHeight - elemento.scrollTop - elemento.clientHeight < DISTANCIA_PEGADO_ABAJO
+        pegadoAbajo.current = cerca
+        setLejos(!cerca)
+        if (cerca) setNuevos(0)
       }}
       className="chat-wa-fondo min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 sm:px-8 lg:px-16"
       data-tour="mensajes-chat"
@@ -325,6 +402,22 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
         })}
         </>
       )}
+    </div>
+    {lejos ? (
+      <button
+        type="button"
+        onClick={irAbajo}
+        className="absolute right-4 bottom-4 flex size-10 items-center justify-center rounded-full bg-white text-[var(--wa-muted)] shadow-md ring-1 ring-black/5 transition-transform hover:scale-105"
+        aria-label="Ir al último mensaje"
+      >
+        <ArrowDown className="size-5" />
+        {nuevos > 0 ? (
+          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--wa-badge)] px-1 text-[11px] font-semibold text-white">
+            {nuevos > 99 ? '99+' : nuevos}
+          </span>
+        ) : null}
+      </button>
+    ) : null}
     </div>
   )
 }

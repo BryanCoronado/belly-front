@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CheckCheck, ListFilter, MessagesSquare, Search, X } from 'lucide-react'
+import { CheckCheck, Clock3, ListFilter, MessagesSquare, Search, X } from 'lucide-react'
 import { useDeferredValue, useState, type ReactNode } from 'react'
 import { leerChats, leerContadoresChat, type BandejaChat, type ConversacionChat, type FiltrosChat } from '@/api'
 import { AvisoMeta } from '@/components/layout/AvisoMeta'
@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { useAjustesCrm } from '../clientes/crm'
-import { fechaLista, iniciales, nombreContacto, vistaPrevia } from './formato'
+import { fechaLista, iniciales, leerFecha, nombreContacto, vistaPrevia } from './formato'
 
 const BANDEJAS: { id: BandejaChat; titulo: string }[] = [
   { id: 'activos', titulo: 'Activos' },
@@ -188,6 +188,7 @@ type PropsItem = { chat: ConversacionChat; activo: boolean; alElegir: () => void
 export function ItemChat({ chat, activo, alElegir, detalle }: PropsItem) {
   const nombre = nombreContacto(chat)
   const noLeidos = Number(chat.mensajes_no_leidos) || 0
+  const espera = chat.id_estado !== 2 && chat.ultimo_mensaje_contesta === 'cliente' ? tiempoEspera(chat.ultimo_mensaje_fecha) : null
 
   return (
     <li>
@@ -232,8 +233,17 @@ export function ItemChat({ chat, activo, alElegir, detalle }: PropsItem) {
               </span>
             ) : null}
           </div>
-          {chat.etapa_nombre || chat.tipo_nombre || chat.etiqueta_nombre ? (
+          {espera || chat.etapa_nombre || chat.tipo_nombre || chat.etiqueta_nombre ? (
             <div className="mt-1 flex flex-wrap gap-1">
+              {espera ? (
+                <span
+                  className={cn('inline-flex items-center gap-0.5 rounded px-1.5 text-[10px] font-medium leading-4', espera.clase)}
+                  title="Tiempo que el cliente lleva esperando respuesta"
+                >
+                  <Clock3 className="size-2.5" />
+                  {espera.texto}
+                </span>
+              ) : null}
               {chat.etapa_nombre ? <Chip color={chat.etapa_color}>{chat.etapa_nombre}</Chip> : null}
               {chat.tipo_nombre ? <Chip color={chat.tipo_color}>{chat.tipo_nombre}</Chip> : null}
               {chat.etiqueta_nombre ? <Chip color={chat.etiqueta_color}>{chat.etiqueta_nombre}</Chip> : null}
@@ -260,6 +270,21 @@ export function CargandoLista() {
       ))}
     </div>
   )
+}
+
+function tiempoEspera(valor: string | null): { texto: string; clase: string } | null {
+  const fecha = leerFecha(valor)
+  if (!fecha) return null
+  const minutos = Math.max(0, Math.floor((Date.now() - fecha.getTime()) / 60_000))
+  const texto =
+    minutos < 1 ? 'Ahora' : minutos < 60 ? `Espera ${minutos} min` : minutos < 1440 ? `Espera ${Math.floor(minutos / 60)} h` : `Espera ${Math.floor(minutos / 1440)} d`
+  const clase =
+    minutos < 15
+      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+      : minutos < 60
+        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
+        : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'
+  return { texto, clase }
 }
 
 const CLASE_FILTRO =

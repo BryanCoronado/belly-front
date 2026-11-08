@@ -126,7 +126,7 @@ export function Productos() {
 
   const familias = useQuery({ queryKey: CLAVE_FAMILIAS, queryFn: leerFamilias })
   const productos = useQuery({ queryKey: CLAVE_PRODUCTOS, queryFn: leerProductos })
-  const pedidos = useQuery({ queryKey: ['catalogo-pedidos'], queryFn: leerPedidosCatalogo })
+  const pedidos = useQuery({ queryKey: ['catalogo-pedidos'], queryFn: () => leerPedidosCatalogo() })
 
   const lista = productos.data
   const total = lista?.length ?? 0

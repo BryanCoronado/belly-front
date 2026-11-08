@@ -1727,8 +1727,9 @@ export type PedidoCatalogo = {
   created_at: string | null
 }
 
-export async function leerPedidosCatalogo(): Promise<PedidoCatalogo[]> {
-  const datos = await solicitar(`${RUTA_CATALOGO}/pedidos`, { method: 'GET', conToken: true })
+export async function leerPedidosCatalogo(idCliente?: number): Promise<PedidoCatalogo[]> {
+  const filtro = idCliente ? `?id_cliente=${idCliente}&limite=20` : ''
+  const datos = await solicitar(`${RUTA_CATALOGO}/pedidos${filtro}`, { method: 'GET', conToken: true })
   return (datos.data as PedidoCatalogo[] | undefined) ?? []
 }
 
