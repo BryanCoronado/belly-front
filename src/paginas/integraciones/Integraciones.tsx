@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useWhatsappConectado } from '@/hooks/use-whatsapp'
 import { cn } from '@/lib/utils'
 import { esAdministrador, leerSesion } from '@/sesion'
+import { urlApkAsesor } from './apkAsesor'
 
 type Categoria = 'todos' | 'mensajeria' | 'catalogo' | 'costos'
 
@@ -97,15 +98,9 @@ export function Integraciones() {
         busqueda: 'app asesor movil celular expo push notificaciones apk descargar',
         ruta: '/integraciones/app-asesor',
         etiquetaAccion: 'Configurar',
-        meta: appAsesor.data?.apk_disponible
-          ? appActiva
-            ? 'APK lista · acceso activo'
-            : 'APK lista · acceso off'
-          : appActiva
-            ? 'Sube el APK para compartir'
-            : 'Acceso desactivado',
+        meta: appActiva ? 'APK lista · acceso activo' : 'APK lista · acceso off',
         Icono: IconoAppAsesor,
-        apkUrl: appAsesor.data?.apk_disponible ? appAsesor.data.apk_url ?? appAsesor.data.share_url ?? null : null,
+        apkUrl: urlApkAsesor(),
       },
       {
         id: 'catalogo',

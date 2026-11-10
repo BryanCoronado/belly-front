@@ -75,7 +75,10 @@ export function ConfiguracionFlujo({ abierto, alCerrar, datos, alCambiar }: Prop
               valor={audienciaDe(datos)}
               alCambiar={(v) => poner({ audiencia: v })}
               opciones={AUDIENCIAS.map((a) => ({ valor: a.valor, etiqueta: a.etiqueta }))}
-              ayuda={AUDIENCIAS.find((a) => a.valor === audienciaDe(datos))?.ayuda}
+              ayuda={
+                (AUDIENCIAS.find((a) => a.valor === audienciaDe(datos))?.ayuda ?? '') +
+                ' Si en Reparto usas «Usar respuestas automáticas», el bot arranca igual (también con clientes que ya tuvieron chats cerrados).'
+              }
             />
             <Seleccion
               etiqueta="¿Cuántas veces con la misma persona?"
