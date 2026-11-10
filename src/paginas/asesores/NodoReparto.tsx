@@ -50,7 +50,7 @@ export function NodoReparto({ id, data, selected }: NodeProps<NodoRepartoRF>) {
 
       {entrega ? (
         <p className="-mt-1 px-3 pb-2 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
-          {data.tipo === 'agente_ia' ? 'Atiende el chat' : 'Asigna el chat aquí'}
+          {data.tipo === 'agente_ia' ? 'Atiende el chat' : data.tipo === 'flujo_bot' ? 'El bot responde primero' : 'Asigna el chat aquí'}
         </p>
       ) : null}
 

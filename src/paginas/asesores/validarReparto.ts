@@ -9,7 +9,7 @@ export const MAX_PASOS = 80
 
 const HORA = /^([01]?\d|2[0-3]):[0-5]\d$/
 const DE_DECISION: TipoNodoReparto[] = ['horario', 'turnos_grupos', 'cliente', 'origen', 'palabras', 'dividir']
-const ENTREGAN: TipoNodoReparto[] = ['repartir', 'persona', 'agente_ia']
+const ENTREGAN: TipoNodoReparto[] = ['repartir', 'persona', 'flujo_bot', 'agente_ia']
 
 /** Problemas de un horario suelto, para mostrarlos junto al campo mientras se edita. */
 export function problemasTramo(tramo: TramoHorario, tramos: TramoHorario[]): string[] {
@@ -90,6 +90,15 @@ export function validarReparto(definicion: DefinicionReparto, catalogo: Catalogo
         if (alcanzable && !conectadas.has(`${nodo.id}:humano`)) ojo('«Cuando pase a una persona» no va a ningún paso: esos chats le llegarán a la persona de respaldo.')
         break
       }
+      case 'flujo_bot': {
+        if (!catalogo.personas.some((p) => p.id === Number(d.id_usuario))) mal('Elige a quién se asigna el chat mientras responde el bot.')
+        const flujos = catalogo.flujos ?? []
+        const idFlujo = Number(d.id_flujo ?? 0)
+        if (idFlujo > 0 && !flujos.some((f) => f.id === idFlujo)) mal('El flujo elegido ya no existe. Elige otro o «Cualquier flujo activo».')
+        else if (idFlujo > 0 && flujos.some((f) => f.id === idFlujo && !f.activo)) ojo('Ese flujo está pausado: actívalo en Respuestas automáticas o elige otro.')
+        else if (!flujos.some((f) => f.activo)) ojo('No hay ningún flujo activo. Activa uno en Respuestas automáticas para que el bot conteste.')
+        break
+      }
     }
 
     if (nodo.tipo === 'inicio') {
@@ -111,7 +120,7 @@ export function validarReparto(definicion: DefinicionReparto, catalogo: Catalogo
   }
 
   if (inicios[0] && conectadas.has(`${inicios[0].id}:siguiente`) && !entregan) {
-    avisos.push({ nodo: null, mensaje: 'Ningún camino termina en «Repartir», «A una persona» o «Asistente IA»: los chats nuevos irán a la persona de respaldo.' })
+    avisos.push({ nodo: null, mensaje: 'Ningún camino termina en «Repartir», «A una persona», «Usar respuestas automáticas» o «Asistente IA»: los chats nuevos irán a la persona de respaldo.' })
   }
 
   const enlaces = validarEnlacesTurnoReparto(definicion, catalogo, alcanzables)

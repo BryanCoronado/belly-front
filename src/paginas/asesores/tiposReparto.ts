@@ -1,4 +1,5 @@
 import {
+  Bot,
   CalendarClock,
   History,
   Megaphone,
@@ -15,7 +16,9 @@ import {
 import type { EstrategiaReparto, GrupoAtencion, RepartoCompleto, ResultadoPrueba, TipoNodoReparto, TramoHorario } from '@/api'
 import { nuevoId, porcentajeA, resumenDias } from '@/lib/editorPasos'
 
-export type Catalogo = Pick<RepartoCompleto, 'grupos' | 'asesores' | 'personas' | 'agentes'>
+export type Catalogo = Pick<RepartoCompleto, 'grupos' | 'asesores' | 'personas' | 'agentes'> & {
+  flujos?: { id: number; nombre: string; activo: boolean }[]
+}
 
 type Meta = {
   titulo: string
@@ -115,17 +118,25 @@ export const META: Record<TipoNodoReparto, Meta> = {
     cabecera: 'bg-fuchsia-600 text-white',
     suave: 'bg-fuchsia-100 text-fuchsia-700',
   },
+  flujo_bot: {
+    titulo: 'Usar respuestas automáticas',
+    descripcion: 'El bot contesta primero; el chat queda asignado a una persona',
+    icono: Bot,
+    color: '#059669',
+    cabecera: 'bg-emerald-600 text-white',
+    suave: 'bg-emerald-100 text-emerald-800',
+  },
 }
 
 export const GRUPOS_PASOS: { titulo: string; pasos: TipoNodoReparto[] }[] = [
   { titulo: 'Decidir el camino', pasos: ['asesor_previo', 'turnos_grupos', 'cliente', 'origen', 'palabras', 'dividir'] },
-  { titulo: 'Quién atiende', pasos: ['repartir', 'persona', 'agente_ia'] },
+  { titulo: 'Quién atiende', pasos: ['repartir', 'persona', 'flujo_bot', 'agente_ia'] },
 ]
 
 export const PASOS_AGREGABLES = GRUPOS_PASOS.flatMap((grupo) => grupo.pasos)
 
 /** Pasos que entregan el chat; su salida solo se usa si no pueden atender. */
-export const PASOS_FINALES: TipoNodoReparto[] = ['asesor_previo', 'repartir', 'persona', 'agente_ia']
+export const PASOS_FINALES: TipoNodoReparto[] = ['asesor_previo', 'repartir', 'persona', 'flujo_bot', 'agente_ia']
 
 export const ESTRATEGIAS: { valor: EstrategiaReparto; titulo: string; ayuda: string }[] = [
   { valor: 'equitativo', titulo: 'Parejo', ayuda: 'Al asesor que recibió menos chats hoy.' },
@@ -154,6 +165,8 @@ export function datosIniciales(tipo: TipoNodoReparto): Record<string, unknown> {
       return { id_usuario: null }
     case 'agente_ia':
       return { id_agente: null }
+    case 'flujo_bot':
+      return { id_usuario: null, id_flujo: null }
     case 'inicio':
       return { id_usuario_respaldo: null }
     default:
@@ -216,6 +229,7 @@ export function salidasDe(tipo: TipoNodoReparto, datos: Record<string, unknown>,
     }
     case 'repartir':
     case 'persona':
+    case 'flujo_bot':
       return [{ id: 'nadie', etiqueta: 'Si nadie está disponible', secundaria: true }]
     case 'agente_ia':
       return [{ id: 'humano', etiqueta: 'Cuando pase a una persona' }]
@@ -265,6 +279,13 @@ export function resumenPaso(tipo: TipoNodoReparto, datos: Record<string, unknown
       if (!agente) return 'Elige qué asistente atiende.'
       return agente.listo ? agente.nombre : `${agente.nombre} · ${agente.activo ? 'falta conectar OpenAI' : 'apagado'}`
     }
+    case 'flujo_bot': {
+      const persona = nombrePorId(catalogo.personas, datos.id_usuario)
+      const flujoId = Number(datos.id_flujo ?? 0)
+      const flujo = flujoId > 0 ? (catalogo.flujos ?? []).find((f) => f.id === flujoId) : null
+      if (!persona) return 'Elige a quién se asigna el chat mientras responde el bot.'
+      return flujo ? `Bot «${flujo.nombre}» · asignado a ${persona.nombre}` : `Bot activo · asignado a ${persona.nombre}`
+    }
   }
 }
 
@@ -279,6 +300,8 @@ export function explicarResultado(resultado: ResultadoPrueba): string {
         : `Le tocaría a ${quien} entre todos los asesores del reparto.`
     case 'persona':
       return `Le llegaría directo a ${quien}.`
+    case 'flujo_bot':
+      return `Respondería el bot de respuestas automáticas y el chat quedaría asignado a ${quien}.`
     case 'agente':
       return `Lo atendería el asistente ${quien}. Cuando pase a una persona, sigue por su salida.`
     case 'respaldo':

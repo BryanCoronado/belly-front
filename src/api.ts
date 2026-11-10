@@ -1205,6 +1205,7 @@ export type TipoNodoReparto =
   | 'repartir'
   | 'persona'
   | 'agente_ia'
+  | 'flujo_bot'
 
 export type TramoHorario = { id: string; nombre: string; dias: number[]; desde: string; hasta: string }
 
@@ -1260,6 +1261,7 @@ export type RepartoCompleto = {
   asesores: { id: number; nombre: string; activo: boolean }[]
   personas: { id: number; nombre: string; es_admin: boolean }[]
   agentes: ResumenAgente[]
+  flujos?: { id: number; nombre: string; activo: boolean }[]
 }
 
 export type PruebaReparto = {
@@ -1271,12 +1273,13 @@ export type PruebaReparto = {
 }
 
 export type ResultadoPrueba = {
-  tipo: 'asesor' | 'agente' | 'ninguno'
+  tipo: 'asesor' | 'agente' | 'flujo' | 'ninguno'
   id_usuario: number | null
   id_agente: number | null
+  id_flujo?: number | null
   nombre: string | null
   nodo: string | null
-  motivo: 'asesor_previo' | 'repartir' | 'persona' | 'agente' | 'respaldo' | 'nadie'
+  motivo: 'asesor_previo' | 'repartir' | 'persona' | 'flujo_bot' | 'agente' | 'respaldo' | 'nadie'
   grupo_reparto?: string | null
   ruta: string[]
   pasos: string[]

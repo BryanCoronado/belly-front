@@ -8,7 +8,7 @@ export type Resaltado = { nodos: Set<string>; pasos: Set<string> }
 export type ValorContextoReparto = { catalogo: Catalogo; resaltado: Resaltado | null }
 
 export const ContextoReparto = createContext<ValorContextoReparto>({
-  catalogo: { grupos: [], asesores: [], personas: [], agentes: [] },
+  catalogo: { grupos: [], asesores: [], personas: [], agentes: [], flujos: [] },
   resaltado: null,
 })
 

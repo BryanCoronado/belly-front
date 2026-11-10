@@ -300,6 +300,47 @@ function Formulario({
         </>
       )
     }
+
+    case 'flujo_bot': {
+      const flujos = catalogo.flujos ?? []
+      const activos = flujos.filter((f) => f.activo)
+      return (
+        <>
+          <Seleccion
+            etiqueta="¿Quién ve el chat mientras responde el bot?"
+            valor={String(datos.id_usuario ?? '')}
+            alCambiar={(v) => poner({ id_usuario: v ? Number(v) : null })}
+            opciones={[
+              { valor: '', etiqueta: 'Elige una persona…' },
+              ...catalogo.personas.map((p) => ({ valor: String(p.id), etiqueta: `${p.nombre}${p.es_admin ? ' (administrador)' : ''}` })),
+            ]}
+          />
+          <Seleccion
+            etiqueta="¿Qué flujo de respuestas usa?"
+            valor={String(datos.id_flujo ?? '')}
+            alCambiar={(v) => poner({ id_flujo: v ? Number(v) : null })}
+            opciones={[
+              { valor: '', etiqueta: 'Cualquier flujo activo' },
+              ...flujos.map((f) => ({
+                valor: String(f.id),
+                etiqueta: f.activo ? f.nombre : `${f.nombre} (pausado)`,
+              })),
+            ]}
+          />
+          {activos.length === 0 ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              No hay flujos activos. Activa uno en Respuestas automáticas o el bot no contestará.
+            </p>
+          ) : null}
+          <Nota>
+            Así no se pisan: el bot habla primero (menú, opciones, etc.) y el chat queda asignado a esa persona. Cuando el flujo llega a «Pasar a un asesor», sigue esa persona.
+          </Nota>
+          <Link to="/automatizacion" className="inline-block text-xs font-medium text-emerald-700 underline-offset-2 hover:underline">
+            Ir a Respuestas automáticas
+          </Link>
+        </>
+      )
+    }
   }
 }
 
