@@ -756,6 +756,28 @@ export async function guardarModoEmpresa(modo_ahorro: boolean): Promise<ModoEmpr
   return datos.data as ModoEmpresa
 }
 
+export type AppAsesorDispositivo = {
+  id: number
+  plataforma: string
+  nombre?: string | null
+  visto_en?: string | null
+  conectado: boolean
+}
+
+export type AppAsesorUsuario = {
+  id: number
+  usuario: string
+  nombres?: string
+  apellidos?: string
+  nombre: string
+  foto?: string | null
+  activo: boolean
+  app_bloqueada: boolean
+  conectado: boolean
+  ultimo_visto?: string | null
+  dispositivos: AppAsesorDispositivo[]
+}
+
 export type AppAsesorEstado = {
   activa: boolean
   version?: string
@@ -763,6 +785,8 @@ export type AppAsesorEstado = {
   apk_url?: string | null
   share_url?: string | null
   apk_tamano?: number | null
+  conectados?: number
+  usuarios?: AppAsesorUsuario[]
 }
 
 export async function leerAppAsesor(): Promise<AppAsesorEstado> {
@@ -770,8 +794,22 @@ export async function leerAppAsesor(): Promise<AppAsesorEstado> {
   return datos.data as AppAsesorEstado
 }
 
+export async function leerAccesosAppAsesor(): Promise<AppAsesorEstado> {
+  const datos = await solicitar('/v1/empresa/app-asesor/accesos', { method: 'GET', conToken: true })
+  return datos.data as AppAsesorEstado
+}
+
 export async function guardarAppAsesor(activa: boolean): Promise<AppAsesorEstado> {
   const datos = await solicitar('/v1/empresa/app-asesor', { method: 'PUT', cuerpo: { activa }, conToken: true })
+  return datos.data as AppAsesorEstado
+}
+
+export async function guardarAccesoAppAsesor(idUsuario: number, bloqueada: boolean): Promise<AppAsesorEstado> {
+  const datos = await solicitar(`/v1/empresa/app-asesor/usuarios/${idUsuario}/acceso`, {
+    method: 'PUT',
+    cuerpo: { bloqueada },
+    conToken: true,
+  })
   return datos.data as AppAsesorEstado
 }
 

@@ -98,7 +98,11 @@ export function Integraciones() {
         busqueda: 'app asesor movil celular expo push notificaciones apk descargar',
         ruta: '/integraciones/app-asesor',
         etiquetaAccion: 'Configurar',
-        meta: appActiva ? 'APK lista · acceso activo' : 'APK lista · acceso off',
+        meta: appActiva
+          ? appAsesor.data?.conectados
+            ? `APK lista · ${appAsesor.data.conectados} en línea`
+            : 'APK lista · acceso activo'
+          : 'APK lista · acceso off',
         Icono: IconoAppAsesor,
         apkUrl: urlApkAsesor(),
       },
