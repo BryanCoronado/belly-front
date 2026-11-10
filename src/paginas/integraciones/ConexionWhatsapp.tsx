@@ -120,7 +120,14 @@ export function ConexionWhatsapp() {
         }
       />
 
-      {!datos ? (
+      {estado.isError ? (
+        <Aviso>
+          No se pudo cargar WhatsApp: {estado.error instanceof Error ? estado.error.message : 'error de red o API'}.
+          <Button type="button" variant="outline" size="sm" className="ml-3" onClick={() => void estado.refetch()}>
+            Reintentar
+          </Button>
+        </Aviso>
+      ) : !datos ? (
         <div className="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
           <Skeleton className="h-16 rounded-xl lg:h-52" />
           <Skeleton className="h-80 rounded-xl sm:h-96" />
