@@ -9,8 +9,10 @@ import {
   MapPin,
   Mic,
   Paperclip,
+  Pause,
   Plus,
   Sticker,
+  Trash2,
   Video,
   X,
   Zap,
@@ -34,6 +36,7 @@ import { useModoAhorro } from '@/lib/modo-ahorro'
 import { FormularioRespuesta } from '@/paginas/plantillas/FormularioRespuesta'
 import { ListaProductosCatalogo } from '@/paginas/catalogo/SelectorCatalogo'
 import { CapturaCamara } from './CapturaCamara'
+import { OndaGrabacion } from './OndaGrabacion'
 import { PanelExpresiones } from './PanelExpresiones'
 import { cn } from '@/lib/utils'
 import { IconoAdjuntar, IconoEnviar, IconoMicrofono, IconoSticker } from './iconosWa'
@@ -403,21 +406,36 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
       ) : null}
 
       {grabando ? (
-        <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm shadow-sm">
-          <span className="size-2.5 animate-pulse rounded-full bg-red-500" />
-          <span className="tabular-nums text-[var(--wa-texto)]">{formatoTiempo(segundos)}</span>
-          <span className="hidden text-[var(--wa-muted)] sm:inline">Soltar para enviar</span>
-          <div className="ml-auto flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => detenerGrabacion(true)}>
-              Cancelar
-            </Button>
-            <Button size="sm" className="bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)]" onClick={() => detenerGrabacion(false)}>
-              Enviar
-            </Button>
-          </div>
+        <div className="flex min-w-0 items-center gap-1 rounded-[26px] bg-[var(--wa-cabecera)] px-2 py-2 shadow-[0_1px_2px_rgba(11,20,26,0.12)]">
+          <button
+            type="button"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full text-[var(--wa-muted)] hover:bg-black/[0.06]"
+            aria-label="Descartar grabación"
+            onClick={() => detenerGrabacion(true)}
+          >
+            <Trash2 className="size-5" />
+          </button>
+          <span className="size-2.5 shrink-0 animate-pulse rounded-full bg-red-500" aria-hidden />
+          <span className="shrink-0 text-[15px] font-normal tabular-nums text-[var(--wa-texto)]">{formatoTiempo(segundos)}</span>
+          <OndaGrabacion activo />
+          <button
+            type="button"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full text-red-500 hover:bg-red-500/10"
+            aria-label="Detener y enviar"
+            onClick={() => detenerGrabacion(false)}
+          >
+            <Pause className="size-5 fill-current" />
+          </button>
+          <button
+            type="button"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#111b21] text-white hover:bg-[#2a3942] dark:bg-[#00a884] dark:hover:bg-[#008069]"
+            aria-label="Enviar nota de voz"
+            onClick={() => detenerGrabacion(false)}
+          >
+            <IconoEnviar className="size-5" />
+          </button>
         </div>
-      ) : null}
-
+      ) : (
       <div className="flex min-w-0 items-end gap-0.5 rounded-[26px] bg-[var(--wa-cabecera)] px-1.5 py-[5px] shadow-[0_1px_2px_rgba(11,20,26,0.12)]">
         <input
           ref={selector}
@@ -561,6 +579,7 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
           </button>
         )}
       </div>
+      )}
 
       <CapturaCamara
         modo={camara}

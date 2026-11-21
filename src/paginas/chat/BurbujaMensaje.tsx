@@ -7,6 +7,7 @@ import { leerSesion } from '@/sesion'
 import { horaCorta } from './formato'
 import { IconoTickDoble, IconoTickSimple } from './iconosWa'
 import { InteractivoWa } from './InteractivoWa'
+import { ReproductorNotaVoz } from './ReproductorNotaVoz'
 import { TextoWhatsapp } from './textoWhatsapp'
 
 const ESTADO = {
@@ -46,7 +47,9 @@ export function BurbujaMensaje({
       : null
   const wamid = mensaje.id_mensaje_whatsapp?.trim() || ''
   const puedeResponder = Boolean(alResponder && wamid && !mensaje.pendiente)
-  const metaEnLinea = !mensaje.media_type && !mensaje.media_url && !mensaje.pendiente && Boolean(mensaje.mensaje?.trim())
+  const soloAudio = mensaje.media_type === 'audio' && Boolean(mensaje.media_url)
+  const metaEnLinea =
+    !soloAudio && !mensaje.media_type && !mensaje.media_url && !mensaje.pendiente && Boolean(mensaje.mensaje?.trim())
 
   function responder() {
     if (!alResponder || !wamid) return
@@ -89,7 +92,11 @@ export function BurbujaMensaje({
               <Cita contenido={mensaje.mensaje_responde_contenido} entrante={entrante} />
             </div>
           ) : null}
-          <Contenido mensaje={mensaje} espacioHora={metaEnLinea ? (entrante ? 'w-[62px]' : 'w-[84px]') : null} />
+          <Contenido
+            mensaje={mensaje}
+            entrante={entrante}
+            espacioHora={metaEnLinea ? (entrante ? 'w-[62px]' : 'w-[84px]') : null}
+          />
           <div
             className={cn(
               'flex items-center justify-end gap-1 text-[11px] leading-[15px] text-[var(--wa-muted)]',
@@ -133,7 +140,7 @@ function textoCita(mensaje: MensajeChat): string {
   return ''
 }
 
-function Contenido({ mensaje, espacioHora }: { mensaje: MensajeChat; espacioHora: string | null }) {
+function Contenido({ mensaje, entrante, espacioHora }: { mensaje: MensajeChat; entrante: boolean; espacioHora: string | null }) {
   const [ampliada, setAmpliada] = useState<string | null>(null)
   const url = mensaje.media_url ?? ''
   const tipo = mensaje.media_type ?? ''
@@ -165,7 +172,9 @@ function Contenido({ mensaje, espacioHora }: { mensaje: MensajeChat; espacioHora
       ) : null}
 
       {url && tipo === 'video' ? <video src={url} controls className="mb-0.5 max-h-72 w-full rounded-md" /> : null}
-      {url && tipo === 'audio' ? <audio src={url} controls className="mb-1 w-64 max-w-full px-1" /> : null}
+      {url && tipo === 'audio' ? (
+        <ReproductorNotaVoz url={url} entrante={entrante} mensajeId={Math.abs(mensaje.id)} />
+      ) : null}
 
       {tipo === 'location' ? <TarjetaUbicacion url={url} texto={mensaje.mensaje} /> : null}
 
