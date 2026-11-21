@@ -54,10 +54,29 @@ export function LayoutApp() {
     return <Navigate to="/operador" replace />
   }
 
+  if (esChatWhatsapp(pathname)) {
+    return <LayoutChatInmersivo usuario={sesion.usuario} ruta={pathname} />
+  }
+
   return movil ? <LayoutMovil usuario={sesion.usuario} ruta={pathname} /> : <LayoutEscritorio usuario={sesion.usuario} ruta={pathname} />
 }
 
 type PropsLayout = { usuario: UsuarioSesion; ruta: string }
+
+/** Chats y supervisión: sin Sidebar/menú morado; solo riel WA + conversación (como WhatsApp Web). */
+function LayoutChatInmersivo({ usuario, ruta }: PropsLayout) {
+  const movil = useIsMobile()
+
+  return (
+    <div className="chat-wa flex h-svh max-h-svh w-full overflow-hidden bg-[var(--wa-cabecera)]">
+      <TransformacionModo />
+      {movil ? null : <RailWhatsapp usuario={usuario} />}
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
+        <Contenido ruta={ruta} pantallaCompleta />
+      </main>
+    </div>
+  )
+}
 
 /** Escritorio: igual que WhatsApp Web (riel de íconos + panel de la sección + contenido). */
 function LayoutEscritorio({ usuario, ruta }: PropsLayout) {

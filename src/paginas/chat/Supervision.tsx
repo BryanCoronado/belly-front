@@ -227,7 +227,7 @@ export function Supervision() {
           }
           aviso={
             chat && abierto && !esMio ? (
-              <p className="flex min-w-0 items-start gap-2 border-t border-[var(--wa-borde)] bg-[#fff8e6] px-3 py-2 text-[12px] leading-snug text-[#7a5b00] dark:bg-[#2a2614] dark:text-[#e6cf8a]">
+              <p className="flex min-w-0 items-start gap-2 border-t border-[var(--wa-borde)] bg-[var(--wa-panel)] px-3 py-2 text-[12px] leading-snug text-[var(--wa-muted)]">
                 <FotoAsesor chat={chat} mio={false} />
                 <span className="min-w-0 flex-1">
                   Lo atiende <strong className="font-medium">{quienAtiende(chat)}</strong>.

@@ -142,11 +142,17 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   if (!ventanaAbierta) {
     return (
       <div
-        className="flex flex-col gap-2 border-t border-[var(--wa-borde)] bg-[#fff4ce] px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] dark:bg-[#2f2a1a] sm:flex-row sm:items-center sm:justify-between sm:px-4"
+        className="flex items-center justify-between gap-3 border-t border-[var(--wa-borde)] bg-[var(--wa-cabecera)] px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4"
         data-tour="redactor"
       >
-        <p className="text-sm text-[#5c4b1f] dark:text-[#e5d28a]">Pasaron 24 h: solo puedes enviar una plantilla.</p>
-        <Button size="sm" className="w-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] sm:w-auto" onClick={alUsarPlantilla}>
+        <p className="min-w-0 text-[13px] leading-snug text-[var(--wa-muted)]">
+          Ventana de 24 h cerrada · solo plantillas de WhatsApp
+        </p>
+        <Button
+          size="sm"
+          className="h-9 shrink-0 rounded-full bg-[var(--wa-verde)] px-4 text-white hover:bg-[var(--wa-verde-oscuro)]"
+          onClick={alUsarPlantilla}
+        >
           <LayoutTemplate /> Plantilla
         </Button>
       </div>

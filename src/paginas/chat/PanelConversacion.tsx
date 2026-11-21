@@ -190,7 +190,7 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
             </button>
             <div className="flex shrink-0 items-center gap-1">
               {acciones}
-              {chat.id_cliente ? (
+              {chat.id_cliente && !supervision ? (
                 <button
                   type="button"
                   onClick={() => setInfoAbierta(true)}
@@ -322,6 +322,7 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         cargando={mensajes.isLoading}
         error={mensajes.error?.message}
         alResponder={setCita}
+        ocultarAvisoWhatsapp={supervision}
       />
 
       {aviso}
@@ -396,12 +397,31 @@ type PropsLista = {
   cargando: boolean
   error?: string
   alResponder?: (cita: CitaMensaje) => void
+  ocultarAvisoWhatsapp?: boolean
 }
 
-function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
+function sinBotsRepetidos(lista: MensajeChat[]): MensajeChat[] {
+  const salida: MensajeChat[] = []
+  for (const mensaje of lista) {
+    const anterior = salida[salida.length - 1]
+    if (
+      anterior &&
+      mensaje.contesta === 'bot' &&
+      anterior.contesta === 'bot' &&
+      (mensaje.mensaje ?? '').trim() === (anterior.mensaje ?? '').trim()
+    ) {
+      continue
+    }
+    salida.push(mensaje)
+  }
+  return salida
+}
+
+function ListaMensajes({ mensajes, cargando, error, alResponder, ocultarAvisoWhatsapp = false }: PropsLista) {
   const contenedor = useRef<HTMLDivElement>(null)
   const pegadoAbajo = useRef(true)
-  const total = mensajes?.length ?? 0
+  const visibles = mensajes ? sinBotsRepetidos(mensajes) : undefined
+  const total = visibles?.length ?? 0
   const [lejos, setLejos] = useState(false)
   const [nuevos, setNuevos] = useState(0)
   const totalPrevio = useRef(total)
@@ -450,13 +470,15 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
         </div>
       ) : (
         <>
-        <p className="mx-auto my-3 flex max-w-md items-start justify-center gap-1.5 rounded-[7.5px] bg-[var(--wa-aviso)] px-3 py-[6px] text-center text-[12.5px] leading-[17px] text-[var(--wa-dia-texto)] shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]">
-          <Lock className="mt-0.5 size-3 shrink-0" />
-          Los mensajes se envían desde tu WhatsApp Business. Haz clic en el nombre para ver los datos CRM del contacto.
-        </p>
-        {mensajes!.map((mensaje, indice) => {
+        {ocultarAvisoWhatsapp ? null : (
+          <p className="mx-auto my-2 hidden max-w-md items-center justify-center gap-1.5 rounded-[7.5px] bg-[var(--wa-aviso)] px-3 py-[5px] text-center text-[11px] leading-[15px] text-[var(--wa-dia-texto)] shadow-[0_1px_0.5px_rgba(11,20,26,0.13)] sm:flex">
+            <Lock className="size-3 shrink-0 opacity-70" />
+            Mensajes vía WhatsApp Business · nombre del contacto = datos CRM
+          </p>
+        )}
+        {visibles!.map((mensaje, indice) => {
           const dia = claveDia(mensaje.created_at)
-          const nuevoDia = indice === 0 || dia !== claveDia(mensajes![indice - 1].created_at)
+          const nuevoDia = indice === 0 || dia !== claveDia(visibles![indice - 1].created_at)
           const fecha = leerFecha(mensaje.created_at)
           return (
             <Fragment key={mensaje.id}>
@@ -469,7 +491,7 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
               ) : null}
               <BurbujaMensaje
                 mensaje={mensaje}
-                agrupada={!nuevoDia && indice > 0 && mensajes![indice - 1].contesta === mensaje.contesta}
+                agrupada={!nuevoDia && indice > 0 && visibles![indice - 1].contesta === mensaje.contesta}
                 alResponder={alResponder}
               />
             </Fragment>

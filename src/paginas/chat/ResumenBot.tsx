@@ -27,8 +27,7 @@ export function ResumenBot({ idConversacion, totalMensajes }: { idConversacion: 
     return null
   }
 
-  // Si el bot ya pasó el chat a una persona se muestra desplegado; si no, el asesor decide.
-  const desplegado = abierto ?? datos.estado === 'derivada'
+  const desplegado = abierto ?? false
 
   return (
     <div className="shrink-0 border-b border-[var(--wa-borde)] bg-[var(--wa-panel)] text-[13px]">
