@@ -322,7 +322,7 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         cargando={mensajes.isLoading}
         error={mensajes.error?.message}
         alResponder={setCita}
-        ocultarAvisoWhatsapp={supervision}
+        ocultarAvisoWhatsapp
       />
 
       {aviso}

@@ -69,10 +69,12 @@ export function BurbujaMensaje({
           data-mensaje-id={mensaje.id}
           onDoubleClick={puedeResponder ? responder : undefined}
           className={cn(
-            'chat-wa-burbuja relative px-1.5 pt-1 pb-0.5 text-[14.2px] leading-[19px]',
+            'chat-wa-burbuja relative px-1.5 pt-1 text-[14.2px] leading-[19px]',
+            soloAudio ? 'pb-[20px]' : 'pb-0.5',
             entrante
               ? 'chat-wa-burbuja-in rounded-[7.5px] bg-[var(--wa-burbuja-in)]'
               : 'chat-wa-burbuja-out rounded-[7.5px] bg-[var(--wa-verde-claro)]',
+            soloAudio && 'min-w-[248px]',
             !agrupada && (entrante ? 'rounded-tl-none' : 'rounded-tr-none'),
             agrupada && 'chat-wa-agrupada',
             fallido && 'bg-red-50 ring-1 ring-red-200',
@@ -100,7 +102,7 @@ export function BurbujaMensaje({
           <div
             className={cn(
               'flex items-center justify-end gap-1 text-[11px] leading-[15px] text-[var(--wa-muted)]',
-              metaEnLinea ? 'absolute right-2 bottom-[5px]' : 'mt-0.5 px-1.5',
+              metaEnLinea || soloAudio ? 'absolute right-[7px] bottom-[4px]' : 'mt-0.5 px-1.5',
             )}
           >
             {mensaje.pendiente ? <span className="mr-auto italic">Enviando…</span> : null}

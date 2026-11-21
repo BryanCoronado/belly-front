@@ -97,7 +97,7 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
             </Link>
           )}
           <p className={cn('text-[var(--wa-texto)]', enArchivados ? 'text-[16px] font-medium' : 'text-[22px] font-bold tracking-[-0.01em]')}>
-            {enArchivados ? 'Archivados' : 'WhatsApp'}
+            {enArchivados ? 'Archivados' : 'Chats'}
           </p>
           <div className="ml-auto flex items-center gap-1">
             <DropdownMenu>

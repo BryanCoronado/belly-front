@@ -1,6 +1,8 @@
-import { Mic, Pause, Play } from 'lucide-react'
+import { Pause, Play } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { leerSesion, nombreVisible } from '@/sesion'
+import { AvatarWa } from './iconosWa'
 
 function formatoDuracion(segundos: number): string {
   if (!Number.isFinite(segundos) || segundos < 0) return '0:00'
@@ -9,14 +11,13 @@ function formatoDuracion(segundos: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-/** Barras pseudo-aleatorias estables por mensaje (visual tipo WhatsApp Web). */
-function barrasOnda(semilla: number, cantidad = 28): number[] {
+function barrasOnda(semilla: number, cantidad = 34): number[] {
   let x = Math.abs(semilla) % 2147483647 || 1
   const out: number[] = []
   for (let i = 0; i < cantidad; i++) {
     x = (x * 16807) % 2147483647
     const n = (x % 100) / 100
-    out.push(0.25 + n * 0.75)
+    out.push(0.2 + n * 0.8)
   }
   return out
 }
@@ -33,13 +34,14 @@ export function ReproductorNotaVoz({ url, entrante, mensajeId }: Props) {
   const [duracion, setDuracion] = useState(0)
   const [actual, setActual] = useState(0)
   const barras = useMemo(() => barrasOnda(mensajeId), [mensajeId])
+  const usuario = leerSesion()?.usuario
+  const nombre = usuario ? nombreVisible(usuario) : 'Tú'
+  const foto = usuario?.foto ?? null
 
   const ratio = duracion > 0 ? Math.min(1, actual / duracion) : 0
-  const mostrar = duracion > 0 ? formatoDuracion(duracion) : formatoDuracion(actual)
+  const duracionTxt = duracion > 0 ? formatoDuracion(duracion) : reproduciendo ? formatoDuracion(actual) : '0:00'
 
   useEffect(() => {
-    const el = audio.current
-    if (!el) return
     setReproduciendo(false)
     setActual(0)
     setDuracion(0)
@@ -59,64 +61,65 @@ export function ReproductorNotaVoz({ url, entrante, mensajeId }: Props) {
   return (
     <div
       className={cn(
-        'mb-0.5 flex min-w-[248px] max-w-[min(100%,300px)] items-center gap-2 py-0.5',
-        entrante ? 'pr-1' : 'pl-0.5',
+        'relative flex min-w-[240px] max-w-[min(100%,280px)] items-center gap-2 px-1 pt-0.5',
+        entrante ? 'pb-1 pr-0.5' : 'pb-1 pl-0.5',
       )}
     >
       {!entrante ? (
-        <span
-          className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-[#dfe5e7] text-[var(--wa-muted)] dark:bg-[#2a3942]"
-          aria-hidden
-        >
-          <Mic className="size-4" />
-          <span className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--wa-verde)] text-white ring-2 ring-[var(--wa-verde-claro)] dark:ring-[#005c4b]">
-            <Mic className="size-2.5" />
-          </span>
-        </span>
+        <AvatarWa nombre={nombre} foto={foto} className="size-[34px] shrink-0 ring-2 ring-[var(--wa-verde-claro)]" />
       ) : null}
 
       <button
         type="button"
         onClick={alternar}
         className={cn(
-          'flex size-9 shrink-0 items-center justify-center rounded-full transition-colors',
+          'flex size-[34px] shrink-0 items-center justify-center rounded-full transition-colors',
           entrante
-            ? 'bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)]'
-            : 'bg-[#53bdeb] text-white hover:bg-[#4aa8d4]',
+            ? 'bg-[var(--wa-verde)] text-white shadow-sm hover:bg-[var(--wa-verde-oscuro)]'
+            : 'bg-[#d1f4cc] text-[#008069] hover:bg-[#c0edd6] dark:bg-[#005c4b] dark:text-[#d9fdd3]',
         )}
         aria-label={reproduciendo ? 'Pausar' : 'Reproducir'}
       >
-        {reproduciendo ? <Pause className="size-4 fill-current" /> : <Play className="ml-0.5 size-4 fill-current" />}
+        {reproduciendo ? (
+          <Pause className="size-[15px] fill-current" />
+        ) : (
+          <Play className="ml-0.5 size-[15px] fill-current" />
+        )}
       </button>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex h-[26px] items-end gap-[2px]" role="img" aria-label="Forma de onda del audio">
-          {barras.map((altura, i) => {
-            const activa = i / barras.length <= ratio
-            return (
+      <div className="relative min-w-0 flex-1 pt-0.5">
+        {entrante ? (
+          <div className="flex h-[30px] items-center">
+            <div className="relative h-[3px] w-full rounded-full bg-[#d1d7db] dark:bg-[#3b4a54]">
               <span
-                key={i}
-                className={cn(
-                  'w-[3px] min-h-[4px] rounded-full transition-colors',
-                  entrante
-                    ? activa
-                      ? 'bg-[var(--wa-verde)]'
-                      : 'bg-[var(--wa-chip-borde)]'
-                    : activa
-                      ? 'bg-[#53bdeb]'
-                      : 'bg-[#b8d9ee]',
-                )}
-                style={{ height: `${Math.round(altura * 22)}px` }}
+                className="absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full bg-[var(--wa-verde)] shadow-sm"
+                style={{ left: `calc(${ratio * 100}% - 5px)` }}
               />
-            )
-          })}
-        </div>
-        <p className="mt-0.5 text-[11px] tabular-nums leading-none text-[var(--wa-muted)]">{mostrar}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex h-[30px] items-end gap-[1.5px]" role="img" aria-label="Forma de onda">
+            {barras.map((altura, i) => {
+              const activa = i / barras.length <= ratio
+              return (
+                <span
+                  key={i}
+                  className={cn('w-[2px] min-h-[3px] rounded-sm', activa ? 'bg-[#3b4a54]/55' : 'bg-[#3b4a54]/28')}
+                  style={{ height: `${Math.max(3, Math.round(altura * 26))}px` }}
+                />
+              )
+            })}
+          </div>
+        )}
+        <span
+          className="pointer-events-none absolute bottom-0 left-0 text-[11px] leading-none tabular-nums text-[var(--wa-muted)]"
+          aria-hidden
+        >
+          {duracionTxt}
+        </span>
       </div>
 
-      {entrante ? (
-        <span className="size-9 shrink-0 rounded-full bg-[#dfe5e7] dark:bg-[#2a3942]" aria-hidden />
-      ) : null}
+      {entrante ? <AvatarWa nombre="Cliente" className="size-[34px] shrink-0" /> : null}
 
       <audio
         ref={audio}
