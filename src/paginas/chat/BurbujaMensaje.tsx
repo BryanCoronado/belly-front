@@ -70,11 +70,11 @@ export function BurbujaMensaje({
           onDoubleClick={puedeResponder ? responder : undefined}
           className={cn(
             'chat-wa-burbuja relative px-1.5 pt-1 text-[14.2px] leading-[19px]',
-            soloAudio ? 'pb-[20px]' : 'pb-0.5',
+            soloAudio ? 'pb-[7px]' : 'pb-0.5',
             entrante
               ? 'chat-wa-burbuja-in rounded-[7.5px] bg-[var(--wa-burbuja-in)]'
               : 'chat-wa-burbuja-out rounded-[7.5px] bg-[var(--wa-verde-claro)]',
-            soloAudio && 'min-w-[248px]',
+            soloAudio && 'w-[316px] max-w-full',
             !agrupada && (entrante ? 'rounded-tl-none' : 'rounded-tr-none'),
             agrupada && 'chat-wa-agrupada',
             fallido && 'bg-red-50 ring-1 ring-red-200',
