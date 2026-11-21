@@ -32,6 +32,7 @@ export function ReproductorNotaVoz({ url, entrante, mensajeId }: Props) {
   const [reproduciendo, setReproduciendo] = useState(false)
   const [duracion, setDuracion] = useState(0)
   const [actual, setActual] = useState(0)
+  const [roto, setRoto] = useState(false)
   const barras = useMemo(() => barrasOnda(mensajeId), [mensajeId])
   const usuario = leerSesion()?.usuario
   const nombre = usuario ? nombreVisible(usuario) : 'Tú'
@@ -43,6 +44,7 @@ export function ReproductorNotaVoz({ url, entrante, mensajeId }: Props) {
     setReproduciendo(false)
     setActual(0)
     setDuracion(0)
+    setRoto(false)
   }, [url])
 
   function alCargar() {
@@ -132,7 +134,9 @@ export function ReproductorNotaVoz({ url, entrante, mensajeId }: Props) {
             style={{ left: `${ratio * 100}%` }}
           />
         </div>
-        <p className="mt-1 text-[11px] leading-none tabular-nums text-[var(--wa-muted)]">{tiempo}</p>
+        <p className="mt-1 text-[11px] leading-none tabular-nums text-[var(--wa-muted)]">
+          {roto ? 'Audio no disponible' : tiempo}
+        </p>
       </div>
 
       {entrante ? avatar : null}
@@ -143,6 +147,7 @@ export function ReproductorNotaVoz({ url, entrante, mensajeId }: Props) {
         preload="metadata"
         className="hidden"
         onLoadedMetadata={alCargar}
+        onError={() => setRoto(true)}
         onTimeUpdate={() => setActual(audio.current?.currentTime ?? 0)}
         onEnded={() => {
           setReproduciendo(false)

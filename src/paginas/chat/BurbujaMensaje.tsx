@@ -1,4 +1,4 @@
-import { AlertCircle, Bot, Clock3, FileText, LayoutTemplate, MapPin, Reply, X } from 'lucide-react'
+import { Bot, Clock3, FileText, LayoutTemplate, MapPin, Reply, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MensajeChat } from '@/api'
@@ -39,7 +39,6 @@ export function BurbujaMensaje({
   alResponder?: (cita: CitaMensaje) => void
 }) {
   const entrante = mensaje.contesta === 'cliente'
-  const fallido = Number(mensaje.id_estado) === ESTADO.error
   const miId = leerSesion()?.usuario.id
   const autorAjeno =
     mensaje.contesta === 'usuario' && mensaje.autor && Number(mensaje.autor.id) !== Number(miId)
@@ -48,8 +47,16 @@ export function BurbujaMensaje({
   const wamid = mensaje.id_mensaje_whatsapp?.trim() || ''
   const puedeResponder = Boolean(alResponder && wamid && !mensaje.pendiente)
   const soloAudio = mensaje.media_type === 'audio' && Boolean(mensaje.media_url)
+  const esSticker = mensaje.media_type === 'sticker' && Boolean(mensaje.media_url)
+  const sinPie = interpretarTexto(mensaje.mensaje).caption === ''
+  const mediaSola =
+    !esSticker &&
+    sinPie &&
+    Boolean(mensaje.media_url) &&
+    (mensaje.media_type === 'image' || mensaje.media_type === 'video')
   const metaEnLinea =
     !soloAudio && !mensaje.media_type && !mensaje.media_url && !mensaje.pendiente && Boolean(mensaje.mensaje?.trim())
+  const metaSobreMedia = mediaSola || esSticker
 
   function responder() {
     if (!alResponder || !wamid) return
@@ -69,15 +76,18 @@ export function BurbujaMensaje({
           data-mensaje-id={mensaje.id}
           onDoubleClick={puedeResponder ? responder : undefined}
           className={cn(
-            'chat-wa-burbuja relative px-1.5 pt-1 text-[14.2px] leading-[19px]',
-            soloAudio ? 'pb-[7px]' : 'pb-0.5',
-            entrante
-              ? 'chat-wa-burbuja-in rounded-[7.5px] bg-[var(--wa-burbuja-in)]'
-              : 'chat-wa-burbuja-out rounded-[7.5px] bg-[var(--wa-verde-claro)]',
+            'relative text-[14.2px] leading-[19px]',
+            esSticker
+              ? 'p-0'
+              : cn(
+                  'chat-wa-burbuja rounded-[7.5px]',
+                  mediaSola ? 'p-[3px]' : 'px-1.5 pt-1',
+                  soloAudio ? (entrante ? 'pb-[18px]' : 'pb-[7px]') : mediaSola ? '' : 'pb-0.5',
+                  entrante ? 'chat-wa-burbuja-in bg-[var(--wa-burbuja-in)]' : 'chat-wa-burbuja-out bg-[var(--wa-verde-claro)]',
+                  !agrupada && (entrante ? 'rounded-tl-none' : 'rounded-tr-none'),
+                  agrupada && 'chat-wa-agrupada',
+                ),
             soloAudio && 'w-[316px] max-w-full',
-            !agrupada && (entrante ? 'rounded-tl-none' : 'rounded-tr-none'),
-            agrupada && 'chat-wa-agrupada',
-            fallido && 'bg-red-50 ring-1 ring-red-200',
             mensaje.pendiente && 'opacity-70',
           )}
         >
@@ -101,13 +111,21 @@ export function BurbujaMensaje({
           />
           <div
             className={cn(
-              'flex items-center justify-end gap-1 text-[11px] leading-[15px] text-[var(--wa-muted)]',
-              metaEnLinea || soloAudio ? 'absolute right-[7px] bottom-[4px]' : 'mt-0.5 px-1.5',
+              'flex items-center justify-end gap-1 text-[11px] leading-[15px]',
+              metaSobreMedia
+                ? cn(
+                    'pointer-events-none absolute right-[8px] bottom-[6px] rounded-full px-1.5 py-px text-white',
+                    esSticker ? 'bg-black/45' : 'bg-gradient-to-t from-black/40 to-transparent',
+                  )
+                : 'text-[var(--wa-muted)]',
+              !metaSobreMedia && (metaEnLinea || soloAudio ? 'absolute right-[7px] bottom-[4px]' : 'mt-0.5 px-1.5'),
             )}
           >
             {mensaje.pendiente ? <span className="mr-auto italic">Enviando…</span> : null}
             <span>{horaCorta(mensaje.created_at)}</span>
-            {entrante ? null : <EstadoEnvio estado={Number(mensaje.id_estado)} pendiente={mensaje.pendiente} />}
+            {entrante ? null : (
+              <EstadoEnvio estado={Number(mensaje.id_estado)} pendiente={mensaje.pendiente} claro={metaSobreMedia} />
+            )}
           </div>
         </div>
         {mensaje.interactivo ? <InteractivoWa interactivo={mensaje.interactivo} /> : null}
@@ -158,7 +176,7 @@ function Contenido({ mensaje, entrante, espacioHora }: { mensaje: MensajeChat; e
         <button
           type="button"
           onClick={() => setAmpliada(url)}
-          className="mb-0.5 block w-full overflow-hidden rounded-md text-left"
+          className={cn('block overflow-hidden text-left', tipo === 'sticker' ? 'rounded-none' : 'w-[300px] max-w-full rounded-[6px]')}
           aria-label="Ver imagen grande"
         >
           <img
@@ -166,14 +184,18 @@ function Contenido({ mensaje, entrante, espacioHora }: { mensaje: MensajeChat; e
             alt={tipo === 'sticker' ? 'Sticker' : 'Imagen'}
             loading="lazy"
             className={cn(
-              'max-h-72 w-full cursor-pointer bg-black/5 object-cover transition-opacity hover:opacity-95',
-              tipo === 'sticker' && 'max-h-40 object-contain bg-transparent',
+              'cursor-pointer transition-opacity hover:opacity-95',
+              tipo === 'sticker'
+                ? 'size-[150px] object-contain'
+                : 'max-h-[330px] min-h-24 w-full bg-black/5 object-cover',
             )}
           />
         </button>
       ) : null}
 
-      {url && tipo === 'video' ? <video src={url} controls className="mb-0.5 max-h-72 w-full rounded-md" /> : null}
+      {url && tipo === 'video' ? (
+        <video src={url} controls preload="metadata" className="max-h-[330px] w-[300px] max-w-full rounded-[6px] bg-black" />
+      ) : null}
       {url && tipo === 'audio' ? (
         <ReproductorNotaVoz url={url} entrante={entrante} mensajeId={Math.abs(mensaje.id)} />
       ) : null}
@@ -185,17 +207,17 @@ function Contenido({ mensaje, entrante, espacioHora }: { mensaje: MensajeChat; e
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="mb-0.5 flex items-center gap-3 rounded-md bg-black/5 px-3 py-2.5 hover:bg-black/10"
+          className="mb-0.5 flex w-[280px] max-w-full items-center gap-3 rounded-[6px] bg-black/[0.05] px-3 py-3 hover:bg-black/[0.08] dark:bg-white/[0.06]"
         >
           <span
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg text-white"
-            style={{ backgroundColor: '#53bdeb' }}
+            className="flex h-10 w-8 shrink-0 items-end justify-center rounded-[3px] pb-1 text-[8px] font-bold text-white"
+            style={{ backgroundColor: colorDocumento(extensionDe(nombreArchivo || url)) }}
           >
-            <FileText className="size-5" />
+            {extensionDe(nombreArchivo || url).toUpperCase() || <FileText className="mb-1 size-4" />}
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-sm font-medium">{nombreArchivo || 'Documento'}</span>
-            <span className="text-[11px] text-[var(--wa-muted)]">Abrir</span>
+            <span className="block truncate text-[14px] text-[var(--wa-texto)]">{nombreArchivo || 'Documento'}</span>
+            <span className="text-[12px] text-[var(--wa-muted)]">{extensionDe(nombreArchivo || url).toUpperCase() || 'Archivo'}</span>
           </span>
         </a>
       ) : null}
@@ -267,6 +289,20 @@ function mapaDesdeTexto(texto: string | null): string {
   const match = texto?.match(/(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/)
   if (!match) return ''
   return `https://www.google.com/maps/search/?api=1&query=${match[1]},${match[2]}`
+}
+
+function extensionDe(nombre: string): string {
+  const limpio = nombre.split('?')[0]
+  const punto = limpio.lastIndexOf('.')
+  return punto > -1 ? limpio.slice(punto + 1).slice(0, 4).toLowerCase() : ''
+}
+
+function colorDocumento(extension: string): string {
+  if (extension === 'pdf') return '#e5252a'
+  if (['doc', 'docx'].includes(extension)) return '#2b579a'
+  if (['xls', 'xlsx', 'csv'].includes(extension)) return '#217346'
+  if (['ppt', 'pptx'].includes(extension)) return '#d24726'
+  return '#8696a0'
 }
 
 function esArchivoImagen(url: string, nombreArchivo: string, caption: string) {
@@ -350,18 +386,22 @@ function Cita({
   )
 }
 
-function EstadoEnvio({ estado, pendiente }: { estado: number; pendiente?: boolean }) {
+function EstadoEnvio({ estado, pendiente, claro = false }: { estado: number; pendiente?: boolean; claro?: boolean }) {
   if (pendiente || estado === ESTADO.inicial) {
     return <Clock3 className="size-3.5" aria-label="Enviando" />
   }
   if (estado === ESTADO.error) {
-    return <AlertCircle className="size-3.5 text-red-600" aria-label="No se envió" />
+    return (
+      <span className="flex size-[15px] items-center justify-center rounded-full bg-[#ea0038] text-[10px] font-bold text-white" title="No se envió">
+        !
+      </span>
+    )
   }
   if (estado === ESTADO.leido) {
     return <IconoTickDoble className="h-[11px] w-4 text-[#53bdeb]" aria-label="Leído" />
   }
   if (estado === ESTADO.recibido) {
-    return <IconoTickDoble className="h-[11px] w-4" aria-label="Entregado" />
+    return <IconoTickDoble className={cn('h-[11px] w-4', claro && 'text-white')} aria-label="Entregado" />
   }
-  return <IconoTickSimple className="h-[11px] w-3" aria-label="Enviado" />
+  return <IconoTickSimple className={cn('h-[11px] w-3', claro && 'text-white')} aria-label="Enviado" />
 }
