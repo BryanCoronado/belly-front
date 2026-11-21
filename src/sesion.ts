@@ -142,5 +142,6 @@ export function esOperador(usuario?: UsuarioSesion | null): boolean {
 }
 
 export function rutaTrasEntrar(usuario?: UsuarioSesion | null): string {
-  return esOperador(usuario) ? '/operador' : '/inicio'
+  // Tras login: modo WhatsApp (chat inmersivo). El dashboard queda en /inicio.
+  return esOperador(usuario) ? '/operador' : '/chats'
 }

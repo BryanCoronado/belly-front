@@ -5,7 +5,7 @@ export type ModuloReciente = {
 }
 
 const MAX = 8
-const IGNORAR = new Set(['/inicio', '/dashboard', '/'])
+const IGNORAR = new Set(['/inicio', '/panel', '/dashboard', '/'])
 
 function clave(idUsuario: number) {
   return `belly:modulos-recientes:${idUsuario}`

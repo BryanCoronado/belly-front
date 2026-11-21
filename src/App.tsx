@@ -57,10 +57,11 @@ export default function App() {
           <Route path="/operador/pagos" element={<PagosOperador />} />
         </Route>
         <Route element={<LayoutApp />}>
-          <Route path="/inicio" element={<Inicio />} />
+          <Route path="/inicio" element={<Navigate to="/chats" replace />} />
+          <Route path="/panel" element={<Inicio />} />
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/cuenta" element={<Cuenta />} />
-          <Route path="/dashboard" element={<Inicio />} />
+          <Route path="/dashboard" element={<Navigate to="/panel" replace />} />
           <Route element={<RequiereWhatsapp />}>
             <Route path="/chats" element={<Chats />} />
             <Route path="/supervision" element={<Supervision />} />

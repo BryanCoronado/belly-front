@@ -26,7 +26,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { avisoError } from '@/lib/avisos'
-import { usePantallaAncha } from '@/hooks/use-pantalla-ancha'
 import { cn } from '@/lib/utils'
 import { CLAVE_CRM, haceCuanto } from '../clientes/crm'
 import { iniciales, leerFecha } from './formato'
@@ -54,21 +53,11 @@ type Props = {
   alEditarFicha: () => void
 }
 
-/** Datos del cliente junto al chat: en pantallas anchas va fijo a la derecha, en las demás como hoja lateral. */
+/** Datos del cliente estilo WhatsApp: drawer derecho (también en desktop). */
 export function PanelCliente(props: Props) {
-  const ancha = usePantallaAncha()
-
-  if (ancha) {
-    return props.abierto ? (
-      <aside className="hidden w-[22rem] shrink-0 flex-col border-l border-[var(--wa-borde)] bg-[var(--wa-panel)] xl:flex">
-        <ContenidoPanel {...props} />
-      </aside>
-    ) : null
-  }
-
   return (
     <Sheet open={props.abierto} onOpenChange={(abrir) => (abrir ? null : props.alCerrar())}>
-      <SheetContent className="chat-wa w-full gap-0 bg-[var(--wa-panel)] p-0 sm:max-w-sm" showCloseButton={false}>
+      <SheetContent className="chat-wa w-full gap-0 border-l border-[var(--wa-borde)] bg-[var(--wa-panel)] p-0 sm:max-w-md" showCloseButton={false}>
         <SheetTitle className="sr-only">Datos del cliente</SheetTitle>
         <SheetDescription className="sr-only">Etapa, etiquetas, notas y pedidos del cliente.</SheetDescription>
         <ContenidoPanel {...props} />

@@ -1,10 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Bold,
   Camera,
   FileText,
   ImagePlus,
-  Italic,
   BookImage,
   LayoutTemplate,
   Loader2,
@@ -12,10 +10,7 @@ import {
   Mic,
   Paperclip,
   Plus,
-  SendHorizontal,
-  Smile,
   Sticker,
-  Strikethrough,
   Video,
   X,
   Zap,
@@ -40,8 +35,12 @@ import { FormularioRespuesta } from '@/paginas/plantillas/FormularioRespuesta'
 import { ListaProductosCatalogo } from '@/paginas/catalogo/SelectorCatalogo'
 import { CapturaCamara } from './CapturaCamara'
 import { PanelExpresiones } from './PanelExpresiones'
+import { cn } from '@/lib/utils'
+import { IconoAdjuntar, IconoEnviar, IconoMicrofono, IconoSticker } from './iconosWa'
 
 const LIMITE_ARCHIVO_MB = 16
+const CLASE_ICONO =
+  'flex size-10 shrink-0 items-center justify-center rounded-full text-[var(--wa-icono)] transition-colors hover:bg-black/[0.06] dark:hover:bg-white/[0.06]'
 
 async function archivoComoJpeg(origen: Blob, nombre: string): Promise<File> {
   const bitmap = await createImageBitmap(origen)
@@ -83,7 +82,10 @@ export type EnvioRedactor = {
   mediaUrl?: string
 }
 
+const borradores = new Map<number, string>()
+
 type Props = {
+  idConversacion: number
   ventanaAbierta: boolean
   enviando: boolean
   cita?: CitaRedactor | null
@@ -92,8 +94,9 @@ type Props = {
   alUsarPlantilla: () => void
 }
 
-export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnviar, alUsarPlantilla }: Props) {
-  const [texto, setTexto] = useState('')
+export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCancelarCita, alEnviar, alUsarPlantilla }: Props) {
+  const [texto, setTexto] = useState(() => borradores.get(idConversacion) ?? '')
+  const [idPrevio, setIdPrevio] = useState(idConversacion)
   const [archivo, setArchivo] = useState<File | null>(null)
   const [tipoArchivo, setTipoArchivo] = useState<'sticker' | undefined>()
   const [errorArchivo, setErrorArchivo] = useState('')
@@ -113,11 +116,28 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
   const reloj = useRef<number>(0)
   const respuestas = useQuery({ queryKey: ['respuestas-rapidas'], queryFn: leerRespuestasRapidas, staleTime: 60_000 })
 
+  if (idPrevio !== idConversacion) {
+    setIdPrevio(idConversacion)
+    setTexto(borradores.get(idConversacion) ?? '')
+    setArchivo(null)
+    setTipoArchivo(undefined)
+    setErrorArchivo('')
+    setEmojisAbiertos(false)
+  }
+
+  useEffect(() => {
+    if (texto) borradores.set(idConversacion, texto)
+    else borradores.delete(idConversacion)
+  }, [idConversacion, texto])
+
+  useEffect(() => {
+    if (window.matchMedia('(pointer: fine)').matches) campo.current?.focus()
+    return () => detenerGrabacion(true)
+  }, [idConversacion])
+
   useEffect(() => {
     if (cita) campo.current?.focus()
   }, [cita])
-
-  useEffect(() => () => detenerGrabacion(true), [])
 
   if (!ventanaAbierta) {
     return (
@@ -318,7 +338,7 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
   }
 
   return (
-    <div className="shrink-0 border-t border-[var(--wa-borde)] bg-[var(--wa-panel)] px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-3" data-tour="redactor">
+    <div className="shrink-0 px-2 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4" data-tour="redactor">
       {ahorro ? (
         <p className="mb-2 rounded-lg bg-primary/10 px-3 py-1.5 text-[12px] text-primary">
           Modo ahorro · este envío consume el cupo de WhatsApp. Si podés, contestá desde el celular.
@@ -392,7 +412,7 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
         </div>
       ) : null}
 
-      <div className="flex min-w-0 items-end gap-0.5 sm:gap-1">
+      <div className="flex min-w-0 items-end gap-0.5 rounded-[26px] bg-[var(--wa-cabecera)] px-1.5 py-[5px] shadow-[0_1px_2px_rgba(11,20,26,0.12)]">
         <input
           ref={selector}
           type="file"
@@ -407,16 +427,10 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)] sm:size-9"
-                aria-label="Adjuntar"
-                title="Adjuntar"
-              />
+              <button type="button" className={CLASE_ICONO} aria-label="Adjuntar" title="Adjuntar" />
             }
           >
-            <Paperclip />
+            <IconoAdjuntar className="size-6" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-56">
             <DropdownMenuItem onClick={() => abrirSelector('image/*')}>
@@ -456,20 +470,29 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <button
+          type="button"
+          className={cn(CLASE_ICONO, emojisAbiertos && 'text-[var(--wa-verde)]')}
+          aria-label="Emojis y stickers"
+          title="Emojis y stickers"
+          onClick={() => setEmojisAbiertos((v) => !v)}
+        >
+          <IconoSticker className="size-6" />
+        </button>
+
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)] sm:size-9"
+              <button
+                type="button"
+                className={CLASE_ICONO}
                 aria-label="Respuestas rápidas"
                 title="Respuestas rápidas"
                 data-tour="respuestas-rapidas"
               />
             }
           >
-            <Zap />
+            <Zap className="size-[22px]" strokeWidth={1.8} />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="max-h-80 w-72 overflow-y-auto" align="start" side="top">
             <DropdownMenuGroup>
@@ -495,29 +518,7 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-[var(--wa-muted)] hover:bg-black/5 hover:text-[var(--wa-texto)] sm:size-9"
-          aria-label="Emojis y stickers"
-          title="Emojis y stickers"
-          onClick={() => setEmojisAbiertos((v) => !v)}
-        >
-          <Smile />
-        </Button>
-
         <div className="min-w-0 flex-1 overflow-hidden">
-          <div className="mb-1 hidden items-center gap-0.5 pl-1 sm:flex">
-            <Button type="button" variant="ghost" size="icon-xs" className="text-[var(--wa-muted)]" title="Negrita (*texto*)" onClick={() => envolver('*')}>
-              <Bold />
-            </Button>
-            <Button type="button" variant="ghost" size="icon-xs" className="text-[var(--wa-muted)]" title="Cursiva (_texto_)" onClick={() => envolver('_')}>
-              <Italic />
-            </Button>
-            <Button type="button" variant="ghost" size="icon-xs" className="text-[var(--wa-muted)]" title="Tachado (~texto~)" onClick={() => envolver('~')}>
-              <Strikethrough />
-            </Button>
-          </div>
           <textarea
             ref={campo}
             value={texto}
@@ -525,31 +526,33 @@ export function Redactor({ ventanaAbierta, enviando, cita, alCancelarCita, alEnv
             onKeyDown={alTeclear}
             rows={1}
             placeholder={archivo ? 'Añade un comentario (opcional)' : 'Escribe un mensaje'}
+            title="Negrita Ctrl+B · Cursiva Ctrl+I"
             aria-label="Mensaje"
-            className="field-sizing-content max-h-36 min-h-10 w-full min-w-0 max-w-full resize-none rounded-[24px] border-0 bg-white px-3 py-2 text-[15px] text-[var(--wa-texto)] shadow-sm outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0 sm:min-h-11 sm:px-4 sm:py-2.5"
+            className="field-sizing-content block max-h-36 min-h-10 w-full min-w-0 max-w-full resize-none border-0 bg-transparent px-2 py-[9px] text-[15px] leading-[22px] text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0"
           />
         </div>
 
         {puedeEnviar ? (
-          <Button
-            size="icon"
-            className="shrink-0 rounded-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] disabled:bg-[#aebac1] disabled:opacity-100 sm:size-9"
+          <button
+            type="button"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] disabled:bg-[#aebac1]"
             aria-label="Enviar"
             disabled={enviando}
             onClick={() => void enviar()}
           >
-            {enviando ? <Loader2 className="animate-spin" /> : <SendHorizontal />}
-          </Button>
+            {enviando ? <Loader2 className="size-5 animate-spin" /> : <IconoEnviar className="size-5" />}
+          </button>
         ) : (
-          <Button
-            size="icon"
-            className="shrink-0 rounded-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] sm:size-9"
+          <button
+            type="button"
+            className={cn(CLASE_ICONO, grabando && 'bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)]')}
             aria-label={grabando ? 'Detener audio' : 'Grabar audio'}
+            title={grabando ? 'Detener y enviar' : 'Mensaje de voz'}
             disabled={enviando}
             onClick={() => (grabando ? detenerGrabacion(false) : void empezarGrabacion())}
           >
-            {enviando ? <Loader2 className="animate-spin" /> : <Mic />}
-          </Button>
+            {enviando ? <Loader2 className="size-5 animate-spin" /> : <IconoMicrofono className="size-6" />}
+          </button>
         )}
       </div>
 

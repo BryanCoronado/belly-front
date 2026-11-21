@@ -46,9 +46,25 @@ function ayer(): Date {
 
 export function horaCorta(valor: string | null | undefined): string {
   const fecha = leerFecha(valor)
-  return fecha ? fecha.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''
+  return fecha ? fecha.toLocaleTimeString('es-PE', { hour: 'numeric', minute: '2-digit', hour12: true }) : ''
 }
 
+function enEstaSemana(fecha: Date): boolean {
+  const limite = new Date()
+  limite.setHours(0, 0, 0, 0)
+  limite.setDate(limite.getDate() - 6)
+  return fecha >= limite
+}
+
+function diaSemana(fecha: Date): string {
+  return fecha.toLocaleDateString('es', { weekday: 'long' })
+}
+
+function fechaNumerica(fecha: Date): string {
+  return fecha.toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+/** Igual que WhatsApp Web: hora si es hoy, "Ayer", día de la semana o fecha completa. */
 export function fechaLista(valor: string | null | undefined): string {
   const fecha = leerFecha(valor)
   if (!fecha) {
@@ -60,7 +76,7 @@ export function fechaLista(valor: string | null | undefined): string {
   if (mismoDia(fecha, ayer())) {
     return 'Ayer'
   }
-  return fecha.toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  return enEstaSemana(fecha) ? diaSemana(fecha) : fechaNumerica(fecha)
 }
 
 export function etiquetaDia(fecha: Date): string {
@@ -70,7 +86,11 @@ export function etiquetaDia(fecha: Date): string {
   if (mismoDia(fecha, ayer())) {
     return 'Ayer'
   }
-  return fecha.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+  if (enEstaSemana(fecha)) {
+    const dia = diaSemana(fecha)
+    return dia.charAt(0).toUpperCase() + dia.slice(1)
+  }
+  return fechaNumerica(fecha)
 }
 
 export function claveDia(valor: string): string {

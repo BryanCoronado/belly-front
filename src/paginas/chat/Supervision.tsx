@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRightLeft, Eye, Hand, Loader2, Search, UserRound } from 'lucide-react'
+import { ArrowRightLeft, Eye, Hand, Loader2, UserRound } from 'lucide-react'
 import { useDeferredValue, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import {
@@ -11,7 +11,6 @@ import {
 } from '@/api'
 import { CampoSelect } from '@/components/Campo'
 import { AvisoMeta } from '@/components/layout/AvisoMeta'
-import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -20,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { esAdministrador, leerSesion } from '@/sesion'
 import { CargandoLista, ItemChat } from './ListaChats'
 import { PanelConversacion } from './PanelConversacion'
+import { IconoBuscar } from './iconosWa'
 
 const ESTADOS: { id: EstadoSupervision; titulo: string }[] = [
   { id: 'activos', titulo: 'En curso' },
@@ -106,60 +106,64 @@ export function Supervision() {
     <div className="chat-wa flex min-h-0 flex-1 overflow-hidden bg-white">
       <aside
         className={cn(
-          'flex min-h-0 w-full flex-col border-r border-[var(--wa-borde)] bg-white md:w-80 md:shrink-0 lg:w-96',
+          'flex min-h-0 w-full flex-col border-r border-[var(--wa-borde)] bg-[var(--wa-cabecera)] md:w-[40%] md:min-w-[340px] md:shrink-0 xl:w-[30%]',
           seleccionado && 'hidden md:flex',
         )}
       >
-        <div className="space-y-2.5 bg-[var(--wa-panel)] px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
-          <div className="flex items-center gap-1">
-            <SidebarTrigger className="-ml-1 md:hidden" />
-            <p className="px-1 text-[19px] font-medium">Supervisión</p>
-            <AvisoMeta compacto className="ml-auto md:hidden" />
+        <div className="space-y-3 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
+          <div className="flex h-10 items-center gap-1">
+            <p className="text-[22px] font-bold tracking-[-0.01em] text-[var(--wa-texto)]">Supervisión</p>
+            <AvisoMeta compacto className="ml-auto" />
           </div>
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--wa-muted)]" />
+            <IconoBuscar className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-[var(--wa-muted)]" />
             <input
               value={busqueda}
               onChange={(evento) => setBusqueda(evento.target.value)}
               placeholder="Buscar cliente o teléfono"
-              className="h-9 w-full rounded-full bg-white pr-3 pl-9 text-sm text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-muted)]"
+              className="h-10 w-full rounded-full border border-transparent bg-[var(--wa-buscar)] pr-4 pl-12 text-[15px] text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-muted)] focus:border-[var(--wa-verde)] focus:bg-[var(--wa-cabecera)]"
               aria-label="Buscar conversación"
             />
           </div>
-          <select
-            value={idAsesor ?? 0}
-            onChange={(evento) => setIdAsesor(Number(evento.target.value) || null)}
-            className="h-9 w-full rounded-lg bg-white px-3 text-sm text-[var(--wa-texto)] outline-none"
-            aria-label="Filtrar por asesor"
-          >
-            <option value={0}>Todo el equipo</option>
-            {usuario ? <option value={usuario.id}>Yo</option> : null}
-            {asesores.data
-              ?.filter((asesor) => asesor.id !== usuario?.id)
-              .map((asesor) => (
-                <option key={asesor.id} value={asesor.id}>
-                  {asesor.nombre || asesor.usuario}
-                </option>
-              ))}
-          </select>
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {ESTADOS.map((opcion) => (
               <button
                 key={opcion.id}
                 type="button"
                 onClick={() => setEstado(opcion.id)}
                 className={cn(
-                  'shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                  estado === opcion.id ? 'bg-[var(--wa-verde)] text-white' : 'bg-white text-[var(--wa-muted)] hover:bg-white/80',
+                  'flex h-8 shrink-0 items-center rounded-full border border-[var(--wa-chip-borde)] px-3 text-[14px] transition-colors',
+                  estado === opcion.id
+                    ? 'bg-[var(--wa-chip-activo)] font-medium text-[var(--wa-texto)]'
+                    : 'text-[var(--wa-icono)] hover:bg-black/[0.04]',
                 )}
               >
                 {opcion.titulo}
               </button>
             ))}
+            <select
+              value={idAsesor ?? 0}
+              onChange={(evento) => setIdAsesor(Number(evento.target.value) || null)}
+              className={cn(
+                'h-8 max-w-40 shrink-0 cursor-pointer rounded-full border border-[var(--wa-chip-borde)] bg-transparent px-3 text-[14px] outline-none',
+                idAsesor ? 'bg-[var(--wa-chip-activo)] font-medium text-[var(--wa-texto)]' : 'text-[var(--wa-icono)]',
+              )}
+              aria-label="Filtrar por asesor"
+            >
+              <option value={0}>Todo el equipo</option>
+              {usuario ? <option value={usuario.id}>Yo</option> : null}
+              {asesores.data
+                ?.filter((asesor) => asesor.id !== usuario?.id)
+                .map((asesor) => (
+                  <option key={asesor.id} value={asesor.id}>
+                    {asesor.nombre || asesor.usuario}
+                  </option>
+                ))}
+            </select>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           {chats.isLoading ? (
             <CargandoLista />
           ) : chats.isError ? (
@@ -173,11 +177,11 @@ export function Supervision() {
                   activo={item.id === seleccionado}
                   alElegir={() => setParametros({ c: String(item.id) })}
                   detalle={
-                    <span className="mt-1 flex items-center gap-1.5 truncate text-[11px] text-[var(--wa-muted)]">
+                    <span
+                      className="block rounded-full ring-2 ring-[var(--wa-cabecera)]"
+                      title={Number(item.id_usuario) === usuario?.id ? 'Lo atiendes tú' : `Lo atiende ${quienAtiende(item)}`}
+                    >
                       <FotoAsesor chat={item} mio={Number(item.id_usuario) === usuario?.id} />
-                      <span className="truncate">
-                        {Number(item.id_usuario) === usuario?.id ? 'Lo atiendes tú' : quienAtiende(item)}
-                      </span>
                     </span>
                   }
                 />
@@ -193,7 +197,6 @@ export function Supervision() {
 
       {seleccionado ? (
         <PanelConversacion
-          key={seleccionado}
           idConversacion={seleccionado}
           alVolver={() => setParametros({})}
           className="min-h-0 flex-1"
@@ -202,24 +205,23 @@ export function Supervision() {
             chat && abierto ? (
               <>
                 {!esMio ? (
-                  <Button
-                    size="icon"
-                    className="bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde)]/90 sm:h-7 sm:w-auto sm:px-2.5"
+                  <button
+                    type="button"
+                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--wa-verde)] px-3 text-[14px] font-medium text-white hover:bg-[var(--wa-verde-oscuro)] disabled:opacity-70"
                     disabled={tomar.isPending}
                     onClick={() => tomar.mutate()}
                   >
-                    {tomar.isPending ? <Loader2 className="animate-spin" /> : <Hand />}
+                    {tomar.isPending ? <Loader2 className="size-4 animate-spin" /> : <Hand className="size-4" />}
                     <span className="hidden sm:inline">Tomar chat</span>
-                  </Button>
+                  </button>
                 ) : null}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="border-[var(--wa-borde)] bg-white text-[var(--wa-texto)] hover:bg-white/80 sm:h-7 sm:w-auto sm:px-2.5"
+                <button
+                  type="button"
+                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--wa-chip-borde)] px-3 text-[14px] text-[var(--wa-texto)] hover:bg-black/[0.04]"
                   onClick={() => setTransfiriendo(true)}
                 >
-                  <ArrowRightLeft /> <span className="hidden sm:inline">Pasar a…</span>
-                </Button>
+                  <ArrowRightLeft className="size-4 text-[var(--wa-icono)]" /> <span className="hidden sm:inline">Pasar a…</span>
+                </button>
               </>
             ) : null
           }

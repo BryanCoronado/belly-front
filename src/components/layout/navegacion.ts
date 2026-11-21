@@ -64,6 +64,7 @@ const TONOS = [
 
 const TONO_RUTA: Record<string, string> = {
   '/inicio': 'bg-emerald-100 text-emerald-700',
+  '/panel': 'bg-emerald-100 text-emerald-700',
   '/dashboard': 'bg-emerald-100 text-emerald-700',
   '/equipo': 'bg-violet-100 text-violet-700',
   '/cuenta': 'bg-violet-100 text-violet-700',
@@ -87,7 +88,8 @@ const TONO_RUTA: Record<string, string> = {
 }
 
 const RUTAS_FRONT: Record<string, string> = {
-  '/dashboard': '/inicio',
+  '/dashboard': '/panel',
+  '/inicio': '/panel',
   '/conversaciones/chat': '/chats',
   '/conversaciones/chat/mis_conversaciones': '/chats',
   '/conversaciones/chat/mis_plantillas': '/plantillas',
@@ -122,7 +124,7 @@ export const SUPERVISION: EnlaceNavegacion = {
 export const NAVEGACION: GrupoNavegacion[] = [
   {
     titulo: 'General',
-    enlaces: [{ titulo: 'Dashboard', ruta: '/inicio', icono: LayoutDashboard, tono: TONO_RUTA['/inicio'] }],
+    enlaces: [{ titulo: 'Dashboard', ruta: '/panel', icono: LayoutDashboard, tono: TONO_RUTA['/inicio'] }],
   },
   {
     titulo: 'Atención',
@@ -211,7 +213,7 @@ export function moduloDeRuta(ruta: string): EnlaceNavegacion | null {
   const plano = aplanar([...NAVEGACION.flatMap((grupo) => grupo.enlaces), CUENTA, EQUIPO, SUPERVISION, INTEGRACIONES, COSTOS_WHATSAPP])
   return (
     plano.find((item) => item.ruta === ruta) ??
-    plano.find((item) => ruta.startsWith(item.ruta) && item.ruta !== '/inicio' && item.ruta !== '/') ??
+    plano.find((item) => ruta.startsWith(item.ruta) && item.ruta !== '/panel' && item.ruta !== '/') ??
     null
   )
 }

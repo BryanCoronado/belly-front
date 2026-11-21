@@ -31,18 +31,18 @@ export function ResumenBot({ idConversacion, totalMensajes }: { idConversacion: 
   const desplegado = abierto ?? datos.estado === 'derivada'
 
   return (
-    <div className="shrink-0 border-b border-[var(--wa-borde)] bg-emerald-50/80 text-sm dark:bg-emerald-950/30">
+    <div className="shrink-0 border-b border-[var(--wa-borde)] bg-[var(--wa-panel)] text-[13px]">
       <button
         type="button"
         onClick={() => setAbierto(!desplegado)}
         aria-expanded={desplegado}
-        className="flex w-full items-center gap-2 px-4 py-2 text-left"
+        className="flex w-full items-center gap-2 px-4 py-1.5 text-left hover:bg-black/5"
       >
-        <Bot className="size-4 shrink-0 text-emerald-600" />
-        <span className="min-w-0 flex-1 truncate font-medium text-emerald-800">
-          Resumen del asistente <span className="font-normal text-emerald-700/80">· {datos.flujo}</span>
+        <Bot className="size-3.5 shrink-0 text-[var(--wa-verde)]" />
+        <span className="min-w-0 flex-1 truncate font-medium text-[var(--wa-texto)]">
+          Asistente <span className="font-normal text-[var(--wa-muted)]">· {datos.flujo}</span>
         </span>
-        <ChevronDown className={cn('size-4 text-emerald-700 transition-transform', desplegado && 'rotate-180')} />
+        <ChevronDown className={cn('size-3.5 text-[var(--wa-muted)] transition-transform', desplegado && 'rotate-180')} />
       </button>
 
       {desplegado ? (

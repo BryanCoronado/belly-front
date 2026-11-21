@@ -331,6 +331,8 @@ export type ConversacionChat = {
   texto_ultimo_mensaje: string | null
   ultimo_mensaje_fecha: string | null
   ultimo_mensaje_contesta: 'cliente' | 'usuario' | 'bot' | null
+  /** 1 inicial · 2 enviado · 3 entregado · 4 leído · 5 error */
+  ultimo_mensaje_id_estado?: number | null
 }
 
 export type FiltrosChat = {

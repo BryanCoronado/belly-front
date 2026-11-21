@@ -1,28 +1,44 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowLeft, Bell, BellOff, CircleCheckBig, MessageCircleMore, PanelRightClose, PanelRightOpen } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import {
+  ArrowDown,
+  ArrowLeft,
+  Bell,
+  BellOff,
+  ChevronDown,
+  CircleCheckBig,
+  FileText,
+  Lock,
+  MessageCircleMore,
+  UserRound,
+  X,
+} from 'lucide-react'
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { abrirChat, enviarMensaje, leerConversacion, leerMensajes, type MensajeChat } from '@/api'
+import { abrirChat, enviarMensaje, leerConversacion, leerMensajes, type ConversacionChat, type MensajeChat } from '@/api'
 import { FichaCliente } from '../clientes/FichaCliente'
 import { useAjustesCrm } from '../clientes/crm'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { avisoError, avisoInfo } from '@/lib/avisos'
 import { alternarSilencio, chatSilenciado } from '@/lib/preferencias-aviso'
 import { useAvisos } from '@/hooks/use-avisos'
-import { usePantallaAncha } from '@/hooks/use-pantalla-ancha'
 import { cn } from '@/lib/utils'
 import { BurbujaMensaje, type CitaMensaje } from './BurbujaMensaje'
 import { PanelCliente } from './PanelCliente'
 import { DialogoFinalizar, DialogoPlantilla } from './Dialogos'
-import { claveDia, etiquetaDia, iniciales, leerFecha, nombreContacto, ventanaAbierta } from './formato'
+import { claveDia, etiquetaDia, leerFecha, nombreContacto, ventanaAbierta } from './formato'
 import { aFormatoWhatsapp } from './textoWhatsapp'
 import { Redactor, type CitaRedactor, type EnvioRedactor } from './Redactor'
+import { AvatarWa, IconoBuscar, IconoLista, IconoLlamar, IconoMenu, IconoPlantilla } from './iconosWa'
 import { ResumenBot } from './ResumenBot'
 
 const ESTADO_FINALIZADA = 2
 const DISTANCIA_PEGADO_ABAJO = 120
-const CLAVE_INFO = 'belly.chat.info'
 
 type Props = {
   idConversacion: number
@@ -44,7 +60,11 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
   const silenciado = prefs.silenciados.includes(idConversacion) || chatSilenciado(idConversacion)
   const ajustes = useAjustesCrm()
 
-  const conversacion = useQuery({ queryKey: ['conversacion', idConversacion], queryFn: () => leerConversacion(idConversacion) })
+  const conversacion = useQuery({
+    queryKey: ['conversacion', idConversacion],
+    queryFn: () => leerConversacion(idConversacion),
+    placeholderData: () => chatEnListas(consultas, idConversacion),
+  })
   const mensajes = useQuery({
     queryKey: claveMensajes,
     queryFn: () => leerMensajes(idConversacion),
@@ -123,115 +143,136 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
   const ultimoMensajeCliente = [...(mensajes.data ?? [])].reverse().find((mensaje) => mensaje.contesta === 'cliente')?.created_at ?? null
   const ventana = mensajes.data ? ventanaAbierta(mensajes.data) : null
 
-  const [infoAbierta, setInfoAbierta] = useState(() => localStorage.getItem(CLAVE_INFO) !== '0')
-  const pantallaAncha = usePantallaAncha()
-  const [infoMovil, setInfoMovil] = useState(false)
-  const verInfo = pantallaAncha ? infoAbierta : infoMovil
-  const alternarInfo = (abrir = !verInfo) => {
-    if (pantallaAncha) {
-      localStorage.setItem(CLAVE_INFO, abrir ? '1' : '0')
-      setInfoAbierta(abrir)
-    } else {
-      setInfoMovil(abrir)
-    }
+  const [infoAbierta, setInfoAbierta] = useState(false)
+  const [buscando, setBuscando] = useState(false)
+  const [filtroMensajes, setFiltroMensajes] = useState('')
+  const telefono = chat?.telefono ? String(chat.telefono).replace(/^\+/, '') : ''
+  const [idPrevio, setIdPrevio] = useState(idConversacion)
+  if (idPrevio !== idConversacion) {
+    setIdPrevio(idConversacion)
+    setCita(null)
+    setDialogo(null)
+    setInfoAbierta(false)
+    setPerfilAbierto(false)
+    setBuscando(false)
+    setFiltroMensajes('')
   }
+  const subtitulo = finalizada ? 'Conversación cerrada' : ventana === false ? 'Solo plantillas · ventana de 24 h cerrada' : null
 
   return (
     <div className={cn('flex h-full min-h-0 min-w-0', className)}>
-    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+    <section className="chat-wa-fondo flex h-full min-h-0 min-w-0 flex-1 flex-col">
       <header
-        className="flex min-w-0 shrink-0 items-center gap-1.5 border-b border-[var(--wa-borde)] bg-[var(--wa-panel)] px-2 py-2 sm:gap-3 sm:px-3 sm:py-2.5"
+        className="flex h-16 min-w-0 shrink-0 items-center gap-1 border-b border-[var(--wa-borde)] bg-[var(--wa-cabecera)] px-2 sm:px-4"
         data-tour="cabecera-chat"
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-[var(--wa-muted)] hover:bg-black/5 md:hidden"
+        <button
+          type="button"
+          className="flex size-10 items-center justify-center rounded-full text-[var(--wa-icono)] hover:bg-black/[0.06] md:hidden"
           aria-label="Volver a la lista"
           onClick={alVolver}
         >
-          <ArrowLeft />
-        </Button>
+          <ArrowLeft className="size-6" strokeWidth={1.8} />
+        </button>
         {chat ? (
           <>
             <button
               type="button"
-              className="-ml-1 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-0.5 text-left hover:bg-black/5"
-              onClick={() => chat.id_cliente && alternarInfo()}
-              title="Ver datos del cliente"
+              className="flex min-w-0 flex-1 items-center gap-3 py-1 text-left"
+              onClick={() => chat.id_cliente && setInfoAbierta(true)}
+              title="Info del contacto"
             >
-              <Avatar className="size-10">
-                <AvatarFallback className="bg-[#dfe5e7] text-sm font-medium text-[#54656f] dark:bg-[#2a3942] dark:text-[#aebac1]">{iniciales(nombre)}</AvatarFallback>
-              </Avatar>
+              <AvatarWa nombre={nombre} className="size-10" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-medium">{nombre}</p>
-                <p className="flex min-w-0 items-center gap-1.5 text-[13px] text-[var(--wa-muted)]">
-                  <span className="truncate">
-                    {chat.etapa_nombre ?? (chat.telefono ? `+${String(chat.telefono).replace(/^\+/, '')}` : chat.nombre_app || 'WhatsApp')}
-                  </span>
-                  {chat.etapa_nombre && chat.etapa_color ? (
-                    <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: chat.etapa_color }} />
-                  ) : null}
-                </p>
+                <p className="truncate text-[16px] leading-[21px] text-[var(--wa-texto)]">{nombre}</p>
+                {subtitulo ? <p className="truncate text-[13px] leading-5 text-[var(--wa-muted)]">{subtitulo}</p> : null}
               </div>
             </button>
-            <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
-            {ventana !== null && !finalizada ? (
-              <span
-                className={cn(
-                  'hidden items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium lg:inline-flex',
-                  ventana
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
-                    : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-                )}
-                title={ventana ? 'El cliente escribió hace menos de 24 h: puedes responder libre' : 'Pasaron 24 h: solo puedes enviar plantillas'}
+            <div className="flex shrink-0 items-center gap-1">
+              {acciones}
+              {chat.id_cliente ? (
+                <button
+                  type="button"
+                  onClick={() => setInfoAbierta(true)}
+                  className="mr-1 hidden h-9 max-w-48 items-center gap-1.5 rounded-full border border-[var(--wa-chip-borde)] px-3 text-[14px] text-[var(--wa-texto)] hover:bg-black/[0.04] lg:flex"
+                  title="Etapa, etiquetas y datos CRM"
+                >
+                  {chat.etapa_color ? (
+                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: chat.etapa_color }} />
+                  ) : (
+                    <IconoLista className="size-[18px] shrink-0 text-[var(--wa-icono)]" />
+                  )}
+                  <span className="truncate">{chat.etapa_nombre || 'Añadir a etapa'}</span>
+                  <ChevronDown className="size-4 shrink-0 text-[var(--wa-icono)]" />
+                </button>
+              ) : null}
+              <BotonCabecera titulo="Enviar plantilla" onClick={() => setDialogo('plantilla')}>
+                <IconoPlantilla className="size-6" />
+              </BotonCabecera>
+              {telefono ? (
+                <a
+                  href={`tel:+${telefono}`}
+                  title={`Llamar +${telefono}`}
+                  aria-label="Llamar"
+                  className="hidden size-10 items-center justify-center rounded-full text-[var(--wa-icono)] hover:bg-black/[0.06] sm:flex"
+                >
+                  <IconoLlamar className="size-6" />
+                </a>
+              ) : null}
+              <BotonCabecera
+                titulo="Buscar en el chat"
+                activo={buscando}
+                onClick={() => {
+                  setBuscando((v) => !v)
+                  setFiltroMensajes('')
+                }}
               >
-                <span className={cn('size-1.5 rounded-full', ventana ? 'bg-emerald-500' : 'bg-slate-400')} />
-                {ventana ? 'Ventana abierta' : 'Solo plantillas'}
-              </span>
-            ) : null}
-            {acciones}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-[var(--wa-muted)] hover:bg-black/5"
-              aria-label={silenciado ? 'Activar avisos de este chat' : 'Silenciar este chat'}
-              title={silenciado ? 'Avisos de este chat: apagados' : 'Silenciar este chat'}
-              onClick={() => {
-                const queda = alternarSilencio(idConversacion)
-                avisoInfo(queda ? 'Este chat ya no suena' : 'Volviste a activar los avisos de este chat')
-              }}
-            >
-              {silenciado ? <BellOff /> : <Bell />}
-            </Button>
-            {chat.id_cliente ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn('text-[var(--wa-muted)] hover:bg-black/5', verInfo && 'bg-black/5 text-[var(--wa-texto)]')}
-                aria-label={verInfo ? 'Ocultar datos del cliente' : 'Ver datos del cliente'}
-                aria-pressed={verInfo}
-                title="Datos del cliente"
-                onClick={() => alternarInfo()}
-              >
-                {verInfo ? <PanelRightClose /> : <PanelRightOpen />}
-              </Button>
-            ) : null}
-            {finalizada ? (
-              <span className="hidden rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[var(--wa-muted)] sm:inline">
-                Finalizada
-              </span>
-            ) : (
-              <Button
-                variant="outline"
-                size="icon"
-                className="border-[var(--wa-borde)] bg-white text-[var(--wa-texto)] hover:bg-white/80 sm:h-7 sm:w-auto sm:px-2.5"
-                onClick={() => setDialogo('finalizar')}
-                data-tour="finalizar-chat"
-              >
-                <CircleCheckBig /> <span className="hidden sm:inline">Finalizar</span>
-              </Button>
-            )}
+                <IconoBuscar className="size-[22px]" />
+              </BotonCabecera>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="flex size-10 items-center justify-center rounded-full text-[var(--wa-icono)] hover:bg-black/[0.06] data-[popup-open]:bg-black/[0.08]"
+                      aria-label="Menú del chat"
+                      title="Menú"
+                    />
+                  }
+                >
+                  <IconoMenu className="size-6" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {chat.id_cliente ? (
+                    <DropdownMenuItem onClick={() => setInfoAbierta(true)}>
+                      <UserRound />
+                      Datos del cliente
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem onClick={() => setDialogo('plantilla')}>
+                    <FileText />
+                    Enviar plantilla
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const queda = alternarSilencio(idConversacion)
+                      avisoInfo(queda ? 'Este chat ya no suena' : 'Volviste a activar los avisos de este chat')
+                    }}
+                  >
+                    {silenciado ? <Bell /> : <BellOff />}
+                    {silenciado ? 'Activar avisos' : 'Silenciar chat'}
+                  </DropdownMenuItem>
+                  {!finalizada ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setDialogo('finalizar')} data-tour="finalizar-chat">
+                        <CircleCheckBig />
+                        Finalizar conversación
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </>
         ) : (
@@ -242,10 +283,42 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         )}
       </header>
 
-      {chat ? <ResumenBot idConversacion={idConversacion} totalMensajes={mensajes.data?.length ?? 0} /> : null}
+      {buscando ? (
+        <div className="flex shrink-0 items-center gap-2 border-b border-[var(--wa-borde)] bg-[var(--wa-cabecera)] px-4 py-2">
+          <div className="relative flex-1">
+            <IconoBuscar className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-[var(--wa-muted)]" />
+            <input
+              autoFocus
+              value={filtroMensajes}
+              onChange={(evento) => setFiltroMensajes(evento.target.value)}
+              onKeyDown={(evento) => evento.key === 'Escape' && setBuscando(false)}
+              placeholder="Buscar mensajes"
+              className="h-10 w-full rounded-full border border-transparent bg-[var(--wa-buscar)] pr-4 pl-12 text-[15px] text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-muted)] focus:border-[var(--wa-verde)]"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setBuscando(false)
+              setFiltroMensajes('')
+            }}
+            className="flex size-9 items-center justify-center rounded-full text-[var(--wa-icono)] hover:bg-black/[0.06]"
+            aria-label="Cerrar búsqueda"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+      ) : null}
+
+      {chat ? <ResumenBot key={idConversacion} idConversacion={idConversacion} totalMensajes={mensajes.data?.length ?? 0} /> : null}
 
       <ListaMensajes
-        mensajes={mensajes.data}
+        key={idConversacion}
+        mensajes={
+          filtroMensajes.trim()
+            ? mensajes.data?.filter((mensaje) => (mensaje.mensaje ?? '').toLowerCase().includes(filtroMensajes.trim().toLowerCase()))
+            : mensajes.data
+        }
         cargando={mensajes.isLoading}
         error={mensajes.error?.message}
         alResponder={setCita}
@@ -257,9 +330,10 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         <p className="border-t border-[var(--wa-borde)] bg-[var(--wa-panel)] px-4 py-3 text-center text-sm text-[var(--wa-muted)]">
           Conversación finalizada
         </p>
-      ) : chat && mensajes.data ? (
+      ) : chat ? (
         <Redactor
-          ventanaAbierta={ventanaAbierta(mensajes.data)}
+          idConversacion={idConversacion}
+          ventanaAbierta={ventana ?? true}
           enviando={envio.isPending}
           cita={cita}
           alCancelarCita={() => setCita(null)}
@@ -308,8 +382,8 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
         idCliente={Number(chat.id_cliente)}
         ajustes={ajustes.data}
         ultimoMensajeCliente={ultimoMensajeCliente}
-        abierto={verInfo}
-        alCerrar={() => alternarInfo(false)}
+        abierto={infoAbierta}
+        alCerrar={() => setInfoAbierta(false)}
         alEditarFicha={() => setPerfilAbierto(true)}
       />
     ) : null}
@@ -358,7 +432,7 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
         setLejos(!cerca)
         if (cerca) setNuevos(0)
       }}
-      className="chat-wa-fondo min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 sm:px-8 lg:px-16"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 sm:px-[6%] xl:px-[8%]"
       data-tour="mensajes-chat"
     >
       {cargando ? (
@@ -376,8 +450,9 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
         </div>
       ) : (
         <>
-        <p className="mx-auto my-3 max-w-sm rounded-[7.5px] bg-[var(--wa-dia)] px-3 py-1.5 text-center text-[12px] text-[var(--wa-dia-texto)] shadow-sm">
-          Los mensajes de este chat salen por tu WhatsApp Business.
+        <p className="mx-auto my-3 flex max-w-md items-start justify-center gap-1.5 rounded-[7.5px] bg-[var(--wa-aviso)] px-3 py-[6px] text-center text-[12.5px] leading-[17px] text-[var(--wa-dia-texto)] shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]">
+          <Lock className="mt-0.5 size-3 shrink-0" />
+          Los mensajes se envían desde tu WhatsApp Business. Haz clic en el nombre para ver los datos CRM del contacto.
         </p>
         {mensajes!.map((mensaje, indice) => {
           const dia = claveDia(mensaje.created_at)
@@ -386,8 +461,8 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
           return (
             <Fragment key={mensaje.id}>
               {nuevoDia && fecha ? (
-                <div className="flex justify-center py-2.5">
-                  <span className="rounded-[7.5px] bg-[var(--wa-dia)] px-3 py-1 text-[12.5px] font-medium text-[var(--wa-dia-texto)] capitalize shadow-sm">
+                <div className="sticky top-1 z-[1] flex justify-center py-2.5">
+                  <span className="rounded-[7.5px] bg-[var(--wa-dia)] px-3 py-[5px] text-[12.5px] leading-[15px] text-[var(--wa-dia-texto)] shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]">
                     {etiquetaDia(fecha)}
                   </span>
                 </div>
@@ -419,6 +494,41 @@ function ListaMensajes({ mensajes, cargando, error, alResponder }: PropsLista) {
       </button>
     ) : null}
     </div>
+  )
+}
+
+function chatEnListas(consultas: QueryClient, id: number): ConversacionChat | undefined {
+  for (const [, lista] of consultas.getQueriesData<ConversacionChat[]>({ queryKey: ['chats'] })) {
+    const encontrado = Array.isArray(lista) ? lista.find((chat) => chat.id === id) : undefined
+    if (encontrado) return encontrado
+  }
+  return undefined
+}
+
+function BotonCabecera({
+  titulo,
+  activo,
+  onClick,
+  children,
+}: {
+  titulo: string
+  activo?: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      title={titulo}
+      aria-label={titulo}
+      onClick={onClick}
+      className={cn(
+        'flex size-10 items-center justify-center rounded-full text-[var(--wa-icono)] hover:bg-black/[0.06]',
+        activo && 'bg-black/[0.08]',
+      )}
+    >
+      {children}
+    </button>
   )
 }
 

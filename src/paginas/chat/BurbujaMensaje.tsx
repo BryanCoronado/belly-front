@@ -1,10 +1,11 @@
-import { AlertCircle, Bot, Check, CheckCheck, Clock3, FileText, LayoutTemplate, MapPin, Reply, X } from 'lucide-react'
+import { AlertCircle, Bot, Clock3, FileText, LayoutTemplate, MapPin, Reply, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MensajeChat } from '@/api'
 import { cn } from '@/lib/utils'
 import { leerSesion } from '@/sesion'
 import { horaCorta } from './formato'
+import { IconoTickDoble, IconoTickSimple } from './iconosWa'
 import { InteractivoWa } from './InteractivoWa'
 import { TextoWhatsapp } from './textoWhatsapp'
 
@@ -45,6 +46,7 @@ export function BurbujaMensaje({
       : null
   const wamid = mensaje.id_mensaje_whatsapp?.trim() || ''
   const puedeResponder = Boolean(alResponder && wamid && !mensaje.pendiente)
+  const metaEnLinea = !mensaje.media_type && !mensaje.media_url && !mensaje.pendiente && Boolean(mensaje.mensaje?.trim())
 
   function responder() {
     if (!alResponder || !wamid) return
@@ -87,8 +89,13 @@ export function BurbujaMensaje({
               <Cita contenido={mensaje.mensaje_responde_contenido} entrante={entrante} />
             </div>
           ) : null}
-          <Contenido mensaje={mensaje} />
-          <div className="mt-0.5 flex items-center justify-end gap-1 px-1.5 text-[11px] text-[var(--wa-muted)]">
+          <Contenido mensaje={mensaje} espacioHora={metaEnLinea ? (entrante ? 'w-[62px]' : 'w-[84px]') : null} />
+          <div
+            className={cn(
+              'flex items-center justify-end gap-1 text-[11px] leading-[15px] text-[var(--wa-muted)]',
+              metaEnLinea ? 'absolute right-2 bottom-[5px]' : 'mt-0.5 px-1.5',
+            )}
+          >
             {mensaje.pendiente ? <span className="mr-auto italic">Enviando…</span> : null}
             <span>{horaCorta(mensaje.created_at)}</span>
             {entrante ? null : <EstadoEnvio estado={Number(mensaje.id_estado)} pendiente={mensaje.pendiente} />}
@@ -126,7 +133,7 @@ function textoCita(mensaje: MensajeChat): string {
   return ''
 }
 
-function Contenido({ mensaje }: { mensaje: MensajeChat }) {
+function Contenido({ mensaje, espacioHora }: { mensaje: MensajeChat; espacioHora: string | null }) {
   const [ampliada, setAmpliada] = useState<string | null>(null)
   const url = mensaje.media_url ?? ''
   const tipo = mensaje.media_type ?? ''
@@ -189,8 +196,9 @@ function Contenido({ mensaje }: { mensaje: MensajeChat }) {
       ) : null}
 
       {caption && !esSoloMarcador && tipo !== 'location' && tipo !== 'sticker' ? (
-        <p className="break-words whitespace-pre-wrap px-1.5 pt-0.5">
+        <p className={cn('break-words whitespace-pre-wrap px-1.5 pt-0.5', espacioHora && 'pb-1')}>
           <TextoWhatsapp texto={caption} />
+          {espacioHora ? <span className={cn('inline-block h-3 align-middle', espacioHora)} aria-hidden /> : null}
         </p>
       ) : null}
 
@@ -339,10 +347,10 @@ function EstadoEnvio({ estado, pendiente }: { estado: number; pendiente?: boolea
     return <AlertCircle className="size-3.5 text-red-600" aria-label="No se envió" />
   }
   if (estado === ESTADO.leido) {
-    return <CheckCheck className="size-3.5 text-sky-400" aria-label="Leído" />
+    return <IconoTickDoble className="h-[11px] w-4 text-[#53bdeb]" aria-label="Leído" />
   }
   if (estado === ESTADO.recibido) {
-    return <CheckCheck className="size-3.5" aria-label="Entregado" />
+    return <IconoTickDoble className="h-[11px] w-4" aria-label="Entregado" />
   }
-  return <Check className="size-3.5" aria-label="Enviado" />
+  return <IconoTickSimple className="h-[11px] w-3" aria-label="Enviado" />
 }
