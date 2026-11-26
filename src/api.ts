@@ -93,6 +93,8 @@ export type DatosRegistro = {
   celular: string
   documento: string
   web: string
+  /** peru = pide DNI/RUC · internacional = sin documento fiscal peruano */
+  modo?: 'peru' | 'internacional'
 }
 
 export type DocumentoConsulta = {

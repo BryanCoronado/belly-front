@@ -9,20 +9,25 @@ import { Button } from '@/components/ui/button'
 import { avisoError, avisoExito } from '@/lib/avisos'
 import { cn } from '@/lib/utils'
 import { marcarRecienRegistrado } from '@/lib/onboarding'
-import { soloDigitos } from '@/lib/paises'
+import { PAISES_TELEFONO, paisPorCodigo, soloDigitos, type Pais } from '@/lib/paises'
 import { guardarSesion } from '@/sesion'
 
-const PERU = { codigo: '51', bandera: '🇵🇪', placeholder: '999 999 999', largo: 9 }
+type ModoRegistro = 'peru' | 'internacional'
 
+const PERU = PAISES_TELEFONO.find((pais) => pais.codigo === '51') ?? PAISES_TELEFONO[0]
 const TOTAL_PASOS = 5
 
-const PASOS = [
-  { titulo: 'Tu negocio', descripcion: 'Cómo se va a llamar tu cuenta.' },
-  { titulo: 'DNI o RUC', descripcion: 'Lo pedimos para abrir tu cuenta.' },
-  { titulo: 'Sobre ti', descripcion: 'Tu nombre y correo.' },
-  { titulo: 'WhatsApp', descripcion: 'El número con el que atiendes.' },
-  { titulo: 'Contraseña', descripcion: 'Créala tú o genera una segura.' },
-] as const
+function pasosDe(modo: ModoRegistro) {
+  return [
+    { titulo: 'Tu negocio', descripcion: 'Cómo se va a llamar tu cuenta y dónde opera.' },
+    modo === 'peru'
+      ? { titulo: 'DNI o RUC', descripcion: 'Lo pedimos para abrir tu cuenta en Perú.' }
+      : { titulo: 'Tu país', descripcion: 'Elige el país desde el que atiendes.' },
+    { titulo: 'Sobre ti', descripcion: 'Tu nombre y correo.' },
+    { titulo: 'WhatsApp', descripcion: 'El número con el que atiendes.' },
+    { titulo: 'Contraseña', descripcion: 'Créala tú o genera una segura.' },
+  ] as const
+}
 
 const REGISTRO_VACIO: DatosRegistro = {
   empresa: '',
@@ -36,6 +41,7 @@ const REGISTRO_VACIO: DatosRegistro = {
   celular: '',
   documento: '',
   web: '',
+  modo: 'peru',
 }
 
 export function Registro() {
@@ -43,6 +49,7 @@ export function Registro() {
   const [paso, setPaso] = useState(1)
   const [direccion, setDireccion] = useState(1)
   const [datos, setDatos] = useState(REGISTRO_VACIO)
+  const [modo, setModo] = useState<ModoRegistro>('peru')
   const [clave2, setClave2] = useState('')
   const [errorPaso, setErrorPaso] = useState<string | null>(null)
   const [consulta, setConsulta] = useState<DocumentoConsulta | null>(null)
@@ -50,10 +57,12 @@ export function Registro() {
   const [verClave, setVerClave] = useState(false)
   const [copiado, setCopiado] = useState(false)
   const ultimoConsultado = useRef('')
+  const pasos = pasosDe(modo)
+  const pais = paisPorCodigo(datos.codigo_pais)
 
   const alta = useMutation({
     mutationFn: async () => {
-      const limpios = limpiar(datos)
+      const limpios = limpiar(datos, modo)
       await registrar(limpios)
       return entrar(limpios.correo, limpios.password)
     },
@@ -91,13 +100,13 @@ export function Registro() {
   const digitosDoc = soloDigitos(datos.documento).slice(0, largoDoc)
 
   useEffect(() => {
-    if (paso !== 2) return
+    if (modo !== 'peru' || paso !== 2) return
     if (digitosDoc.length !== largoDoc) return
     if (digitosDoc === ultimoConsultado.current) return
     if (buscarDoc.isPending) return
     buscarDoc.mutate(digitosDoc)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al completar los dígitos
-  }, [paso, digitosDoc, largoDoc])
+  }, [modo, paso, digitosDoc, largoDoc])
 
   function cambiar(evento: ChangeEvent<HTMLInputElement>) {
     const { name, value } = evento.target
@@ -105,10 +114,38 @@ export function Registro() {
     setDatos((actual) => ({ ...actual, [name]: value }))
   }
 
+  function elegirModo(siguiente: ModoRegistro) {
+    setModo(siguiente)
+    setErrorPaso(null)
+    setConsulta(null)
+    ultimoConsultado.current = ''
+    setDatos((actual) => ({
+      ...actual,
+      modo: siguiente,
+      documento: '',
+      codigo_pais: siguiente === 'peru' ? PERU.codigo : actual.codigo_pais === PERU.codigo ? '1' : actual.codigo_pais,
+      celular: '',
+    }))
+  }
+
+  function cambiarPais(codigo: string) {
+    const elegido = paisPorCodigo(codigo)
+    setErrorPaso(null)
+    setDatos((actual) => ({
+      ...actual,
+      codigo_pais: elegido.codigo,
+      celular: soloDigitos(actual.celular).slice(0, elegido.largo),
+    }))
+  }
+
   function cambiarCelular(valor: string) {
     setErrorPaso(null)
-    const digitos = soloDigitos(valor).slice(0, PERU.largo)
-    setDatos((actual) => ({ ...actual, codigo_pais: PERU.codigo, celular: digitos }))
+    const digitos = soloDigitos(valor).slice(0, pais.largo)
+    setDatos((actual) => ({
+      ...actual,
+      codigo_pais: modo === 'peru' ? PERU.codigo : actual.codigo_pais,
+      celular: digitos,
+    }))
   }
 
   function elegirTipo(tipo: 'dni' | 'ruc') {
@@ -134,7 +171,7 @@ export function Registro() {
 
   function enviar(evento: FormEvent) {
     evento.preventDefault()
-    const error = validarPaso(paso, datos, clave2, consulta, tipoDoc)
+    const error = validarPaso(paso, datos, clave2, consulta, tipoDoc, modo, pais)
     if (error) {
       setErrorPaso(error)
       return
@@ -149,8 +186,8 @@ export function Registro() {
 
   return (
     <LayoutAcceso
-      titulo={PASOS[paso - 1].titulo}
-      descripcion={PASOS[paso - 1].descripcion}
+      titulo={pasos[paso - 1].titulo}
+      descripcion={pasos[paso - 1].descripcion}
       paso={{ actual: paso, total: TOTAL_PASOS }}
       enlace={{ texto: 'Iniciar sesión', to: '/' }}
       pie={
@@ -176,21 +213,50 @@ export function Registro() {
               className="grid gap-4"
             >
               {paso === 1 ? (
-                <label className="campo-acceso">
-                  <span>Nombre del negocio</span>
-                  <input
-                    name="nombre"
-                    placeholder="Studio Luna"
-                    value={datos.nombre}
-                    onChange={cambiar}
-                    autoComplete="organization"
-                    autoFocus
-                    required
-                  />
-                </label>
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => elegirModo('peru')}
+                      className={cn(
+                        'h-11 rounded-lg border text-sm font-medium',
+                        modo === 'peru' ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700',
+                      )}
+                    >
+                      🇵🇪 Perú
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => elegirModo('internacional')}
+                      className={cn(
+                        'h-11 rounded-lg border text-sm font-medium',
+                        modo === 'internacional' ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700',
+                      )}
+                    >
+                      🌎 Internacional
+                    </button>
+                  </div>
+                  <p className="text-xs leading-relaxed text-zinc-500">
+                    {modo === 'peru'
+                      ? 'Pedirás DNI o RUC para validar tu negocio en Perú.'
+                      : 'Sin DNI ni RUC. Ideal si tu empresa opera fuera de Perú.'}
+                  </p>
+                  <label className="campo-acceso">
+                    <span>Nombre del negocio</span>
+                    <input
+                      name="nombre"
+                      placeholder="Studio Luna"
+                      value={datos.nombre}
+                      onChange={cambiar}
+                      autoComplete="organization"
+                      autoFocus
+                      required
+                    />
+                  </label>
+                </>
               ) : null}
 
-              {paso === 2 ? (
+              {paso === 2 && modo === 'peru' ? (
                 <>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -238,6 +304,24 @@ export function Registro() {
                     </div>
                   ) : null}
                 </>
+              ) : null}
+
+              {paso === 2 && modo === 'internacional' ? (
+                <label className="campo-acceso">
+                  <span>País</span>
+                  <select
+                    value={datos.codigo_pais}
+                    onChange={(evento) => cambiarPais(evento.target.value)}
+                    className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-zinc-900"
+                    autoFocus
+                  >
+                    {PAISES_TELEFONO.filter((item) => item.codigo !== PERU.codigo).map((item) => (
+                      <option key={`${item.iso}-${item.codigo}`} value={item.codigo}>
+                        {item.bandera} {item.nombre} (+{item.codigo})
+                      </option>
+                    ))}
+                  </select>
+                </label>
               ) : null}
 
               {paso === 3 ? (
@@ -288,15 +372,30 @@ export function Registro() {
                 <label className="campo-acceso">
                   <span>WhatsApp</span>
                   <div className="campo-tel">
-                    <span>
-                      {PERU.bandera} +{PERU.codigo}
-                    </span>
+                    {modo === 'peru' ? (
+                      <span>
+                        {PERU.bandera} +{PERU.codigo}
+                      </span>
+                    ) : (
+                      <select
+                        value={datos.codigo_pais}
+                        onChange={(evento) => cambiarPais(evento.target.value)}
+                        className="max-w-[9.5rem] shrink-0 border-0 bg-transparent pr-1 text-sm outline-none"
+                        aria-label="Código de país"
+                      >
+                        {PAISES_TELEFONO.map((item) => (
+                          <option key={`${item.iso}-${item.codigo}`} value={item.codigo}>
+                            {item.bandera} +{item.codigo}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <input
                       name="celular"
                       type="tel"
                       inputMode="numeric"
                       autoComplete="tel-national"
-                      placeholder={PERU.placeholder}
+                      placeholder={pais.placeholder}
                       value={datos.celular}
                       onChange={(evento) => cambiarCelular(evento.target.value)}
                       autoFocus
@@ -421,7 +520,7 @@ export function Registro() {
           <Button
             type="submit"
             className="h-11 flex-1 rounded-lg bg-zinc-900 text-sm text-white hover:bg-zinc-800"
-            disabled={ocupado || (paso === 2 && !consulta)}
+            disabled={ocupado || (paso === 2 && modo === 'peru' && !consulta)}
           >
             {ocupado ? <LoaderCircle className="animate-spin" /> : null}
             {paso < TOTAL_PASOS ? 'Continuar' : 'Crear cuenta'}
@@ -517,6 +616,8 @@ function validarPaso(
   clave2 = '',
   consulta: DocumentoConsulta | null,
   tipoDoc: 'dni' | 'ruc',
+  modo: ModoRegistro,
+  pais: Pais,
 ): string | null {
   if (paso === 1) {
     const nombre = datos.nombre.trim()
@@ -525,19 +626,25 @@ function validarPaso(
     if (/^(test|prueba|asdf|qwerty|empresa|negocio|xxx+|aaa+)$/i.test(nombre)) return 'Pon el nombre real.'
   }
   if (paso === 2) {
-    const esperado = tipoDoc === 'dni' ? 8 : 11
-    if (soloDigitos(datos.documento).length !== esperado) return `Completa los ${esperado} dígitos.`
-    if (!consulta) return 'Espera a que aparezcan tus datos.'
+    if (modo === 'peru') {
+      const esperado = tipoDoc === 'dni' ? 8 : 11
+      if (soloDigitos(datos.documento).length !== esperado) return `Completa los ${esperado} dígitos.`
+      if (!consulta) return 'Espera a que aparezcan tus datos.'
+    } else if (!datos.codigo_pais) {
+      return 'Elige el país de tu negocio.'
+    }
   }
   if (paso === 3) {
-    if (!consulta) return 'Vuelve y completa tu DNI o RUC.'
+    if (modo === 'peru' && !consulta) return 'Vuelve y completa tu DNI o RUC.'
     if (datos.nombres.trim().length < 2) return 'Escribe tu nombre.'
     if (datos.apellidos.trim().length < 2) return 'Escribe tu apellido.'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.correo.trim())) return 'Revisa el correo.'
   }
   if (paso === 4) {
     const numero = soloDigitos(datos.celular)
-    if (numero.length !== PERU.largo) return 'El WhatsApp debe tener 9 dígitos.'
+    if (numero.length !== pais.largo) {
+      return `El WhatsApp debe tener ${pais.largo} dígitos para ${pais.nombre}.`
+    }
   }
   if (paso === 5) {
     if (datos.password.length < 8) return 'Mínimo 8 caracteres.'
@@ -589,7 +696,8 @@ function guardarClaveArchivo(datos: DatosRegistro) {
   URL.revokeObjectURL(url)
 }
 
-function limpiar(datos: DatosRegistro): DatosRegistro {
+function limpiar(datos: DatosRegistro, modo: ModoRegistro): DatosRegistro {
+  const pais = paisPorCodigo(modo === 'peru' ? PERU.codigo : datos.codigo_pais)
   return {
     ...datos,
     empresa: '',
@@ -599,8 +707,9 @@ function limpiar(datos: DatosRegistro): DatosRegistro {
     correo: datos.correo.trim().toLowerCase(),
     username: '',
     web: '',
-    documento: soloDigitos(datos.documento),
-    codigo_pais: PERU.codigo,
-    celular: soloDigitos(datos.celular),
+    modo,
+    documento: modo === 'peru' ? soloDigitos(datos.documento) : '',
+    codigo_pais: pais.codigo,
+    celular: soloDigitos(datos.celular).slice(0, pais.largo),
   }
 }
