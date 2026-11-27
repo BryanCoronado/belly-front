@@ -319,9 +319,10 @@ html[data-ahorro='1'] .trazo-marca { background: #f59e0b; }
 
 .chat-wa-fondo {
   background-color: var(--wa-fondo);
-  background-image: url('/chat/wa-doodle-light.svg');
+  /* Azulejo pequeño repetido (como WhatsApp), no la imagen estirada */
+  background-image: url('/chat/wa-wallpaper-light.png');
   background-repeat: repeat;
-  background-size: 420px 420px;
+  background-size: 220px 130px;
 }
 
 .chat-wa-burbuja {
@@ -633,7 +634,7 @@ html[data-ahorro='1'].dark .chat-wa {
 }
 
 .dark .chat-wa-fondo {
-  background-image: url('/chat/wa-doodle-dark.svg');
+  background-image: url('/chat/wa-wallpaper-dark.png');
 }
 
 /* Editor de flujos */
