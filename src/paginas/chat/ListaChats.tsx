@@ -60,8 +60,8 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
   })
 
   const cerrados = useQuery({
-    queryKey: ['chats', 'finalizados', '', {}],
-    queryFn: () => leerChats('finalizados', '', {}),
+    queryKey: ['chats', 'archivados', '', {}],
+    queryFn: () => leerChats('archivados', '', {}),
     staleTime: 60_000,
   })
   const archivados = cerrados.data?.length ?? 0
@@ -71,7 +71,7 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
     pendientes: contadores.data?.falta_responder,
   }
 
-  const enArchivados = bandeja === 'finalizados'
+  const enArchivados = bandeja === 'archivados'
 
   return (
     <aside className={cn('flex min-h-0 flex-col border-r border-[#e9edef] bg-[var(--wa-lista)] dark:border-[#222d34]', className)}>
@@ -134,9 +134,9 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
                   <AvisoMeta compacto />
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setBandeja('finalizados')}>
+                <DropdownMenuItem onClick={() => setBandeja('archivados')}>
                   <IconoArchivados className="size-4" />
-                  Archivados (cerrados)
+                  Archivados
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navegar('/panel')}>
                   <LayoutDashboard />
@@ -260,7 +260,7 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
         {enArchivados ? null : (
           <button
             type="button"
-            onClick={() => setBandeja('finalizados')}
+            onClick={() => setBandeja('archivados')}
             className="flex h-[49px] w-full items-center gap-4 border-b border-[#f2f2f2] px-3 text-left hover:bg-[var(--wa-hover)] dark:border-[#222d34]"
           >
             <span className="flex w-[49px] justify-center text-[var(--wa-icono)]">
@@ -400,6 +400,7 @@ const VACIO: Record<BandejaChat, string> = {
   activos: 'Sin chats todavía',
   no_leidos: 'Todo leído',
   pendientes: 'Nada pendiente',
+  archivados: 'Sin chats archivados',
   finalizados: 'Sin chats cerrados',
 }
 

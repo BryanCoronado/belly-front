@@ -309,12 +309,14 @@ export function texto(fila: Fila, ...claves: string[]): string {
   return ''
 }
 
-export type BandejaChat = 'activos' | 'no_leidos' | 'pendientes' | 'finalizados'
+export type BandejaChat = 'activos' | 'no_leidos' | 'pendientes' | 'archivados' | 'finalizados'
 
 export type ConversacionChat = {
   id: number
   id_app: number
   id_estado: number
+  /** 1 = oculto de la bandeja principal, sin cerrar la conversación */
+  archivado?: number | string | null
   id_usuario?: number | null
   usuario_es_bot?: number | string | null
   id_cliente: number | null
@@ -413,6 +415,7 @@ const RUTAS_BANDEJA: Record<BandejaChat, string> = {
   activos: '/v1/conversacion/listar',
   no_leidos: '/v1/conversacion/no-leidos',
   pendientes: '/v1/conversacion/falta-responder',
+  archivados: '/v1/conversacion/archivadas',
   finalizados: '/v1/conversacion/finalizadas',
 }
 
@@ -637,6 +640,14 @@ export async function eliminarRespuestaRapida(id: number): Promise<void> {
 export async function leerMotivosCierre(): Promise<MotivoCierre[]> {
   const datos = await solicitar('/v1/motivo-conversacion/listar', { method: 'GET', conToken: true })
   return Array.isArray(datos.data) ? (datos.data as MotivoCierre[]) : []
+}
+
+export async function archivarChat(idConversacion: number, archivado = true): Promise<void> {
+  await solicitar(`/v1/conversacion/archivar/${idConversacion}`, {
+    method: 'PUT',
+    cuerpo: { archivado: archivado ? 1 : 0 },
+    conToken: true,
+  })
 }
 
 export async function finalizarChat(idConversacion: number, idMotivo: number): Promise<void> {

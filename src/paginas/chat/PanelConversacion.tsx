@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import {
+  Archive,
   ArrowDown,
   ArrowLeft,
   Bell,
@@ -13,7 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { abrirChat, enviarMensaje, leerConversacion, leerMensajes, type ConversacionChat, type MensajeChat } from '@/api'
+import { abrirChat, archivarChat, enviarMensaje, leerConversacion, leerMensajes, type ConversacionChat, type MensajeChat } from '@/api'
 import { FichaCliente } from '../clientes/FichaCliente'
 import { useAjustesCrm } from '../clientes/crm'
 import {
@@ -139,6 +140,18 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
 
   const chat = conversacion.data
   const finalizada = chat?.id_estado === ESTADO_FINALIZADA
+  const archivado = Number(chat?.archivado) === 1
+
+  const archivo = useMutation({
+    mutationFn: () => archivarChat(idConversacion, !archivado),
+    onSuccess: () => {
+      avisoInfo(archivado ? 'Chat de vuelta en la bandeja' : 'Chat archivado', archivado ? '' : 'Sigue abierto. No es lo mismo que finalizar.')
+      refrescarListas()
+      consultas.invalidateQueries({ queryKey: ['conversacion', idConversacion] })
+      if (!archivado) alVolver()
+    },
+    onError: (error) => avisoError(error, 'No se pudo archivar'),
+  })
   const nombre = chat ? nombreContacto(chat) : ''
   const ultimoMensajeCliente = [...(mensajes.data ?? [])].reverse().find((mensaje) => mensaje.contesta === 'cliente')?.created_at ?? null
   const ventana = mensajes.data ? ventanaAbierta(mensajes.data) : null
@@ -262,6 +275,12 @@ export function PanelConversacion({ idConversacion, alVolver, className, supervi
                     {silenciado ? <Bell /> : <BellOff />}
                     {silenciado ? 'Activar avisos' : 'Silenciar chat'}
                   </DropdownMenuItem>
+                  {!finalizada ? (
+                    <DropdownMenuItem onClick={() => archivo.mutate()} disabled={archivo.isPending}>
+                      <Archive />
+                      {archivado ? 'Desarchivar' : 'Archivar chat'}
+                    </DropdownMenuItem>
+                  ) : null}
                   {!finalizada ? (
                     <>
                       <DropdownMenuSeparator />
