@@ -145,7 +145,7 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   if (!ventanaAbierta) {
     return (
       <div
-        className="flex items-center justify-between gap-3 border-t border-[var(--wa-borde)] bg-[var(--wa-cabecera)] px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4"
+        className="flex items-center justify-between gap-3 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4"
         data-tour="redactor"
       >
         <p className="min-w-0 text-[13px] leading-snug text-[var(--wa-muted)]">
@@ -347,7 +347,7 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   return (
-    <div className="shrink-0 bg-[var(--wa-cabecera)] px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4" data-tour="redactor">
+    <div className="shrink-0 bg-transparent px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4" data-tour="redactor">
       {ahorro ? (
         <p className="mb-2 rounded-lg bg-primary/10 px-3 py-1.5 text-[12px] text-primary">
           Modo ahorro · este envío consume el cupo de WhatsApp. Si podés, contestá desde el celular.

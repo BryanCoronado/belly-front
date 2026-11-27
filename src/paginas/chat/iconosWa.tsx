@@ -288,7 +288,7 @@ export function AvatarWa({ foto, nombre, className }: { foto?: string | null; no
 
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-medium select-none ${className ?? 'size-10'}`}
+      className={`avatar-wa relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold select-none ${className ?? 'size-10'}`}
       style={foto ? undefined : { backgroundColor: color.fondo, color: color.texto }}
       title={nombre}
       aria-label={nombre}
@@ -296,7 +296,7 @@ export function AvatarWa({ foto, nombre, className }: { foto?: string | null; no
       {foto ? (
         <img src={foto} alt={nombre ?? ''} className="size-full object-cover" loading="lazy" />
       ) : (
-        <span className="text-[40%] leading-none tracking-wide">{iniciales}</span>
+        <span className="avatar-wa-iniciales leading-none tracking-wide">{iniciales}</span>
       )}
     </span>
   )

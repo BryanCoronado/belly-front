@@ -57,7 +57,7 @@ export function RailWhatsapp({ usuario, className }: Props) {
   return (
     <nav
       className={cn(
-        'chat-wa-rail flex w-[4.25rem] shrink-0 flex-col items-center border-r border-[var(--wa-borde)] bg-[var(--wa-rail)] pt-2.5 pb-2.5',
+        'chat-wa-rail flex w-[4.25rem] shrink-0 flex-col items-center border-r border-[var(--wa-separador,#d1d7db)] bg-[var(--wa-rail)] pt-2.5 pb-2.5',
         className,
       )}
       aria-label="Navegación"
