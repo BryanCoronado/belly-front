@@ -319,7 +319,9 @@ html[data-ahorro='1'] .trazo-marca { background: #f59e0b; }
 
 .chat-wa-fondo {
   background-color: var(--wa-fondo);
-  background-image: none;
+  background-image: url('/chat/wa-doodle-light.svg');
+  background-repeat: repeat;
+  background-size: 420px 420px;
 }
 
 .chat-wa-burbuja {
@@ -631,7 +633,7 @@ html[data-ahorro='1'].dark .chat-wa {
 }
 
 .dark .chat-wa-fondo {
-  background-image: none;
+  background-image: url('/chat/wa-doodle-dark.svg');
 }
 
 /* Editor de flujos */
