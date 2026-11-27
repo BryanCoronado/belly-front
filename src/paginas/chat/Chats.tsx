@@ -12,7 +12,7 @@ export function Chats() {
   useGuia('chats')
 
   return (
-    <div className="chat-wa flex min-h-0 flex-1 overflow-hidden bg-white">
+    <div className="chat-wa flex min-h-0 flex-1 overflow-hidden bg-[var(--wa-lista)]">
       <ListaChats
         seleccionado={seleccionado}
         alSeleccionar={(chat) => setParametros({ c: String(chat.id) })}
@@ -35,7 +35,7 @@ function PanelVacioWa() {
   return (
     <div className="relative hidden min-h-0 flex-1 flex-col items-center justify-center bg-[var(--wa-panel)] px-8 text-center md:flex">
       <div className="flex max-w-lg flex-col items-center gap-5">
-        <div className="rounded-2xl bg-white px-10 py-9 shadow-[0_2px_12px_rgba(11,20,26,0.08)] dark:bg-[#202c33]">
+        <div className="rounded-2xl bg-[var(--wa-lista)] px-10 py-9 shadow-[0_2px_12px_rgba(11,20,26,0.08)]">
           <IlustracionWa />
           <h1 className="mt-6 text-[28px] font-light leading-tight text-[var(--wa-texto)]">
             Belly listo para atender
@@ -70,7 +70,7 @@ function PanelVacioWa() {
 function AccesoRapido({ to, icono, texto }: { to: string; icono: ReactNode; texto: string }) {
   return (
     <Link to={to} className="flex flex-col items-center gap-2 text-[12px] text-[var(--wa-muted)] hover:text-[var(--wa-texto)]">
-      <span className="flex size-12 items-center justify-center rounded-full bg-white text-[var(--wa-texto)] shadow-sm ring-1 ring-black/5 dark:bg-[#202c33]">
+      <span className="flex size-12 items-center justify-center rounded-full bg-[var(--wa-lista)] text-[var(--wa-texto)] shadow-sm ring-1 ring-black/5">
         {icono}
       </span>
       {texto}

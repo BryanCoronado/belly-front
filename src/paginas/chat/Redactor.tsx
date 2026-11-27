@@ -347,7 +347,7 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   return (
-    <div className="shrink-0 px-2 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4" data-tour="redactor">
+    <div className="shrink-0 bg-[var(--wa-cabecera)] px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4" data-tour="redactor">
       {ahorro ? (
         <p className="mb-2 rounded-lg bg-primary/10 px-3 py-1.5 text-[12px] text-primary">
           Modo ahorro · este envío consume el cupo de WhatsApp. Si podés, contestá desde el celular.
@@ -406,7 +406,7 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
       ) : null}
 
       {grabando ? (
-        <div className="flex min-w-0 items-center gap-1 rounded-[26px] bg-[var(--wa-cabecera)] px-2 py-2 shadow-[0_1px_2px_rgba(11,20,26,0.12)]">
+        <div className="flex min-w-0 items-center gap-1 rounded-[26px] bg-[var(--wa-composer)] px-2 py-2 shadow-[0_1px_2px_rgba(11,20,26,0.12)]">
           <button
             type="button"
             className="flex size-10 shrink-0 items-center justify-center rounded-full text-[var(--wa-muted)] hover:bg-black/[0.06]"
@@ -436,7 +436,7 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
           </button>
         </div>
       ) : (
-      <div className="flex min-w-0 items-end gap-0.5 rounded-[26px] bg-[var(--wa-cabecera)] px-1.5 py-[5px] shadow-[0_1px_2px_rgba(11,20,26,0.12)]">
+      <div className="flex min-w-0 items-end gap-0.5 rounded-[26px] bg-[var(--wa-composer)] px-1.5 py-[5px] shadow-[0_1px_2px_rgba(11,20,26,0.12)]">
         <input
           ref={selector}
           type="file"

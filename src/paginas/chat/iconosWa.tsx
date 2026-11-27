@@ -247,21 +247,56 @@ export function IconoEtiqueta(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+/** Pasteles estilo WhatsApp Web (fondo suave + inicial más oscura). */
+const COLORES_AVATAR = [
+  { fondo: '#c5e8f7', texto: '#1e6f96' },
+  { fondo: '#d4f0e2', texto: '#1f7a55' },
+  { fondo: '#f7d5e2', texto: '#a13d66' },
+  { fondo: '#e6d8f5', texto: '#6b3f96' },
+  { fondo: '#fde7c8', texto: '#9a6420' },
+  { fondo: '#d5f2ef', texto: '#1f7a70' },
+  { fondo: '#f6d6d0', texto: '#9a4338' },
+  { fondo: '#dde4f7', texto: '#3f5496' },
+  { fondo: '#e8f0c8', texto: '#5f7320' },
+  { fondo: '#f0d8f0', texto: '#8a3f8a' },
+] as const
+
+function hashNombre(nombre: string): number {
+  let h = 0
+  for (let i = 0; i < nombre.length; i++) h = (h * 31 + nombre.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+export function inicialesDe(nombre?: string | null): string {
+  const limpio = (nombre ?? '').trim().replace(/\s+/g, ' ')
+  if (!limpio) return '?'
+  const partes = limpio.split(' ').filter(Boolean)
+  if (partes.length >= 2) {
+    return `${partes[0][0] ?? ''}${partes[1][0] ?? ''}`.toUpperCase()
+  }
+  return limpio.slice(0, 2).toUpperCase()
+}
+
+export function colorAvatarDe(nombre?: string | null) {
+  const clave = (nombre ?? '').trim().toLowerCase() || '?'
+  return COLORES_AVATAR[hashNombre(clave) % COLORES_AVATAR.length]
+}
+
 export function AvatarWa({ foto, nombre, className }: { foto?: string | null; nombre?: string; className?: string }) {
+  const color = colorAvatarDe(nombre)
+  const iniciales = inicialesDe(nombre)
+
   return (
     <span
-      className={`relative inline-flex shrink-0 overflow-hidden rounded-full bg-[#dfe5e7] dark:bg-[#6a7175] ${className ?? 'size-10'}`}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-medium select-none ${className ?? 'size-10'}`}
+      style={foto ? undefined : { backgroundColor: color.fondo, color: color.texto }}
       title={nombre}
+      aria-label={nombre}
     >
       {foto ? (
         <img src={foto} alt={nombre ?? ''} className="size-full object-cover" loading="lazy" />
       ) : (
-        <svg viewBox="0 0 212 212" className="size-full" aria-hidden>
-          <path
-            className="fill-white dark:fill-[#cfd4d6]"
-            d="M106.3 33.2c-21.8 0-39.5 17.7-39.5 39.5 0 21.8 17.7 39.5 39.5 39.5s39.5-17.7 39.5-39.5c0-21.8-17.7-39.5-39.5-39.5Zm0 89.9c-37.7 0-71.7 15.8-91.2 41.2C34.4 193.4 68 212 106 212s71.6-18.6 90.9-47.7c-19.5-25.4-52.9-41.2-90.6-41.2Z"
-          />
-        </svg>
+        <span className="text-[40%] leading-none tracking-wide">{iniciales}</span>
       )}
     </span>
   )

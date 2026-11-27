@@ -71,7 +71,7 @@ function LayoutChatInmersivo({ usuario, ruta }: PropsLayout) {
     <div className="chat-wa flex h-svh max-h-svh w-full overflow-hidden bg-[var(--wa-cabecera)]">
       <TransformacionModo />
       {movil ? null : <RailWhatsapp usuario={usuario} />}
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--wa-lista)]">
         <Contenido ruta={ruta} pantallaCompleta />
       </main>
     </div>
