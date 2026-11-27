@@ -319,10 +319,12 @@ html[data-ahorro='1'] .trazo-marca { background: #f59e0b; }
 
 .chat-wa-fondo {
   background-color: var(--wa-fondo);
-  /* Azulejo pequeño repetido (como WhatsApp), no la imagen estirada */
-  background-image: url('/chat/wa-wallpaper-light.png');
+  /* Mosaico más grande + velo del color de fondo para que no se noten las uniones */
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--wa-fondo) 58%, transparent), color-mix(in srgb, var(--wa-fondo) 58%, transparent)),
+    url('/chat/wa-wallpaper-light.png');
   background-repeat: repeat;
-  background-size: 220px 130px;
+  background-size: auto, 480px 284px;
 }
 
 .chat-wa-burbuja {
@@ -634,7 +636,9 @@ html[data-ahorro='1'].dark .chat-wa {
 }
 
 .dark .chat-wa-fondo {
-  background-image: url('/chat/wa-wallpaper-dark.png');
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--wa-fondo) 62%, transparent), color-mix(in srgb, var(--wa-fondo) 62%, transparent)),
+    url('/chat/wa-wallpaper-dark.png');
 }
 
 /* Editor de flujos */
