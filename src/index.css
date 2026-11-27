@@ -321,13 +321,15 @@ html[data-ahorro='1'] .trazo-marca { background: #f59e0b; }
 }
 
 .chat-wa-fondo {
+  /* Patrón SVG pensado para repetir sin uniones (como WhatsApp Web) */
   background-color: var(--wa-fondo);
-  /* Tamaño medio (ni chico ni cover) + velo para disimular uniones */
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--wa-fondo) 58%, transparent), color-mix(in srgb, var(--wa-fondo) 58%, transparent)),
-    url('/chat/wa-wallpaper-light.png');
+  background-image: url('/chat/wa-doodle-light.svg');
   background-repeat: repeat;
-  background-size: auto, 680px 402px;
+  background-size: 400px 400px;
+}
+
+.dark .chat-wa-fondo {
+  background-image: url('/chat/wa-doodle-dark.svg');
 }
 
 /* Iniciales del avatar: % del tamaño del círculo (no del texto padre) */
@@ -654,11 +656,6 @@ html[data-ahorro='1'].dark .chat-wa {
   --wa-burbuja-in: #202c33;
 }
 
-.dark .chat-wa-fondo {
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--wa-fondo) 55%, transparent), color-mix(in srgb, var(--wa-fondo) 55%, transparent)),
-    url('/chat/wa-wallpaper-dark.png');
-}
 
 /* Editor de flujos */
 .dark .react-flow__minimap {

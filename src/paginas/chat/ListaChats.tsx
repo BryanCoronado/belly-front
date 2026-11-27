@@ -74,7 +74,7 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
   const enArchivados = bandeja === 'finalizados'
 
   return (
-    <aside className={cn('flex min-h-0 flex-col bg-[var(--wa-lista)]', className)}>
+    <aside className={cn('flex min-h-0 flex-col border-r border-[#e9edef] bg-[var(--wa-lista)] dark:border-[#222d34]', className)}>
       <div className="space-y-3 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
         <div className="flex h-10 items-center gap-1">
           {enArchivados ? (
@@ -256,18 +256,20 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2" data-tour="lista-chats">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-2" data-tour="lista-chats">
         {enArchivados ? null : (
           <button
             type="button"
             onClick={() => setBandeja('finalizados')}
-            className="flex h-12 w-full items-center gap-4 rounded-lg px-3 text-left hover:bg-[var(--wa-hover)]"
+            className="flex h-[49px] w-full items-center gap-4 border-b border-[#f2f2f2] px-3 text-left hover:bg-[var(--wa-hover)] dark:border-[#222d34]"
           >
             <span className="flex w-[49px] justify-center text-[var(--wa-icono)]">
               <IconoArchivados className="size-5" />
             </span>
-            <span className="flex-1 text-[16px] text-[var(--wa-texto)]">Archivados</span>
-            {archivados ? <span className="pr-1 text-[12px] text-[var(--wa-muted)]">{archivados}</span> : null}
+            <span className="flex-1 text-[17px] text-[var(--wa-texto)]">Archivados</span>
+            {archivados ? (
+              <span className="pr-3 text-[14px] font-medium text-[var(--wa-verde)]">{archivados}</span>
+            ) : null}
           </button>
         )}
         {chats.isLoading ? (
@@ -298,22 +300,22 @@ export function ItemChat({ chat, activo, alElegir, detalle }: PropsItem) {
   const mio = chat.ultimo_mensaje_contesta && chat.ultimo_mensaje_contesta !== 'cliente'
 
   return (
-    <li>
+    <li className="relative">
       <button
         type="button"
         onClick={alElegir}
         className={cn(
-          'flex h-[72px] w-full items-center gap-3 rounded-lg px-3 text-left transition-colors hover:bg-[var(--wa-hover)]',
-          activo && 'bg-[var(--wa-seleccion)] hover:bg-[var(--wa-seleccion)]',
+          'flex h-[72px] w-full items-center gap-3 px-3 text-left transition-colors hover:bg-[var(--wa-hover)]',
+          activo && 'bg-[#f0f2f5] hover:bg-[#f0f2f5] dark:bg-[var(--wa-seleccion)] dark:hover:bg-[var(--wa-seleccion)]',
         )}
       >
         <span className="relative shrink-0">
           <AvatarWa nombre={nombre} className="size-[49px]" />
           {detalle ? <span className="absolute -right-0.5 -bottom-0.5">{detalle}</span> : null}
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 border-b border-[#f2f2f2] py-[13px] pr-3 dark:border-[#222d34]">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-[17px] leading-[21px] text-[var(--wa-texto)]">{nombre}</span>
+            <span className="truncate text-[17px] leading-[21px] font-normal text-[var(--wa-texto)]">{nombre}</span>
             <span
               className={cn(
                 'shrink-0 text-[12px] leading-[14px]',
@@ -323,10 +325,10 @@ export function ItemChat({ chat, activo, alElegir, detalle }: PropsItem) {
               {fechaLista(chat.ultimo_mensaje_fecha)}
             </span>
           </div>
-          <div className="mt-[3px] flex items-center justify-between gap-2">
+          <div className="mt-[2px] flex items-center justify-between gap-2">
             <span
               className={cn(
-                'flex min-w-0 items-center gap-1 truncate text-[14px] leading-5',
+                'flex min-w-0 items-center gap-1 truncate text-[14px] leading-[20px]',
                 noLeidos ? 'font-medium text-[var(--wa-texto)]' : 'text-[var(--wa-muted)]',
               )}
             >
@@ -345,7 +347,7 @@ export function ItemChat({ chat, activo, alElegir, detalle }: PropsItem) {
                 </span>
               ) : null}
               {noLeidos ? (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--wa-badge)] px-1.5 text-[12px] font-semibold text-white">
+                <span className="flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[var(--wa-badge)] px-1.5 text-[12px] font-semibold text-white">
                   {noLeidos > 99 ? '99+' : noLeidos}
                 </span>
               ) : null}

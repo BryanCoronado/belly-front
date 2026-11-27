@@ -356,9 +356,12 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   return (
-    <div className="shrink-0 bg-transparent px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4" data-tour="redactor">
+    <div
+      className="shrink-0 bg-[#f0f2f5] px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 dark:bg-[var(--wa-panel)]"
+      data-tour="redactor"
+    >
       {bloqueado ? (
-        <p className="mb-2 text-center text-[12px] leading-snug text-[var(--wa-muted)]">
+        <p className="mb-1.5 text-center text-[12px] leading-snug text-[var(--wa-muted)]">
           Ventana de 24 h cerrada · solo puedes enviar plantillas de WhatsApp
         </p>
       ) : null}
