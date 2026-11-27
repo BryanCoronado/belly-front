@@ -106,7 +106,7 @@ export function Supervision() {
     <div className="chat-wa flex min-h-0 flex-1 overflow-hidden bg-[var(--wa-lista)]">
       <aside
         className={cn(
-          'flex min-h-0 w-full flex-col border-r border-[var(--wa-separador,#d1d7db)] bg-[var(--wa-lista)] md:w-[40%] md:min-w-[340px] md:shrink-0 xl:w-[30%]',
+          'flex min-h-0 w-full flex-col bg-[var(--wa-lista)] md:w-[40%] md:min-w-[340px] md:shrink-0 xl:w-[30%]',
           seleccionado && 'hidden md:flex',
         )}
       >

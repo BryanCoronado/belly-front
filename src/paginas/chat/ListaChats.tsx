@@ -74,7 +74,7 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
   const enArchivados = bandeja === 'finalizados'
 
   return (
-    <aside className={cn('flex min-h-0 flex-col border-r border-[var(--wa-separador,#d1d7db)] bg-[var(--wa-lista)]', className)}>
+    <aside className={cn('flex min-h-0 flex-col bg-[var(--wa-lista)]', className)}>
       <div className="space-y-3 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
         <div className="flex h-10 items-center gap-1">
           {enArchivados ? (

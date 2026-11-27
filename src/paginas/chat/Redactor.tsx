@@ -142,29 +142,14 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
     if (cita) campo.current?.focus()
   }, [cita])
 
-  if (!ventanaAbierta) {
-    return (
-      <div
-        className="flex items-center justify-between gap-3 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4"
-        data-tour="redactor"
-      >
-        <p className="min-w-0 text-[13px] leading-snug text-[var(--wa-muted)]">
-          Ventana de 24 h cerrada · solo plantillas de WhatsApp
-        </p>
-        <Button
-          size="sm"
-          className="h-9 shrink-0 rounded-full bg-[var(--wa-verde)] px-4 text-white hover:bg-[var(--wa-verde-oscuro)]"
-          onClick={alUsarPlantilla}
-        >
-          <LayoutTemplate /> Plantilla
-        </Button>
-      </div>
-    )
-  }
-
-  const puedeEnviar = !enviando && (texto.trim() !== '' || archivo !== null)
+  const bloqueado = !ventanaAbierta
+  const puedeEnviar = !bloqueado && !enviando && (texto.trim() !== '' || archivo !== null)
 
   async function enviar(extra?: EnvioRedactor) {
+    if (bloqueado) {
+      alUsarPlantilla()
+      return
+    }
     if (extra) {
       try {
         await alEnviar(extra)
@@ -206,6 +191,10 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   function alTeclear(evento: KeyboardEvent<HTMLTextAreaElement>) {
+    if (bloqueado) {
+      evento.preventDefault()
+      return
+    }
     if (evento.key === 'Escape') {
       evento.preventDefault()
       alCancelarCita?.()
@@ -229,6 +218,10 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   function elegirArchivo(elegido: File | undefined, como?: 'sticker') {
+    if (bloqueado) {
+      alUsarPlantilla()
+      return
+    }
     setErrorArchivo('')
     if (!elegido) return
     if (elegido.size > LIMITE_ARCHIVO_MB * 1024 * 1024) {
@@ -251,6 +244,10 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   async function usarRespuesta(respuesta: RespuestaRapida) {
+    if (bloqueado) {
+      alUsarPlantilla()
+      return
+    }
     if (respuesta.contenido) insertar(respuesta.contenido)
     if (!respuesta.imagen_url) return
     try {
@@ -265,6 +262,10 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   async function enviarSticker(sticker: StickerTienda) {
+    if (bloqueado) {
+      alUsarPlantilla()
+      return
+    }
     try {
       const respuesta = await fetch(sticker.url)
       if (!respuesta.ok) throw new Error('Giphy no entregó el archivo')
@@ -278,6 +279,10 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   async function enviarUbicacion() {
+    if (bloqueado) {
+      alUsarPlantilla()
+      return
+    }
     if (!navigator.geolocation) {
       avisoError(new Error('Este navegador no comparte ubicación.'), 'No se pudo enviar')
       return
@@ -298,6 +303,10 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
   }
 
   async function empezarGrabacion() {
+    if (bloqueado) {
+      alUsarPlantilla()
+      return
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const tipo = ['audio/ogg;codecs=opus', 'audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((opcion) =>
@@ -348,6 +357,11 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
 
   return (
     <div className="shrink-0 bg-transparent px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4" data-tour="redactor">
+      {bloqueado ? (
+        <p className="mb-2 text-center text-[12px] leading-snug text-[var(--wa-muted)]">
+          Ventana de 24 h cerrada · solo puedes enviar plantillas de WhatsApp
+        </p>
+      ) : null}
       {ahorro ? (
         <p className="mb-2 rounded-lg bg-primary/10 px-3 py-1.5 text-[12px] text-primary">
           Modo ahorro · este envío consume el cupo de WhatsApp. Si podés, contestá desde el celular.
@@ -451,7 +465,13 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <button type="button" className={CLASE_ICONO} aria-label="Adjuntar" title="Adjuntar" />
+              <button
+                type="button"
+                className={cn(CLASE_ICONO, bloqueado && 'pointer-events-none opacity-40')}
+                aria-label="Adjuntar"
+                title={bloqueado ? 'Ventana de 24 h cerrada' : 'Adjuntar'}
+                disabled={bloqueado}
+              />
             }
           >
             <IconoAdjuntar className="size-6" />
@@ -496,9 +516,10 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
 
         <button
           type="button"
-          className={cn(CLASE_ICONO, emojisAbiertos && 'text-[var(--wa-verde)]')}
+          className={cn(CLASE_ICONO, emojisAbiertos && 'text-[var(--wa-verde)]', bloqueado && 'opacity-40')}
           aria-label="Emojis y stickers"
-          title="Emojis y stickers"
+          title={bloqueado ? 'Ventana de 24 h cerrada' : 'Emojis y stickers'}
+          disabled={bloqueado}
           onClick={() => setEmojisAbiertos((v) => !v)}
         >
           <IconoSticker className="size-6" />
@@ -549,14 +570,35 @@ export function Redactor({ idConversacion, ventanaAbierta, enviando, cita, alCan
             onChange={(evento) => setTexto(evento.target.value)}
             onKeyDown={alTeclear}
             rows={1}
-            placeholder={archivo ? 'Añade un comentario (opcional)' : 'Escribe un mensaje'}
-            title="Negrita Ctrl+B · Cursiva Ctrl+I"
+            readOnly={bloqueado}
+            placeholder={
+              bloqueado
+                ? 'Ventana de 24 h cerrada'
+                : archivo
+                  ? 'Añade un comentario (opcional)'
+                  : 'Escribe un mensaje'
+            }
+            title={bloqueado ? 'Solo plantillas de WhatsApp' : 'Negrita Ctrl+B · Cursiva Ctrl+I'}
             aria-label="Mensaje"
-            className="field-sizing-content block max-h-36 min-h-10 w-full min-w-0 max-w-full resize-none border-0 bg-transparent px-2 py-[9px] text-[15px] leading-[22px] text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0"
+            className={cn(
+              'field-sizing-content block max-h-36 min-h-10 w-full min-w-0 max-w-full resize-none border-0 bg-transparent px-2 py-[9px] text-[15px] leading-[22px] text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-muted)] focus-visible:ring-0',
+              bloqueado && 'cursor-not-allowed opacity-70',
+            )}
           />
         </div>
 
-        {puedeEnviar ? (
+        {bloqueado ? (
+          <button
+            type="button"
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[var(--wa-verde)] px-3.5 text-[13px] font-medium text-white hover:bg-[var(--wa-verde-oscuro)]"
+            aria-label="Enviar plantilla"
+            title="Enviar plantilla"
+            onClick={alUsarPlantilla}
+          >
+            <LayoutTemplate className="size-4" />
+            Plantilla
+          </button>
+        ) : puedeEnviar ? (
           <button
             type="button"
             className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--wa-verde)] text-white hover:bg-[var(--wa-verde-oscuro)] disabled:bg-[#aebac1]"
