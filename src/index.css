@@ -322,13 +322,12 @@ html[data-ahorro='1'] .trazo-marca { background: #f59e0b; }
 
 .chat-wa-fondo {
   background-color: var(--wa-fondo);
-  /* Una sola imagen grande (sin repeat) → no se ven uniones de mosaico */
+  /* Tamaño medio (ni chico ni cover) + velo para disimular uniones */
   background-image:
-    linear-gradient(color-mix(in srgb, var(--wa-fondo) 38%, transparent), color-mix(in srgb, var(--wa-fondo) 38%, transparent)),
+    linear-gradient(color-mix(in srgb, var(--wa-fondo) 58%, transparent), color-mix(in srgb, var(--wa-fondo) 58%, transparent)),
     url('/chat/wa-wallpaper-light.png');
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
+  background-repeat: repeat;
+  background-size: auto, 680px 402px;
 }
 
 /* Iniciales del avatar: % del tamaño del círculo (no del texto padre) */
