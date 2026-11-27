@@ -1,8 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Clock3, LayoutDashboard, ListFilter, MessagesSquare, Plus, X } from 'lucide-react'
-import { useDeferredValue, useState, type ReactNode } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Archive, ArrowLeft, Bell, BellOff, Clock3, LayoutDashboard, ListFilter, MessageCircle, MessagesSquare, Plus, X } from 'lucide-react'
+import { useDeferredValue, useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
-import { leerChats, leerContadoresChat, type BandejaChat, type ConversacionChat, type FiltrosChat } from '@/api'
+import { archivarChat, leerChats, leerContadoresChat, type BandejaChat, type ConversacionChat, type FiltrosChat } from '@/api'
+import { avisoError, avisoInfo } from '@/lib/avisos'
+import { alternarSilencio, chatSilenciado } from '@/lib/preferencias-aviso'
 import { AvisoMeta } from '@/components/layout/AvisoMeta'
 import { LimitesPlan } from '@/components/layout/LimitesPlan'
 import {
@@ -293,17 +296,53 @@ export function ListaChats({ seleccionado, alSeleccionar, className }: Props) {
 type PropsItem = { chat: ConversacionChat; activo: boolean; alElegir: () => void; detalle?: ReactNode }
 
 export function ItemChat({ chat, activo, alElegir, detalle }: PropsItem) {
+  const consultas = useQueryClient()
   const nombre = nombreContacto(chat)
   const noLeidos = Number(chat.mensajes_no_leidos) || 0
   const espera = chat.id_estado !== 2 && chat.ultimo_mensaje_contesta === 'cliente' ? tiempoEspera(chat.ultimo_mensaje_fecha) : null
   const estado = Number(chat.ultimo_mensaje_id_estado ?? 0)
   const mio = chat.ultimo_mensaje_contesta && chat.ultimo_mensaje_contesta !== 'cliente'
+  const archivado = Number(chat.archivado) === 1
+  const silenciado = chatSilenciado(chat.id)
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+
+  const archivar = useMutation({
+    mutationFn: () => archivarChat(chat.id, !archivado),
+    onSuccess: () => {
+      avisoInfo(archivado ? 'Chat de vuelta en la bandeja' : 'Chat archivado')
+      consultas.invalidateQueries({ queryKey: ['chats'] })
+      setMenu(null)
+    },
+    onError: (error) => avisoError(error, 'No se pudo archivar'),
+  })
+
+  useEffect(() => {
+    if (!menu) return
+    const cerrar = () => setMenu(null)
+    window.addEventListener('click', cerrar)
+    window.addEventListener('scroll', cerrar, true)
+    window.addEventListener('resize', cerrar)
+    return () => {
+      window.removeEventListener('click', cerrar)
+      window.removeEventListener('scroll', cerrar, true)
+      window.removeEventListener('resize', cerrar)
+    }
+  }, [menu])
 
   return (
     <li className="relative">
       <button
         type="button"
         onClick={alElegir}
+        onContextMenu={(evento) => {
+          evento.preventDefault()
+          const ancho = 220
+          const alto = 148
+          setMenu({
+            x: Math.min(evento.clientX, window.innerWidth - ancho - 8),
+            y: Math.min(evento.clientY, window.innerHeight - alto - 8),
+          })
+        }}
         className={cn(
           'flex h-[72px] w-full items-center gap-3 px-3 text-left transition-colors hover:bg-[var(--wa-hover)]',
           activo && 'bg-[#f0f2f5] hover:bg-[#f0f2f5] dark:bg-[var(--wa-seleccion)] dark:hover:bg-[var(--wa-seleccion)]',
@@ -355,7 +394,65 @@ export function ItemChat({ chat, activo, alElegir, detalle }: PropsItem) {
           </div>
         </div>
       </button>
+      {menu
+        ? createPortal(
+            <div
+              className="fixed z-50 w-[220px] overflow-hidden rounded-lg bg-white py-1.5 text-[14.5px] text-[#111b21] shadow-[0_2px_8px_rgba(11,20,26,0.18)] dark:bg-[#233138] dark:text-[#e9edef]"
+              style={{ left: menu.x, top: menu.y }}
+              onClick={(evento) => evento.stopPropagation()}
+              onContextMenu={(evento) => evento.preventDefault()}
+            >
+              <OpcionMenu
+                icono={<MessageCircle className="size-[18px]" />}
+                onClick={() => {
+                  setMenu(null)
+                  alElegir()
+                }}
+              >
+                Abrir chat
+              </OpcionMenu>
+              <OpcionMenu
+                icono={<Archive className="size-[18px]" />}
+                onClick={() => archivar.mutate()}
+              >
+                {archivado ? 'Desarchivar' : 'Archivar chat'}
+              </OpcionMenu>
+              <OpcionMenu
+                icono={silenciado ? <Bell className="size-[18px]" /> : <BellOff className="size-[18px]" />}
+                onClick={() => {
+                  const queda = alternarSilencio(chat.id)
+                  avisoInfo(queda ? 'Chat silenciado' : 'Avisos activados')
+                  setMenu(null)
+                }}
+              >
+                {silenciado ? 'Activar avisos' : 'Silenciar'}
+              </OpcionMenu>
+            </div>,
+            document.body,
+          )
+        : null}
     </li>
+  )
+}
+
+function OpcionMenu({
+  icono,
+  children,
+  onClick,
+}: {
+  icono: ReactNode
+  children: ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className="flex h-10 w-full items-center gap-3 px-4 text-left hover:bg-[#f5f6f6] dark:hover:bg-[#182229]"
+      onClick={onClick}
+    >
+      <span className="text-[#54656f] dark:text-[#aebac1]">{icono}</span>
+      {children}
+    </button>
   )
 }
 
