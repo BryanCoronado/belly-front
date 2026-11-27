@@ -321,15 +321,16 @@ html[data-ahorro='1'] .trazo-marca { background: #f59e0b; }
 }
 
 .chat-wa-fondo {
-  /* Patrón SVG pensado para repetir sin uniones (como WhatsApp Web) */
-  background-color: var(--wa-fondo);
-  background-image: url('/chat/wa-doodle-light.svg');
+  /* PNG nativo (540×981), sin reescalar: nítido */
+  background-color: #47704c;
+  background-image: url('/chat/wa-bg.png');
   background-repeat: repeat;
-  background-size: 400px 400px;
+  background-size: 540px 981px;
 }
 
 .dark .chat-wa-fondo {
-  background-image: url('/chat/wa-doodle-dark.svg');
+  background-color: #47704c;
+  background-image: url('/chat/wa-bg.png');
 }
 
 /* Iniciales del avatar: % del tamaño del círculo (no del texto padre) */
